@@ -1,0 +1,1038 @@
+<title>Job Dashboard — UI Mockup for Sign-off</title>
+
+<style>
+  /* ============================================================
+     Tokens. Components are styled through these only — never
+     inside a media query — so the viewer's theme toggle can
+     override the OS preference in both directions.
+     ============================================================ */
+  :root {
+    --bg:          #f6f7f9;
+    --surface:     #ffffff;
+    --surface-alt: #f0f2f5;
+    --border:      #dde1e8;
+    --border-firm: #c3cad6;
+    --text:        #0f1620;
+    --muted:       #5c6a7c;
+    --faint:       #8b97a6;
+    --accent:      #4b57c8;
+    --accent-soft: #e8eaff;
+    --focus:       #4b57c8;
+
+    --st-pending:      #7f6110;   --st-pending-bg:   #fbf1d6;
+    --st-running:      #0b6a8d;   --st-running-bg:   #d9eff7;
+    --st-completed:    #1b6640;   --st-completed-bg: #d8f0e2;
+    --st-failed:       #9c2937;   --st-failed-bg:    #fbe0e3;
+
+    --sans: ui-sans-serif, -apple-system, "Segoe UI Variable Text", "Segoe UI",
+            Roboto, "Helvetica Neue", Arial, sans-serif;
+    --mono: ui-monospace, "SF Mono", "Cascadia Mono", "JetBrains Mono",
+            "Roboto Mono", Menlo, Consolas, monospace;
+
+    --r: 3px;
+    --shadow: 0 1px 2px rgb(15 22 32 / 0.06), 0 6px 20px rgb(15 22 32 / 0.05);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:          #0a0e13;
+      --surface:     #111820;
+      --surface-alt: #161e28;
+      --border:      #212b37;
+      --border-firm: #33404f;
+      --text:        #dce4ee;
+      --muted:       #8393a6;
+      --faint:       #66768a;
+      --accent:      #8f9cff;
+      --accent-soft: #1b2140;
+      --focus:       #8f9cff;
+
+      --st-pending:      #e3ba52;  --st-pending-bg:   #342a10;
+      --st-running:      #5fc9ea;  --st-running-bg:   #0d2c37;
+      --st-completed:    #62cb8c;  --st-completed-bg: #10301d;
+      --st-failed:       #f2818d;  --st-failed-bg:    #37171c;
+
+      --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 6px 20px rgb(0 0 0 / 0.3);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --bg: #0a0e13; --surface: #111820; --surface-alt: #161e28;
+    --border: #212b37; --border-firm: #33404f;
+    --text: #dce4ee; --muted: #8393a6; --faint: #66768a;
+    --accent: #8f9cff; --accent-soft: #1b2140; --focus: #8f9cff;
+    --st-pending: #e3ba52;   --st-pending-bg: #342a10;
+    --st-running: #5fc9ea;   --st-running-bg: #0d2c37;
+    --st-completed: #62cb8c; --st-completed-bg: #10301d;
+    --st-failed: #f2818d;    --st-failed-bg: #37171c;
+    --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 6px 20px rgb(0 0 0 / 0.3);
+  }
+
+  :root[data-theme="light"] {
+    --bg: #f6f7f9; --surface: #ffffff; --surface-alt: #f0f2f5;
+    --border: #dde1e8; --border-firm: #c3cad6;
+    --text: #0f1620; --muted: #5c6a7c; --faint: #8b97a6;
+    --accent: #4b57c8; --accent-soft: #e8eaff; --focus: #4b57c8;
+    --st-pending: #7f6110;   --st-pending-bg: #fbf1d6;
+    --st-running: #0b6a8d;   --st-running-bg: #d9eff7;
+    --st-completed: #1b6640; --st-completed-bg: #d8f0e2;
+    --st-failed: #9c2937;    --st-failed-bg: #fbe0e3;
+    --shadow: 0 1px 2px rgb(15 22 32 / 0.06), 0 6px 20px rgb(15 22 32 / 0.05);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 68rem;
+    margin: 0 auto;
+    padding: 3rem 1.5rem 6rem;
+    display: flex;
+    flex-direction: column;
+    gap: 3.5rem;
+  }
+
+  /* ---------- shared type ---------- */
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.13em;
+    color: var(--faint);
+    margin: 0;
+  }
+  h1 { font-size: 1.85rem; line-height: 1.2; margin: 0.35rem 0 0; letter-spacing: -0.02em; text-wrap: balance; }
+  h2 { font-size: 1.15rem; margin: 0; letter-spacing: -0.01em; text-wrap: balance; }
+  .lede { color: var(--muted); margin: 0.6rem 0 0; max-width: 62ch; }
+
+  .doc-head { border-bottom: 1px solid var(--border); padding-bottom: 2rem; }
+
+  .review-note {
+    margin-top: 1.5rem;
+    padding: 0.9rem 1.1rem;
+    background: var(--accent-soft);
+    border-left: 2px solid var(--accent);
+    border-radius: 0 var(--r) var(--r) 0;
+    font-size: 0.9rem;
+    color: var(--text);
+    max-width: 62ch;
+  }
+  .review-note p { margin: 0; }
+  .review-note p + p { margin-top: 0.5rem; }
+
+  section { display: flex; flex-direction: column; gap: 1.25rem; }
+  .section-head { display: flex; flex-direction: column; gap: 0.3rem; }
+
+  /* ---------- the app surface ---------- */
+  .app {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+
+  .toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 0.75rem;
+    padding: 1rem 1.1rem;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface-alt);
+  }
+
+  .field { display: flex; flex-direction: column; gap: 0.35rem; }
+  .field label {
+    font-family: var(--mono);
+    font-size: 0.66rem;
+    text-transform: uppercase;
+    letter-spacing: 0.11em;
+    color: var(--faint);
+  }
+
+  input[type="text"], input[type="search"], select {
+    font: inherit;
+    font-size: 0.9rem;
+    color: var(--text);
+    background: var(--surface);
+    border: 1px solid var(--border-firm);
+    border-radius: var(--r);
+    padding: 0.42rem 0.6rem;
+    min-width: 0;
+  }
+  input::placeholder { color: var(--faint); }
+  .grow { flex: 1 1 14rem; }
+
+  :is(input, select, button, [tabindex]):focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 1px;
+  }
+
+  button {
+    font: inherit;
+    font-size: 0.87rem;
+    color: var(--text);
+    background: var(--surface);
+    border: 1px solid var(--border-firm);
+    border-radius: var(--r);
+    padding: 0.42rem 0.8rem;
+    cursor: pointer;
+  }
+  button:hover { border-color: var(--faint); }
+  button.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+    font-weight: 500;
+  }
+  :root[data-theme="dark"] button.primary,
+  button.primary { color: #fff; }
+  @media (prefers-color-scheme: dark) { button.primary { color: #0a0e13; } }
+  :root[data-theme="dark"] button.primary { color: #0a0e13; }
+  :root[data-theme="light"] button.primary { color: #fff; }
+  button.primary:hover { filter: brightness(1.06); }
+  button.danger { color: var(--st-failed); border-color: var(--border-firm); }
+  button.danger:hover { border-color: var(--st-failed); }
+  button[disabled] { opacity: 0.5; cursor: not-allowed; }
+  button.ghost { border-color: transparent; background: transparent; color: var(--muted); padding: 0.3rem 0.45rem; }
+  button.ghost:hover { background: var(--surface-alt); color: var(--text); border-color: transparent; }
+
+  .field-error {
+    font-size: 0.78rem;
+    color: var(--st-failed);
+    font-family: var(--mono);
+  }
+  input.invalid { border-color: var(--st-failed); }
+
+  .filters { display: flex; gap: 0.3rem; flex-wrap: wrap; }
+  .chip {
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    padding: 0.32rem 0.55rem;
+    border: 1px solid var(--border-firm);
+    border-radius: var(--r);
+    background: var(--surface);
+    color: var(--muted);
+    cursor: pointer;
+  }
+  .chip[aria-pressed="true"] {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+  @media (prefers-color-scheme: dark) { .chip[aria-pressed="true"] { color: #0a0e13; } }
+  :root[data-theme="dark"] .chip[aria-pressed="true"] { color: #0a0e13; }
+  :root[data-theme="light"] .chip[aria-pressed="true"] { color: #fff; }
+
+  /* ---------- rows ---------- */
+  .rows { display: flex; flex-direction: column; }
+
+  .row {
+    display: grid;
+    grid-template-columns: 7.5rem minmax(0, 1fr) auto auto;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.8rem 1.1rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .row:last-child { border-bottom: none; }
+  .row:hover { background: var(--surface-alt); }
+
+  .status {
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    padding: 0.24rem 0.5rem;
+    border-radius: 2px;
+    text-align: center;
+    white-space: nowrap;
+  }
+  .status[data-status="PENDING"]   { color: var(--st-pending);   background: var(--st-pending-bg); }
+  .status[data-status="RUNNING"]   { color: var(--st-running);   background: var(--st-running-bg); }
+  .status[data-status="COMPLETED"] { color: var(--st-completed); background: var(--st-completed-bg); }
+  .status[data-status="FAILED"]    { color: var(--st-failed);    background: var(--st-failed-bg); }
+
+  .name { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; }
+  .name b { font-weight: 550; font-size: 0.95rem; overflow-wrap: anywhere; }
+  .meta {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--faint);
+    font-variant-numeric: tabular-nums;
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+  .actions { display: flex; align-items: center; gap: 0.4rem; }
+
+  .pending-dot {
+    display: inline-block;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--st-running);
+    margin-right: 0.3rem;
+    animation: pulse 1.6s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
+  @media (prefers-reduced-motion: reduce) {
+    .pending-dot { animation: none; }
+    * { transition: none !important; }
+  }
+
+  /* ---------- status menu ---------- */
+  .menu-wrap { position: relative; }
+  .menu {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 4px);
+    z-index: 20;
+    min-width: 10.5rem;
+    background: var(--surface);
+    border: 1px solid var(--border-firm);
+    border-radius: var(--r);
+    box-shadow: var(--shadow);
+    padding: 0.25rem;
+    display: flex;
+    flex-direction: column;
+  }
+  .menu button {
+    border: none;
+    background: transparent;
+    text-align: left;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0.5rem;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+  }
+  .menu button:hover { background: var(--surface-alt); }
+  .menu button[aria-current="true"] { color: var(--accent); }
+  .swatch { width: 8px; height: 8px; border-radius: 2px; flex: none; }
+
+  /* ---------- history timeline ---------- */
+  .history {
+    padding: 0.25rem 1.1rem 1rem 8.6rem;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface-alt);
+  }
+  .history ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+  .history li {
+    display: grid;
+    grid-template-columns: 6rem 1fr;
+    gap: 0.75rem;
+    align-items: baseline;
+    padding: 0.3rem 0 0.3rem 0.9rem;
+    border-left: 1px solid var(--border-firm);
+    position: relative;
+    font-family: var(--mono);
+    font-size: 0.73rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--muted);
+  }
+  .history li::before {
+    content: "";
+    position: absolute;
+    left: -3.5px; top: 0.75rem;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--border-firm);
+  }
+  .history li:first-child::before { background: var(--accent); }
+  .history li b { color: var(--text); font-weight: 600; letter-spacing: 0.08em; }
+  .history .caption {
+    font-family: var(--mono);
+    font-size: 0.66rem;
+    text-transform: uppercase;
+    letter-spacing: 0.11em;
+    color: var(--faint);
+    margin: 0 0 0.4rem;
+  }
+
+  /* ---------- banners, empty, skeleton ---------- */
+  .banner {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.8rem 1.1rem;
+    background: var(--st-failed-bg);
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+    font-size: 0.88rem;
+  }
+  .banner .mark {
+    font-family: var(--mono);
+    font-size: 0.66rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: var(--st-failed);
+    padding-top: 0.15rem;
+    white-space: nowrap;
+  }
+  .banner .msg { flex: 1; }
+  .banner .msg b { display: block; font-weight: 600; }
+  .banner .msg span { color: var(--muted); font-size: 0.83rem; }
+
+  .empty { padding: 3rem 1.1rem; text-align: center; color: var(--muted); }
+  .empty b { display: block; color: var(--text); margin-bottom: 0.3rem; }
+  .empty p { margin: 0; font-size: 0.88rem; }
+
+  .skel { height: 10px; border-radius: 2px; background: var(--surface-alt); border: 1px solid var(--border); }
+  .skel.w1 { width: 5.5rem; } .skel.w2 { width: 60%; } .skel.w3 { width: 8rem; }
+
+  .foot {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.9rem;
+    border-top: 1px solid var(--border);
+    background: var(--surface-alt);
+  }
+  .foot .count {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--faint);
+    letter-spacing: 0.06em;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ---------- dialog ---------- */
+  .scrim {
+    position: fixed; inset: 0; z-index: 50;
+    background: rgb(8 12 17 / 0.55);
+    display: grid; place-items: center;
+    padding: 1.5rem;
+  }
+  .dialog {
+    background: var(--surface);
+    border: 1px solid var(--border-firm);
+    border-radius: var(--r);
+    box-shadow: var(--shadow);
+    max-width: 27rem; width: 100%;
+    padding: 1.25rem;
+    display: flex; flex-direction: column; gap: 0.85rem;
+  }
+  .dialog h3 { margin: 0; font-size: 1rem; }
+  .dialog p { margin: 0; color: var(--muted); font-size: 0.89rem; }
+  .dialog .job-ref {
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    color: var(--text);
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    padding: 0.5rem 0.6rem;
+    overflow-wrap: anywhere;
+  }
+  .dialog .row-actions { display: flex; justify-content: flex-end; gap: 0.5rem; }
+
+  /* ---------- gallery ---------- */
+  .gallery { display: flex; flex-direction: column; gap: 2rem; }
+  .plate { display: flex; flex-direction: column; gap: 0.6rem; }
+  .plate-head { display: flex; align-items: baseline; gap: 0.6rem; flex-wrap: wrap; }
+  .plate-head h3 { margin: 0; font-size: 0.95rem; font-weight: 600; }
+  .case-tag {
+    font-family: var(--mono);
+    font-size: 0.64rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+    border-radius: 2px;
+    padding: 0.1rem 0.35rem;
+  }
+  .plate-note { margin: 0; font-size: 0.85rem; color: var(--muted); max-width: 62ch; }
+  .frame { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); overflow: hidden; }
+
+  .sim {
+    display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;
+    font-size: 0.83rem; color: var(--muted);
+    padding: 0.7rem 1.1rem;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+  }
+  .sim label { display: flex; align-items: center; gap: 0.4rem; cursor: pointer; }
+
+  table.legend { border-collapse: collapse; font-size: 0.85rem; width: 100%; }
+  table.legend th, table.legend td { text-align: left; padding: 0.45rem 0.7rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+  table.legend th {
+    font-family: var(--mono); font-size: 0.66rem; text-transform: uppercase;
+    letter-spacing: 0.11em; color: var(--faint); font-weight: 500;
+  }
+  table.legend td:first-child { white-space: nowrap; }
+  .scroll-x { overflow-x: auto; }
+
+  @media (max-width: 40rem) {
+    .row { grid-template-columns: 6.5rem minmax(0, 1fr); row-gap: 0.6rem; }
+    .row .meta-col, .row .actions { grid-column: 1 / -1; }
+    .history { padding-left: 1.1rem; }
+  }
+</style>
+
+<div class="wrap">
+
+  <header class="doc-head">
+    <p class="eyebrow">Slice 4.5 · design sign-off</p>
+    <h1>Job Management Dashboard — UI mockup</h1>
+    <p class="lede">
+      Every state the interface can reach, with hard-coded data and no backend. This is the
+      artifact to argue with before any React exists — changing a layout here costs minutes,
+      changing it after slices 5–8 are wired through TanStack Query costs a rebuild of every
+      component and its tests.
+    </p>
+    <div class="review-note">
+      <p><b>How to review:</b> the prototype below is live — type in the search box, open a status
+        menu, expand a history, try creating a job with an empty name, delete something. Toggle
+        <b>Simulate API failure</b> to watch optimistic updates roll back.</p>
+      <p>Below it, a gallery pins each remaining state in isolation, tagged with the test-plan case
+        it satisfies.</p>
+    </div>
+  </header>
+
+  <!-- ============================ LIVE ============================ -->
+  <section>
+    <div class="section-head">
+      <p class="eyebrow">01 — interactive</p>
+      <h2>The working prototype</h2>
+    </div>
+
+    <div class="app">
+      <div class="sim">
+        <label>
+          <input type="checkbox" id="fail-toggle" />
+          Simulate API failure
+        </label>
+        <span>— makes the next status change or delete fail, so the rollback path is visible.</span>
+      </div>
+
+      <div class="toolbar">
+        <div class="field grow">
+          <label for="q">Search</label>
+          <input type="search" id="q" placeholder="Filter by job name…" />
+        </div>
+        <div class="field">
+          <label>Status</label>
+          <div class="filters" id="filters">
+            <button class="chip" data-filter="ALL" aria-pressed="true">All</button>
+            <button class="chip" data-filter="PENDING" aria-pressed="false">Pending</button>
+            <button class="chip" data-filter="RUNNING" aria-pressed="false">Running</button>
+            <button class="chip" data-filter="COMPLETED" aria-pressed="false">Completed</button>
+            <button class="chip" data-filter="FAILED" aria-pressed="false">Failed</button>
+          </div>
+        </div>
+        <form class="field grow" id="create-form" novalidate>
+          <label for="new-name">New job</label>
+          <div style="display:flex; gap:0.5rem;">
+            <input type="text" id="new-name" class="grow" placeholder="e.g. Transonic Wing Sweep" />
+            <button type="submit" class="primary">Create</button>
+          </div>
+          <span class="field-error" id="name-error" hidden></span>
+        </form>
+      </div>
+
+      <div id="banner-slot"></div>
+      <div class="rows" id="rows"></div>
+
+      <div class="foot">
+        <span class="count" id="count"></span>
+        <button id="load-more">Load more</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ GALLERY ============================ -->
+  <section>
+    <div class="section-head">
+      <p class="eyebrow">02 — state gallery</p>
+      <h2>Every remaining state</h2>
+      <p class="lede">Static renderings, using the same markup as the prototype so nothing drifts
+        between the two.</p>
+    </div>
+
+    <div class="gallery">
+
+      <div class="plate">
+        <div class="plate-head"><h3>Loading</h3><span class="case-tag">E3</span></div>
+        <p class="plate-note">Row-shaped skeletons rather than a centred spinner, so the layout
+          doesn't jump when data lands.</p>
+        <div class="frame">
+          <div class="rows">
+            <div class="row"><div class="skel w1"></div><div class="skel w2"></div><div class="skel w3"></div><div></div></div>
+            <div class="row"><div class="skel w1"></div><div class="skel w2"></div><div class="skel w3"></div><div></div></div>
+            <div class="row"><div class="skel w1"></div><div class="skel w2"></div><div class="skel w3"></div><div></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="plate">
+        <div class="plate-head"><h3>Fetch failed</h3><span class="case-tag">E4</span><span class="case-tag">E5</span></div>
+        <p class="plate-note">The error states what failed and what to do next. Never a blank
+          screen — the toolbar stays interactive, and Retry clears the banner on success.</p>
+        <div class="frame">
+          <div class="banner">
+            <span class="mark">Error</span>
+            <span class="msg">
+              <b>Couldn't load jobs.</b>
+              <span>The server returned 500. Your filters are unchanged.</span>
+            </span>
+            <button>Retry</button>
+          </div>
+          <div class="empty"><b>No jobs to show</b><p>The list will populate once the request succeeds.</p></div>
+        </div>
+      </div>
+
+      <div class="plate">
+        <div class="plate-head"><h3>Create rejected by the server</h3><span class="case-tag">B5</span></div>
+        <p class="plate-note">The typed name survives the failure — the field is never cleared
+          until a create actually succeeds.</p>
+        <div class="frame">
+          <div class="banner">
+            <span class="mark">Error</span>
+            <span class="msg">
+              <b>Couldn't create “LES Combustor Validation”.</b>
+              <span>The server returned 500. Your job wasn't created — try again.</span>
+            </span>
+            <button>Dismiss</button>
+          </div>
+          <div class="toolbar">
+            <form class="field grow" onsubmit="return false;">
+              <label for="preserved">New job</label>
+              <div style="display:flex; gap:0.5rem;">
+                <input type="text" id="preserved" class="grow" value="LES Combustor Validation" />
+                <button type="submit" class="primary">Create</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <div class="plate">
+        <div class="plate-head"><h3>Status change in flight, then rolled back</h3><span class="case-tag">C7</span></div>
+        <p class="plate-note">The optimistic badge shows the new value immediately with a live dot.
+          If the request fails it returns to the previous value and says so — the UI never claims a
+          state the server didn't accept.</p>
+        <div class="frame">
+          <div class="rows">
+            <div class="row">
+              <span class="status" data-status="RUNNING"><span class="pending-dot"></span>Running</span>
+              <span class="name"><b>Battery Thermal Runaway (2C)</b>
+                <span class="meta"><span>#4812</span><span>saving…</span></span></span>
+              <span></span><span class="actions"><button disabled>Change status</button></span>
+            </div>
+          </div>
+          <div class="banner">
+            <span class="mark">Error</span>
+            <span class="msg">
+              <b>Couldn't set “Battery Thermal Runaway (2C)” to Running.</b>
+              <span>The server returned 500. The status has been restored to Pending.</span>
+            </span>
+            <button>Dismiss</button>
+          </div>
+          <div class="rows">
+            <div class="row">
+              <span class="status" data-status="PENDING">Pending</span>
+              <span class="name"><b>Battery Thermal Runaway (2C)</b>
+                <span class="meta"><span>#4812</span><span>restored</span></span></span>
+              <span></span><span class="actions"><button>Change status</button></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="plate">
+        <div class="plate-head"><h3>Delete confirmation</h3><span class="case-tag">D1</span></div>
+        <p class="plate-note">An in-app dialog, never <code>window.confirm</code> — a native dialog
+          blocks the event loop and would hang the Playwright suite. It names the job and states the
+          consequence for the status history.</p>
+        <div class="frame" style="padding:1.5rem; display:grid; place-items:center; background:var(--surface-alt);">
+          <div class="dialog" style="box-shadow:none;">
+            <h3>Delete this job?</h3>
+            <div class="job-ref">#4809 · Crash Pulse — Frontal Offset 40%</div>
+            <p>Its four status entries will be deleted too. This can't be undone.</p>
+            <div class="row-actions">
+              <button>Cancel</button>
+              <button class="danger">Delete job</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="plate">
+        <div class="plate-head"><h3>End of list</h3><span class="case-tag">F1</span><span class="case-tag">F2</span></div>
+        <p class="plate-note">Cursor pagination has no total count — computing one means a
+          <code>COUNT(*)</code> per page load. So the footer reports what's loaded, not what
+          fraction of the whole it represents.</p>
+        <div class="frame">
+          <div class="foot">
+            <span class="count">75 loaded · no more results</span>
+            <button disabled>Load more</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="plate">
+        <div class="plate-head"><h3>Status vocabulary</h3></div>
+        <p class="plate-note">Interface chrome is deliberately near-monochrome so that status is the
+          only saturated colour on the page. Colour is never the sole carrier — each state also has a
+          distinct uppercase label.</p>
+        <div class="frame scroll-x">
+          <table class="legend">
+            <thead><tr><th>State</th><th>Meaning</th><th>Reachable from</th></tr></thead>
+            <tbody>
+              <tr><td><span class="status" data-status="PENDING">Pending</span></td>
+                  <td>Accepted, not yet started. Every job's first status.</td><td>any</td></tr>
+              <tr><td><span class="status" data-status="RUNNING">Running</span></td>
+                  <td>Executing now. Carries a live pulse dot.</td><td>any</td></tr>
+              <tr><td><span class="status" data-status="COMPLETED">Completed</span></td>
+                  <td>Finished successfully.</td><td>any</td></tr>
+              <tr><td><span class="status" data-status="FAILED">Failed</span></td>
+                  <td>Terminated with an error.</td><td>any</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="plate-note">“Reachable from: any” is the shipped permissive policy (Q7). The status
+          control stands in for scheduler events rather than a user workflow, so every state stays
+          reachable; the strict map lives beside it in <code>jobs/transitions.py</code>.</p>
+      </div>
+
+    </div>
+  </section>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var STATUSES = ["PENDING", "RUNNING", "COMPLETED", "FAILED"];
+  var LABEL = { PENDING: "Pending", RUNNING: "Running", COMPLETED: "Completed", FAILED: "Failed" };
+
+  var jobs = [
+    { id: 4814, name: "Transonic Wing Sweep — Re 6.5×10⁶", status: "RUNNING",
+      created: "2026-07-25 09:14", updated: "2026-07-25 11:02",
+      history: [["RUNNING", "2026-07-25 09:31"], ["PENDING", "2026-07-25 09:14"]] },
+    { id: 4813, name: "LES Combustor Validation", status: "COMPLETED",
+      created: "2026-07-25 08:47", updated: "2026-07-25 10:58",
+      history: [["COMPLETED", "2026-07-25 10:58"], ["RUNNING", "2026-07-25 08:52"], ["PENDING", "2026-07-25 08:47"]] },
+    { id: 4812, name: "Battery Thermal Runaway (2C)", status: "PENDING",
+      created: "2026-07-25 08:30", updated: "2026-07-25 08:30",
+      history: [["PENDING", "2026-07-25 08:30"]] },
+    { id: 4811, name: "Rotor Blade Modal Analysis", status: "RUNNING",
+      created: "2026-07-25 07:58", updated: "2026-07-25 10:21",
+      history: [["RUNNING", "2026-07-25 08:03"], ["PENDING", "2026-07-25 07:58"]] },
+    { id: 4809, name: "Crash Pulse — Frontal Offset 40%", status: "FAILED",
+      created: "2026-07-25 07:12", updated: "2026-07-25 07:44",
+      history: [["FAILED", "2026-07-25 07:44"], ["RUNNING", "2026-07-25 07:15"], ["PENDING", "2026-07-25 07:12"]] },
+    { id: 4807, name: "CFD Mesh Convergence Study", status: "COMPLETED",
+      created: "2026-07-25 06:40", updated: "2026-07-25 09:05",
+      history: [["COMPLETED", "2026-07-25 09:05"], ["RUNNING", "2026-07-25 06:44"], ["PENDING", "2026-07-25 06:40"]] }
+  ];
+
+  var nextId = 4815;
+  var filter = "ALL";
+  var query = "";
+  var expanded = null;
+  var menuFor = null;
+  var banner = null;
+  var savingId = null;
+
+  var rowsEl = document.getElementById("rows");
+  var bannerSlot = document.getElementById("banner-slot");
+  var countEl = document.getElementById("count");
+  var failToggle = document.getElementById("fail-toggle");
+  var nameInput = document.getElementById("new-name");
+  var nameError = document.getElementById("name-error");
+
+  function shouldFail() { return failToggle.checked; }
+
+  function visible() {
+    return jobs.filter(function (j) {
+      var okStatus = filter === "ALL" || j.status === filter;
+      var okQuery = !query || j.name.toLowerCase().indexOf(query.toLowerCase()) !== -1;
+      return okStatus && okQuery;
+    });
+  }
+
+  function el(tag, cls, text) {
+    var n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text != null) n.textContent = text;
+    return n;
+  }
+
+  function statusEl(status, live) {
+    var s = el("span", "status");
+    s.setAttribute("data-status", status);
+    if (live) s.appendChild(el("span", "pending-dot"));
+    s.appendChild(document.createTextNode(LABEL[status]));
+    return s;
+  }
+
+  function renderBanner() {
+    bannerSlot.textContent = "";
+    if (!banner) return;
+    var b = el("div", "banner");
+    b.appendChild(el("span", "mark", "Error"));
+    var msg = el("span", "msg");
+    msg.appendChild(el("b", null, banner.title));
+    msg.appendChild(el("span", null, banner.detail));
+    b.appendChild(msg);
+    var dismiss = el("button", null, "Dismiss");
+    dismiss.addEventListener("click", function () { banner = null; renderBanner(); });
+    b.appendChild(dismiss);
+    bannerSlot.appendChild(b);
+  }
+
+  function renderHistory(job) {
+    var wrap = el("div", "history");
+    wrap.appendChild(el("p", "caption", "Status history · " + job.history.length + " entries · newest first"));
+    var ol = document.createElement("ol");
+    job.history.forEach(function (entry) {
+      var li = document.createElement("li");
+      li.appendChild(el("b", null, entry[0]));
+      li.appendChild(el("span", null, entry[1]));
+      ol.appendChild(li);
+    });
+    wrap.appendChild(ol);
+    return wrap;
+  }
+
+  function changeStatus(job, next) {
+    menuFor = null;
+    var previous = job.status;
+    job.status = next;
+    savingId = job.id;
+    render();
+
+    window.setTimeout(function () {
+      savingId = null;
+      if (shouldFail()) {
+        job.status = previous;                       // roll back
+        banner = {
+          title: "Couldn't set “" + job.name + "” to " + LABEL[next] + ".",
+          detail: "The server returned 500. The status has been restored to " + LABEL[previous] + "."
+        };
+      } else {
+        var stamp = "2026-07-25 11:" + String(10 + job.history.length).padStart(2, "0");
+        job.history.unshift([next, stamp]);          // append-only log
+        job.updated = stamp;
+        banner = null;
+      }
+      render();
+    }, 550);
+  }
+
+  function removeJob(job) {
+    if (shouldFail()) {
+      banner = {
+        title: "Couldn't delete “" + job.name + "”.",
+        detail: "The server returned 500. The job is still here — nothing was removed."
+      };
+      render();
+      return;
+    }
+    jobs = jobs.filter(function (j) { return j.id !== job.id; });
+    banner = null;
+    render();
+  }
+
+  function confirmDelete(job) {
+    var scrim = el("div", "scrim");
+    var dialog = el("div", "dialog");
+    dialog.setAttribute("role", "dialog");
+    dialog.setAttribute("aria-modal", "true");
+    dialog.appendChild(el("h3", null, "Delete this job?"));
+    dialog.appendChild(el("div", "job-ref", "#" + job.id + " · " + job.name));
+    dialog.appendChild(el("p", null,
+      "Its " + job.history.length + " status " +
+      (job.history.length === 1 ? "entry" : "entries") + " will be deleted too. This can't be undone."));
+    var actions = el("div", "row-actions");
+    var cancel = el("button", null, "Cancel");
+    var confirm = el("button", "danger", "Delete job");
+    actions.appendChild(cancel);
+    actions.appendChild(confirm);
+    dialog.appendChild(actions);
+    scrim.appendChild(dialog);
+    document.body.appendChild(scrim);
+    confirm.focus();
+
+    function close() { scrim.remove(); document.removeEventListener("keydown", onKey); }
+    function onKey(e) { if (e.key === "Escape") close(); }
+    document.addEventListener("keydown", onKey);
+    cancel.addEventListener("click", close);
+    scrim.addEventListener("click", function (e) { if (e.target === scrim) close(); });
+    confirm.addEventListener("click", function () { close(); removeJob(job); });
+  }
+
+  function renderRow(job) {
+    var row = el("div", "row");
+    row.appendChild(statusEl(job.status, job.status === "RUNNING"));
+
+    var name = el("span", "name");
+    name.appendChild(el("b", null, job.name));
+    var meta = el("span", "meta");
+    meta.appendChild(el("span", null, "#" + job.id));
+    meta.appendChild(el("span", null, "created " + job.created));
+    meta.appendChild(el("span", null, "updated " + job.updated));
+    if (savingId === job.id) meta.appendChild(el("span", null, "saving…"));
+    name.appendChild(meta);
+    row.appendChild(name);
+
+    var histBtn = el("button", "ghost",
+      (expanded === job.id ? "▾ " : "▸ ") + job.history.length + " events");
+    histBtn.setAttribute("aria-expanded", expanded === job.id ? "true" : "false");
+    histBtn.addEventListener("click", function () {
+      expanded = expanded === job.id ? null : job.id;
+      render();
+    });
+    row.appendChild(histBtn);
+
+    var actions = el("div", "actions");
+    var menuWrap = el("div", "menu-wrap");
+    var trigger = el("button", null, "Change status");
+    trigger.disabled = savingId === job.id;
+    trigger.setAttribute("aria-haspopup", "true");
+    trigger.setAttribute("aria-expanded", menuFor === job.id ? "true" : "false");
+    trigger.addEventListener("click", function (e) {
+      e.stopPropagation();
+      menuFor = menuFor === job.id ? null : job.id;
+      render();
+    });
+    menuWrap.appendChild(trigger);
+
+    if (menuFor === job.id) {
+      var menu = el("div", "menu");
+      menu.addEventListener("click", function (e) { e.stopPropagation(); });
+      STATUSES.forEach(function (s) {
+        var b = el("button", null, null);
+        var sw = el("span", "swatch");
+        sw.style.background = "var(--st-" + s.toLowerCase() + ")";
+        b.appendChild(sw);
+        b.appendChild(document.createTextNode(LABEL[s]));
+        if (s === job.status) b.setAttribute("aria-current", "true");
+        b.addEventListener("click", function () { changeStatus(job, s); });
+        menu.appendChild(b);
+      });
+      menuWrap.appendChild(menu);
+    }
+    actions.appendChild(menuWrap);
+
+    var del = el("button", "danger", "Delete");
+    del.addEventListener("click", function () { confirmDelete(job); });
+    actions.appendChild(del);
+    row.appendChild(actions);
+
+    return row;
+  }
+
+  function render() {
+    renderBanner();
+    rowsEl.textContent = "";
+    var list = visible();
+
+    if (!list.length) {
+      var empty = el("div", "empty");
+      empty.appendChild(el("b", null, jobs.length ? "No jobs match those filters" : "No jobs yet"));
+      empty.appendChild(el("p", null, jobs.length
+        ? "Clear the search or pick a different status."
+        : "Create your first job using the field above."));
+      rowsEl.appendChild(empty);
+    } else {
+      list.forEach(function (job) {
+        rowsEl.appendChild(renderRow(job));
+        if (expanded === job.id) rowsEl.appendChild(renderHistory(job));
+      });
+    }
+
+    countEl.textContent = list.length + " of " + jobs.length + " loaded"
+      + (filter === "ALL" && !query ? "" : " · filtered");
+  }
+
+  document.getElementById("filters").addEventListener("click", function (e) {
+    var btn = e.target.closest(".chip");
+    if (!btn) return;
+    filter = btn.getAttribute("data-filter");
+    Array.prototype.forEach.call(this.querySelectorAll(".chip"), function (c) {
+      c.setAttribute("aria-pressed", c === btn ? "true" : "false");
+    });
+    render();
+  });
+
+  document.getElementById("q").addEventListener("input", function () {
+    query = this.value.trim();
+    render();
+  });
+
+  document.getElementById("create-form").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var value = nameInput.value.trim();
+    if (!value) {
+      // Client-side validation fires before any request is made (case B2/B3).
+      nameError.textContent = "Enter a name for the job.";
+      nameError.hidden = false;
+      nameInput.classList.add("invalid");
+      nameInput.focus();
+      return;
+    }
+    nameError.hidden = true;
+    nameInput.classList.remove("invalid");
+
+    if (shouldFail()) {
+      banner = {
+        title: "Couldn't create “" + value + "”.",
+        detail: "The server returned 500. Your job wasn't created — try again."
+      };
+      render();                 // input deliberately NOT cleared (case B5)
+      return;
+    }
+
+    var stamp = "2026-07-25 11:15";
+    jobs.unshift({
+      id: nextId++, name: value, status: "PENDING",
+      created: stamp, updated: stamp, history: [["PENDING", stamp]]
+    });
+    nameInput.value = "";
+    banner = null;
+    render();
+  });
+
+  nameInput.addEventListener("input", function () {
+    if (this.value.trim()) { nameError.hidden = true; this.classList.remove("invalid"); }
+  });
+
+  document.getElementById("load-more").addEventListener("click", function () {
+    var base = jobs.length;
+    ["Aeroacoustic Far-Field Propagation", "Turbine Disc Creep — 1200 h",
+     "Multiphase Separator CFD"].forEach(function (n, i) {
+      jobs.push({
+        id: 4790 - i, name: n, status: STATUSES[(base + i) % 4],
+        created: "2026-07-24 22:0" + i, updated: "2026-07-25 04:1" + i,
+        history: [[STATUSES[(base + i) % 4], "2026-07-25 04:1" + i], ["PENDING", "2026-07-24 22:0" + i]]
+      });
+    });
+    render();
+  });
+
+  document.addEventListener("click", function () {
+    if (menuFor !== null) { menuFor = null; render(); }
+  });
+
+  render();
+})();
+</script>
