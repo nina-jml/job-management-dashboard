@@ -39,3 +39,20 @@ class JobCursorPagination(CursorPagination):
     page_size_query_param = "page_size"
     # Uncapped page size is a trivial denial-of-service against your own API.
     max_page_size = 100
+
+
+class JobStatusCursorPagination(CursorPagination):
+    """History pages for a single job.
+
+    Same reasoning as above, one level down: a job polled by a scheduler can
+    accumulate a large log, and an unpaginated "it's only a history" endpoint is
+    how that turns into an unbounded response.
+    """
+
+    # Matches JobStatus.Meta.ordering, with `id` as the tiebreaker so events
+    # recorded in the same microsecond still page deterministically.
+    ordering = ("-timestamp", "-id")
+
+    page_size = 50
+    page_size_query_param = "page_size"
+    max_page_size = 200

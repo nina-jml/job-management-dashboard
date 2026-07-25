@@ -61,6 +61,26 @@ export async function listJobs(
   return response.json() as Promise<Page<Job>>;
 }
 
+export interface StatusEntry {
+  id: number;
+  status_type: StatusType;
+  timestamp: string;
+}
+
+/** A job's status history — the append-only log behind `current_status`. */
+export async function history(
+  request: APIRequestContext,
+  jobId: number,
+): Promise<Page<StatusEntry>> {
+  const response = await request.get(`/api/jobs/${jobId}/statuses/?page_size=200`);
+  if (!response.ok()) {
+    throw new Error(
+      `GET /api/jobs/${jobId}/statuses/ failed: ${response.status()} ${await response.text()}`,
+    );
+  }
+  return response.json() as Promise<Page<StatusEntry>>;
+}
+
 /** Follow an absolute `next` URL, returning just the path so baseURL still applies. */
 export function toPath(url: string): string {
   return new URL(url).pathname + new URL(url).search;

@@ -3,3 +3,4 @@ start_epoch	end_epoch	start_iso	end_iso	label
 1784996084	1784996085	2026-07-25T16:14:44Z	2026-07-25T16:14:45Z	slice 5 — UI mockup — published for review
 1784997668	1784998239	2026-07-25T16:41:08Z	2026-07-25T16:50:39Z	slices 2-4 — create, update, delete — slice 2 — POST + auto PENDING; 23 e2e, 14 unit green
 1784998245	1784998899	2026-07-25T16:50:45Z	2026-07-25T17:01:39Z	slice 3 — PATCH + transitions — slice 3 — PATCH + state machine; 38 e2e, 31 unit green
+1784998907	1785000237	2026-07-25T17:01:47Z	2026-07-25T17:23:57Z	slice 4 — DELETE + cascade + history — slice 4 — DELETE + cascade + history; T3 cold gate green

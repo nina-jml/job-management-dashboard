@@ -9,7 +9,8 @@ Do not edit by hand — edit the ledger instead.
 | 2026-07-25 | 16:14 | 16:14 | 0h 00m | slice 5 — UI mockup — published for review |
 | 2026-07-25 | 16:41 | 16:50 | 0h 09m | slices 2-4 — create, update, delete — slice 2 — POST + auto PENDING; 23 e2e, 14 unit green |
 | 2026-07-25 | 16:50 | 17:01 | 0h 10m | slice 3 — PATCH + transitions — slice 3 — PATCH + state machine; 38 e2e, 31 unit green |
+| 2026-07-25 | 17:01 | 17:23 | 0h 22m | slice 4 — DELETE + cascade + history — slice 4 — DELETE + cascade + history; T3 cold gate green |
 
-**Total logged: 0h 45m**
+**Total logged: 1h 07m**
 
 This total is the figure reported in `README.md` as time spent on the assignment.
