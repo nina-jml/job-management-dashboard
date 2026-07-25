@@ -5,7 +5,7 @@ import { JOB_FIELDS, listJobs, STATUS_TYPES, toPath, type Job, type Page } from 
 /**
  * Slice 1 — the list endpoint.
  *
- * TEST_PLAN cases D1 (payload carries name + current status) and D2 (newest
+ * TEST_PLAN cases E1 (payload carries name + current status) and E2 (newest
  * first, stable ordering). Runs against the seeded baseline that `make test`
  * creates, and asserts on structure and invariants rather than on specific
  * rows, so it stays valid as later slices add data.
@@ -27,7 +27,7 @@ test.describe("GET /api/jobs/", () => {
     expect(body).not.toHaveProperty("count");
   });
 
-  test("every job carries its current status and timestamps (D1)", async ({ request }) => {
+  test("every job carries its current status and timestamps (E1)", async ({ request }) => {
     const { results } = await listJobs(request, { page_size: 5 });
     expect(results.length).toBeGreaterThan(0);
 
@@ -43,7 +43,7 @@ test.describe("GET /api/jobs/", () => {
     }
   });
 
-  test("orders newest first, with a total ordering (D2)", async ({ request }) => {
+  test("orders newest first, with a total ordering (E2)", async ({ request }) => {
     const { results } = await listJobs(request, { page_size: 25 });
     expect(results.length).toBeGreaterThan(1);
 
@@ -60,7 +60,7 @@ test.describe("GET /api/jobs/", () => {
     }
   });
 
-  test("ordering is stable across identical requests (D2)", async ({ request }) => {
+  test("ordering is stable across identical requests (E2)", async ({ request }) => {
     const first = await listJobs(request, { page_size: 10 });
     const second = await listJobs(request, { page_size: 10 });
 

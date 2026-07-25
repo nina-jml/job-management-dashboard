@@ -14,7 +14,7 @@ def health(request):
 
     `make test` and the compose healthcheck both gate on this. Without it the
     suite races Postgres initialization, which is the classic intermittent CI
-    failure (TEST_PLAN case F2).
+    failure (TEST_PLAN case A2).
     """
     try:
         with connection.cursor() as cursor:

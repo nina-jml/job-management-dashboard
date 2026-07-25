@@ -20,7 +20,7 @@ def record_status(job: Job, status_type: str, *, timestamp=None) -> JobStatus:
     loses information. Only the projection on `Job` is conditional.
 
     Locks the job row for the duration, so two concurrent status changes
-    serialize instead of racing (TEST_PLAN case B9).
+    serialize instead of racing (TEST_PLAN case C9).
 
     `timestamp` is not accepted from API clients (OPEN_QUESTIONS Q3); it exists
     for the seed command, which backdates rows to build realistic histories.

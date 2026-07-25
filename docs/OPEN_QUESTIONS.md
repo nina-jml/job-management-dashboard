@@ -67,7 +67,7 @@ dropdown: a real scheduler emitting `RUNNING`/`COMPLETED` webhooks, a retried de
 
 Not required by the prompt, but it's the only way to *demonstrate* rather than merely assert the two claims
 the design rests on: that the log is genuinely append-only (the old `PENDING` row survives a status change)
-and that `DELETE` cascaded (history 404s afterward). Test cases B1, B4, B8, C2 and D6 depend on it.
+and that `DELETE` cascaded (history 404s afterward). TEST_PLAN cases C1, C4, C8, D2 and E6 depend on it.
 
 ### Q5 · How is the frontend served?
 
@@ -92,9 +92,9 @@ one gate would mean an unrelated unit failure blocks everything, for no gain in 
 | # | Ambiguity | Assumption | Rationale |
 |---|---|---|---|
 | A1 | No mention of users or auth | No authentication, no multi-tenancy — one shared job list | The prompt never introduces a user concept. Adding one invents scope. Noted in the README as the natural next step, since it's also where a `owner_id` index would need to lead the composite indexes. |
-| A2 | Legal status transitions unspecified | No state machine — any status → any status | The prompt says update "to any of the defined states". `COMPLETED → RUNNING` is therefore allowed (test B3). A real scheduler would constrain this; that's a domain decision, not a prototype one. |
-| A3 | Repeat PATCH of the same status | Appends a new event; `current_status` unchanged, `current_status_at` advances | It's a log of *observations*, not a diff. "Still RUNNING at 10:42" is meaningful information. Test B4. |
-| A4 | Name uniqueness | Not unique | Nothing suggests it should be, and real job names collide constantly. Test A7. |
+| A2 | Legal status transitions unspecified | No state machine — any status → any status | The prompt says update "to any of the defined states". `COMPLETED → RUNNING` is therefore allowed (TEST_PLAN case C3). A real scheduler would constrain this; that's a domain decision, not a prototype one. |
+| A3 | Repeat PATCH of the same status | Appends a new event; `current_status` unchanged, `current_status_at` advances | It's a log of *observations*, not a diff. "Still RUNNING at 10:42" is meaningful information. TEST_PLAN case C4. |
+| A4 | Name uniqueness | Not unique | Nothing suggests it should be, and real job names collide constantly. TEST_PLAN case B7. |
 | A5 | Deletion semantics | Hard delete with FK cascade | The prompt says delete and says associated statuses must go. Soft delete would contradict "ensure all associated entries are also deleted". |
 | A6 | Timezone handling | Store UTC (`USE_TZ=True`), render in the browser's locale | Standard practice; avoids a whole class of off-by-hours bugs. |
 | A7 | Page size | 25 default, `?page_size=` capped at 100 | Uncapped page size is a trivial denial-of-service against your own API. |
@@ -106,7 +106,7 @@ one gate would mean an unrelated unit failure blocks everything, for no gain in 
 
 | Risk | Mitigation |
 |---|---|
-| **The standard Playwright image is not on DockerHub.** `mcr.microsoft.com/playwright` is a Microsoft registry; the prompt only guarantees DockerHub access. Using it would fail `make test` on the evaluator's machine — which per the prompt ends the evaluation. | Build the e2e image from `node:22-bookworm` (DockerHub) with `npx playwright install --with-deps chromium`. Verified by test case F1 on a pruned Docker. |
-| Tests racing Postgres initialization — the classic intermittent CI failure. | `GET /api/health/` checks the DB connection; compose healthchecks and `make test` both gate on it. Test case F2. |
-| E2E state leaking between runs, making the suite pass once and fail on re-run. | Every spec namespaces its fixtures with a run-unique prefix and scopes assertions to them. Test case F3. |
-| Apple Silicon build that doesn't work on the evaluator's amd64 Linux. | Explicit `--platform linux/amd64` build check at slices 0 and 11. Test case F4. |
+| **The standard Playwright image is not on DockerHub.** `mcr.microsoft.com/playwright` is a Microsoft registry; the prompt only guarantees DockerHub access. Using it would fail `make test` on the evaluator's machine — which per the prompt ends the evaluation. | Build the e2e image from `node:22-bookworm` (DockerHub) with `npx playwright install --with-deps chromium`. Verified by TEST_PLAN case A1 on a pruned Docker. |
+| Tests racing Postgres initialization — the classic intermittent CI failure. | `GET /api/health/` checks the DB connection; compose healthchecks and `make test` both gate on it. TEST_PLAN case A2. |
+| E2E state leaking between runs, making the suite pass once and fail on re-run. | Every spec namespaces its fixtures with a run-unique prefix and scopes assertions to them. TEST_PLAN case A3. |
+| Apple Silicon build that doesn't work on the evaluator's amd64 Linux. | Explicit `--platform linux/amd64` build check at slices 0 and 11. TEST_PLAN case A4. |

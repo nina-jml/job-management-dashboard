@@ -7,7 +7,7 @@ import type { APIRequestContext } from "@playwright/test";
  * The suite runs against a real Postgres, not a fixture database, so no spec
  * may assume an empty table or a specific row count. Every spec namespaces the
  * rows it creates and scopes its assertions to them — which is what makes the
- * suite safe to re-run without `make clean` (TEST_PLAN case F3).
+ * suite safe to re-run without `make clean` (TEST_PLAN case A3).
  */
 export function uniquePrefix(label: string): string {
   return `e2e-${label}-${randomUUID().slice(0, 8)}-`;

@@ -5,7 +5,7 @@ import { expect, test } from "@playwright/test";
  *
  * Proves the pipeline before any feature exists: images build, compose wires
  * the services together, nginx serves the app and proxies /api to Django, and
- * Playwright can drive all of it. TEST_PLAN cases F1, F2.
+ * Playwright can drive all of it. TEST_PLAN cases A1, A2.
  */
 test.describe("smoke", () => {
   test("health endpoint reports the API and database are up", async ({ request }) => {

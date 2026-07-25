@@ -4,7 +4,7 @@ One error shape for the whole API.
 DRF's default handler returns a different JSON body depending on which
 exception fired — `{"detail": …}` here, `{"field": [...]}` there. That pushes
 the branching into the frontend. Normalizing it here means `api/jobs.ts` has a
-single `ApiError` type and one parsing path (TEST_PLAN cases A5, B5, B7, D4).
+single `ApiError` type and one parsing path (TEST_PLAN cases B5, C5, C7, E4).
 
     {
       "detail": "human-readable summary",

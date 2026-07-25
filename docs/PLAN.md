@@ -118,7 +118,7 @@ Legend: **S** = size · **Spec** = the Playwright file that proves it · **Cases
 [TEST_PLAN.md](./TEST_PLAN.md) §3.
 
 ### Slice 0 — Walking skeleton
-**S: M** · **Spec:** `00-smoke` · **Cases:** F1, F2, F4 · **Validation: T3**
+**S: M** · **Spec:** `00-smoke` · **Cases:** A1, A2, A4 · **Validation: T3**
 
 Compose stack (db + backend + frontend + e2e), Dockerfiles, Makefile (`build up test test-spec
 test-backend test-all stop clean seed logs time`), `GET /api/health/`, React app rendering a title.
@@ -130,7 +130,7 @@ test-backend test-all stop clean seed logs time`), `GET /api/health/`, React app
 the pipe before the water. **Test plan sign-off happens here**, against a working harness.
 
 ### Slice 1 — Models + list endpoint
-**S: M** · **Spec:** `01-jobs-list-api` · **Cases:** D1, D2 · **Validation: T1 → T2**
+**S: M** · **Spec:** `01-jobs-list-api` · **Cases:** E1, E2, E7, E8 · **Validation: T1 → T2**
 
 Models, migrations, composite indexes, DRF serializer, cursor-paginated `GET /api/jobs/`, uniform exception
 handler, `seed_jobs` management command.
@@ -141,35 +141,35 @@ handler, `seed_jobs` management command.
 - `?page_size=2` → 2 results + non-null `next`; following `next` returns a **disjoint** set
 
 ### Slice 2 — Create + automatic PENDING
-**S: S** · **Spec:** `02-create-job-api` · **Cases:** A1, A2, A3, A4, A6, A7 · **Validation: T1 → T2**
+**S: S** · **Spec:** `02-create-job-api` · **Cases:** B1, B2, B3, B4, B6, B7 · **Validation: T1 → T2**
 
 `POST /api/jobs/`, atomic job + initial status, name validation. A job must never exist with an empty log.
 
 ### Slice 3 — PATCH: append event, update projection
-**S: M** · **Spec:** `03-update-job-api` · **Cases:** B1, B3, B4, B5, B6, B8, B9 · **Validation: T1 → T2**
+**S: M** · **Spec:** `03-update-job-api` · **Cases:** C1, C3, C4, C5, C6, C8, C9 · **Validation: T1 → T2**
 
 Write-only `status` serializer field, `record_status()` with `select_for_update()` + atomic block, the
-monotonic guard. B9 (two concurrent PATCHes, no lost update) is the case that proves the lock.
+monotonic guard. C9 (two concurrent PATCHes, no lost update) is the case that proves the lock.
 
 ### Slice 4 — Delete + cascade + history endpoint
-**S: S** · **Spec:** `04-delete-job-api` · **Cases:** C1, C2, C3 · **Validation: T3** (backend complete)
+**S: S** · **Spec:** `04-delete-job-api` · **Cases:** D1, D2, D3 · **Validation: T3** (backend complete)
 
 `DELETE` → 204, FK cascade enforced at the DB level; `GET /api/jobs/<id>/statuses/`.
 
 ### Slice 5 — Frontend: job list
-**S: M** · **Spec:** `05-job-list-ui` · **Cases:** D1, D3, D6 · **Validation: T1 → T2**
+**S: M** · **Spec:** `05-job-list-ui` · **Cases:** E1, E3, E6 · **Validation: T1 → T2**
 
 Typed API client, TanStack Query, `JobList`/`JobRow`/`StatusBadge`/`StatusTimeline`/`ErrorBanner`, loading
 and empty states, styling pass.
 
 ### Slice 6 — Frontend: create form
-**S: S** · **Spec:** `06-create-job-ui` · **Cases:** A1, A2, A3 · **Validation: T1 → T2**
+**S: S** · **Spec:** `06-create-job-ui` · **Cases:** B1, B2, B3 · **Validation: T1 → T2**
 
 Empty and whitespace-only names blocked client-side with **zero network requests**; valid name appears at
 the top of the list without a refresh; input clears on success.
 
 ### Slice 7 — Frontend: status update ⭐
-**S: M** · **Spec:** `07-update-status-ui` · **Cases:** B1, B2, B7 · **Validation: T3**
+**S: M** · **Spec:** `07-update-status-ui` · **Cases:** C1, C2, C7 · **Validation: T3**
 
 *The prompt's named critical flow — the one an evaluator looks for first.*
 
@@ -177,22 +177,22 @@ Create → assert `PENDING` → change to `RUNNING` → badge updates → **surv
 reachable. Optimistic update with rollback on failure.
 
 ### Slice 8 — Frontend: delete
-**S: S** · **Spec:** `08-delete-job-ui` · **Cases:** C1, C4, C5 · **Validation: T1 → T2**
+**S: S** · **Spec:** `08-delete-job-ui` · **Cases:** D1, D4, D5 · **Validation: T1 → T2**
 
 Row disappears without refresh and stays gone after reload. Any confirm step is an in-app dialog —
 **never `window.confirm`**, which blocks automation and would hang the suite.
 
 ### Slice 9 — Fault-injection sweep
-**S: M** · **Spec:** `09-fault-injection` · **Cases:** A5, B7, C4, D4, D5 · **Validation: T2**
+**S: M** · **Spec:** `09-fault-injection` · **Cases:** B5, C7, D4, E4, E5 · **Validation: T2**
 
 `page.route()` fault injection proves the handling built in slices 1–8 holds: 500 on each verb, aborted
 requests, slow responses, optimistic rollback, and recovery once the route is unblocked.
 
 ### Slice 10 — Scale: pagination, filter, search
-**S: M** · **Spec:** `10-pagination-scale` · **Cases:** E1–E7 · **Validation: T2 + latency measurement**
+**S: M** · **Spec:** `10-pagination-scale` · **Cases:** F1–F7 · **Validation: T2 + latency measurement**
 
 Seed a large dataset (`make seed N=250000`), load-more/infinite scroll, server-side status filter,
-debounced search. Virtualize if rendered row count warrants it. E7's measured numbers go in the README.
+debounced search. Virtualize if rendered row count warrants it. F7's measured numbers go in the README.
 
 ### Slice 11 — Delivery
 **S: M** · **Spec:** full suite · **Validation: T3 ×2** (warm, then fully pruned)
@@ -214,4 +214,4 @@ README: setup, architecture, **performance writeup**, **prompt-engineering write
 
 E2E runs against a real Postgres, so no spec may assume an empty database. Every spec creates fixtures with
 a run-unique prefix (`e2e-<uuid>-…`), scopes assertions to those rows, and cleans up. No test depends on
-another's leftovers; the suite is safe to re-run without `make clean` (case F3).
+another's leftovers; the suite is safe to re-run without `make clean` (case A3).

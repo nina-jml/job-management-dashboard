@@ -22,7 +22,7 @@ from rest_framework.pagination import CursorPagination
 class JobCursorPagination(CursorPagination):
     # Must match Job.Meta.ordering. The `-id` tiebreaker makes the ordering
     # total, which keyset pagination requires for correctness: with ties, rows
-    # can be skipped or repeated across page boundaries (TEST_PLAN case E2).
+    # can be skipped or repeated across page boundaries (TEST_PLAN case F2).
     ordering = ("-created_at", "-id")
 
     page_size_query_param = "page_size"

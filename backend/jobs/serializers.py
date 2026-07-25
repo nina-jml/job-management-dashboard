@@ -37,7 +37,7 @@ class JobSerializer(serializers.ModelSerializer):
 
     def validate_name(self, value: str) -> str:
         # Trim first, then check: "   " is a blank name, not a valid one
-        # (TEST_PLAN case A3).
+        # (TEST_PLAN case B3).
         name = value.strip()
         if not name:
             raise serializers.ValidationError("This field may not be blank.")

@@ -12,7 +12,7 @@ services:
     healthcheck:
       # Everything downstream gates on this. Without it the stack starts before
       # Postgres finishes initializing and the suite fails intermittently —
-      # TEST_PLAN case F2.
+      # TEST_PLAN case A2.
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-jobs} -d ${POSTGRES_DB:-jobs}"]
       interval: 2s
       timeout: 3s

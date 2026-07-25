@@ -4,7 +4,7 @@ Seed realistic jobs, in bulk.
 Used two ways:
   * a handful of rows so the dashboard isn't empty during development
   * hundreds of thousands of rows to substantiate the performance claims in the
-    README rather than merely assert them (TEST_PLAN case E7)
+    README rather than merely assert them (TEST_PLAN case F7)
 
 At 250k rows the naive approach — one `create_job()` per job — is a quarter of
 a million round trips. This uses `bulk_create` in batches instead, and computes

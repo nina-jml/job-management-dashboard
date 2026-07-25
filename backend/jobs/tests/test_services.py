@@ -48,7 +48,7 @@ def test_record_status_appends_and_advances_the_projection():
 
 
 def test_repeating_a_status_appends_an_event_and_advances_the_timestamp():
-    # "Still RUNNING at 10:42" is information, not a no-op (TEST_PLAN case B4).
+    # "Still RUNNING at 10:42" is information, not a no-op (TEST_PLAN case C4).
     job = create_job("Monte Carlo Sweep")
     record_status(job, StatusType.RUNNING)
     first_at = Job.objects.get(pk=job.pk).current_status_at
@@ -82,7 +82,7 @@ def test_a_stale_event_is_logged_but_does_not_move_the_projection():
 
 def test_renaming_does_not_append_a_status_event():
     # updated_at moves on a rename, which is exactly why the guard compares
-    # against current_status_at instead (TEST_PLAN case B8).
+    # against current_status_at instead (TEST_PLAN case C8).
     job = create_job("Acoustic Study")
     before = job.statuses.count()
 
