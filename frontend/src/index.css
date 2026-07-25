@@ -455,6 +455,8 @@
   }
   .dialog .row-actions { display: flex; justify-content: flex-end; gap: 0.5rem; }
 
+  .create-row { display: flex; gap: 0.5rem; }
+
 /* ---------- app shell ---------- */
 .page {
   max-width: 68rem;

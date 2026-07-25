@@ -1,9 +1,12 @@
 import { useState } from "react";
 
 import { useJobs } from "./hooks/useJobs";
+import { useCreateJob } from "./hooks/useJobMutations";
 import { JobList } from "./components/JobList";
+import { CreateJobForm } from "./components/CreateJobForm";
 import { ErrorBanner } from "./components/ErrorBanner";
 import { STATUS_LABELS, STATUS_TYPES, type StatusType } from "./api/types";
+import { ApiError } from "./api/client";
 
 type Filter = StatusType | "ALL";
 
@@ -16,8 +19,16 @@ export function App() {
   const { data, isPending, error, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } =
     useJobs(filters);
 
+  const createJob = useCreateJob();
+
   const jobs = data?.pages.flatMap((page) => page.results) ?? [];
   const isFiltered = status !== "ALL";
+
+  // A field-level rejection belongs beside the input, not in the page banner.
+  const createBannerError =
+    createJob.error instanceof ApiError && createJob.error.fieldError("name")
+      ? null
+      : createJob.error;
 
   return (
     <main className="page">
@@ -44,9 +55,18 @@ export function App() {
               ))}
             </div>
           </div>
+
+          <CreateJobForm
+            onCreate={(name) => createJob.mutateAsync(name)}
+            isSubmitting={createJob.isPending}
+            error={createJob.error}
+          />
         </div>
 
         {error && <ErrorBanner error={error} onRetry={() => void refetch()} />}
+        {createBannerError && (
+          <ErrorBanner error={createBannerError} onDismiss={() => createJob.reset()} />
+        )}
 
         <div className="row-head">
           <span>Job</span>
