@@ -6,6 +6,97 @@ Related: [PLAN.md](./PLAN.md) · [TEST_PLAN.md](./TEST_PLAN.md)
 
 ---
 
+## 0. Architecture
+
+```mermaid
+flowchart LR
+    subgraph host["docker compose"]
+        direction LR
+        fe["<b>frontend</b><br/>nginx:alpine<br/>static Vite build<br/>+ /api reverse proxy<br/>:80"]
+        be["<b>backend</b><br/>gunicorn + Django<br/>DRF ViewSet<br/>:8000"]
+        db[("<b>db</b><br/>postgres:16-alpine<br/>:5432")]
+        e2e["<b>e2e</b><br/>node:22-bookworm<br/>+ chromium<br/><i>run-once profile</i>"]
+    end
+    user(["Browser<br/>localhost:8080"]) --> fe
+    fe -->|"/api/* proxy"| be
+    be -->|"psycopg"| db
+    e2e -.->|"UI specs"| fe
+    e2e -.->|"API specs<br/>(request fixture)"| fe
+
+    classDef svc fill:#1e293b,stroke:#475569,color:#e2e8f0
+    class fe,be,db,e2e svc
+```
+
+nginx proxying `/api` gives the browser and Playwright a **single origin** — no CORS configuration, and no
+API base URL baked in at build time, so the same image runs anywhere. The e2e container drives everything
+through that same origin, meaning the tests exercise the real request path rather than a shortcut around
+it.
+
+### Data model
+
+```mermaid
+erDiagram
+    JOB ||--o{ JOB_STATUS : "has many (CASCADE)"
+
+    JOB {
+        bigint   id PK
+        varchar  name "max 200, non-blank"
+        datetime created_at "auto_now_add"
+        datetime updated_at "auto_now"
+        varchar  current_status "PROJECTION — written only by record_status()"
+        datetime current_status_at "timestamp of the event behind current_status"
+    }
+
+    JOB_STATUS {
+        bigint   id PK
+        bigint   job_id FK
+        varchar  status_type "PENDING | RUNNING | COMPLETED | FAILED"
+        datetime timestamp "server-stamped"
+    }
+```
+
+`JOB_STATUS` is the **source of truth** — an append-only log of observations, never updated, never deleted
+except by cascade. The two `current_*` columns on `JOB` are a **projection** of that log, kept in the same
+transaction as the event that produces them. §3 explains why the projection exists and what keeps it
+honest.
+
+### The status write
+
+The one piece of non-obvious control flow:
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant UI as React (optimistic)
+    participant API as DRF JobViewSet
+    participant SVC as services.record_status()
+    participant DB as Postgres
+
+    UI->>UI: badge → RUNNING immediately
+    UI->>API: PATCH /api/jobs/12/ {status:"RUNNING"}
+    API->>SVC: record_status(job, RUNNING)
+
+    rect rgb(30,41,59)
+    note over SVC,DB: transaction.atomic()
+    SVC->>DB: SELECT … FOR UPDATE (job row lock)
+    SVC->>DB: INSERT JobStatus(job, RUNNING, now())
+    alt new.timestamp >= job.current_status_at
+        SVC->>DB: UPDATE job SET current_status, current_status_at
+    else stale / replayed event
+        SVC-->>SVC: append only, projection untouched
+    end
+    end
+
+    API-->>UI: 200 {current_status:"RUNNING", …}
+    UI->>UI: reconcile cache
+    Note over UI: on 4xx/5xx → roll back badge,<br/>surface ErrorBanner
+```
+
+The event is appended **unconditionally**; only the projection is conditional. That is what makes the write
+safe to replay, and what keeps the log authoritative if the projection ever has to be rebuilt.
+
+---
+
 ## 1. Understanding of the domain
 
 Two entities, one-to-many.
