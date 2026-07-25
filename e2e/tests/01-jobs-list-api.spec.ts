@@ -1,6 +1,15 @@
 import { expect, test } from "@playwright/test";
+import type { APIRequestContext } from "@playwright/test";
 
-import { JOB_FIELDS, listJobs, STATUS_TYPES, toPath, type Job, type Page } from "./helpers";
+import {
+  JOB_FIELDS,
+  listJobs,
+  STATUS_TYPES,
+  toPath,
+  uniquePrefix,
+  type Job,
+  type Page,
+} from "./helpers";
 
 /**
  * Slice 1 — the list endpoint.
@@ -107,5 +116,101 @@ test.describe("GET /api/jobs/", () => {
     const body = await response.json();
     expect(body).toHaveProperty("detail");
     expect(body).toHaveProperty("errors");
+  });
+});
+
+/**
+ * `?status=` repeats to select several at once. The suite shares a database
+ * with seeded rows, so these assert two things that hold regardless of what
+ * else is in the table: every row returned matches the filter, and the
+ * fixtures this spec created are among them.
+ */
+test.describe("GET /api/jobs/?status=", () => {
+  async function fixtures(request: APIRequestContext, label: string) {
+    const prefix = uniquePrefix(label);
+    const made: Record<string, Job> = {};
+
+    for (const status of ["PENDING", "RUNNING", "FAILED"] as const) {
+      const job = (await (
+        await request.post("/api/jobs/", { data: { name: `${prefix}${status}` } })
+      ).json()) as Job;
+      // PENDING is where a job starts, so only the other two need moving.
+      if (status !== "PENDING") {
+        await request.patch(`/api/jobs/${job.id}/`, { data: { status } });
+      }
+      made[status] = job;
+    }
+
+    return made;
+  }
+
+  test("a single status narrows to that status", async ({ request }) => {
+    const made = await fixtures(request, "api-one");
+
+    const response = await request.get("/api/jobs/?status=RUNNING&page_size=100");
+    expect(response.status()).toBe(200);
+    const { results } = (await response.json()) as Page<Job>;
+
+    expect(results.every((job) => job.current_status === "RUNNING")).toBe(true);
+    expect(results.map((job) => job.id)).toContain(made.RUNNING!.id);
+  });
+
+  test("repeating the parameter returns the union", async ({ request }) => {
+    const made = await fixtures(request, "api-many");
+
+    const response = await request.get("/api/jobs/?status=RUNNING&status=FAILED&page_size=100");
+    expect(response.status()).toBe(200);
+    const { results } = (await response.json()) as Page<Job>;
+
+    const ids = results.map((job) => job.id);
+    expect(ids).toContain(made.RUNNING!.id);
+    expect(ids).toContain(made.FAILED!.id);
+    // A union, not a widening: the third fixture must not come back.
+    expect(ids).not.toContain(made.PENDING!.id);
+    expect(results.every((job) => ["RUNNING", "FAILED"].includes(job.current_status))).toBe(true);
+  });
+
+  test("a repeated value behaves like selecting it once", async ({ request }) => {
+    const made = await fixtures(request, "api-dupe");
+
+    const response = await request.get("/api/jobs/?status=FAILED&status=FAILED&page_size=100");
+    expect(response.status()).toBe(200);
+    const { results } = (await response.json()) as Page<Job>;
+
+    expect(results.every((job) => job.current_status === "FAILED")).toBe(true);
+    expect(results.map((job) => job.id)).toContain(made.FAILED!.id);
+  });
+
+  test("an empty value is no filter rather than no results", async ({ request }) => {
+    const made = await fixtures(request, "api-empty");
+
+    const response = await request.get("/api/jobs/?status=&page_size=100");
+    expect(response.status()).toBe(200);
+    const { results } = (await response.json()) as Page<Job>;
+
+    // The PENDING fixture would be excluded by any real filter.
+    expect(results.map((job) => job.id)).toContain(made.PENDING!.id);
+  });
+
+  test("an unknown status is a 400, not an empty list", async ({ request }) => {
+    const response = await request.get("/api/jobs/?status=BANANA");
+
+    // Returning nothing would read as "no jobs match" and send the caller
+    // looking for missing data instead of a typo.
+    expect(response.status()).toBe(400);
+    const body = (await response.json()) as { detail: string; errors: Record<string, string[]> };
+    expect(body).toHaveProperty("detail");
+    expect(body.errors.status!.join(" ")).toContain("BANANA");
+  });
+
+  test("one bad value among good ones still fails, and names it", async ({ request }) => {
+    const response = await request.get("/api/jobs/?status=RUNNING&status=BANANA");
+
+    expect(response.status()).toBe(400);
+    const body = (await response.json()) as { errors: Record<string, string[]> };
+    const message = body.errors.status!.join(" ");
+    expect(message).toContain("BANANA");
+    // The valid one is not the problem and must not be reported as one.
+    expect(message).not.toContain("RUNNING");
   });
 });

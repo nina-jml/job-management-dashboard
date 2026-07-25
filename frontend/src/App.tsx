@@ -8,14 +8,12 @@ import { ErrorBanner } from "./components/ErrorBanner";
 import { STATUS_LABELS, STATUS_TYPES, type StatusType } from "./api/types";
 import { ApiError } from "./api/client";
 
-type Filter = StatusType | "ALL";
-
 export function App() {
-  const [status, setStatus] = useState<Filter>("ALL");
+  const [statuses, setStatuses] = useState<StatusType[]>([]);
 
   // Filtering is a different query key, so it round-trips to the server rather
   // than narrowing the rows already loaded (SPEC §2).
-  const filters = { status };
+  const filters = { statuses };
   const { data, isPending, error, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } =
     useJobs(filters);
 
@@ -23,7 +21,18 @@ export function App() {
   const statusMutation = useSetStatus();
 
   const jobs = data?.pages.flatMap((page) => page.results) ?? [];
-  const isFiltered = status !== "ALL";
+  const isFiltered = statuses.length > 0;
+
+  // Selecting is a toggle in both directions: a chip that is on turns off, and
+  // turning the last one off is how you get back to everything. A one-way
+  // filter you can only escape through a separate "All" control is the version
+  // of this that traps people.
+  const toggleStatus = (status: StatusType) =>
+    setStatuses((current) =>
+      current.includes(status)
+        ? current.filter((each) => each !== status)
+        : [...current, status],
+    );
 
   // The row whose status change is still in flight, for the "saving…" hint.
   const savingJobId = statusMutation.isPending ? (statusMutation.variables?.id ?? null) : null;
@@ -46,15 +55,28 @@ export function App() {
           <div className="field">
             <label id="status-filter-label">Status</label>
             <div className="filters" role="group" aria-labelledby="status-filter-label">
-              {(["ALL", ...STATUS_TYPES] as Filter[]).map((option) => (
+              {/*
+                "All" is the state of having nothing selected, so it reads as
+                pressed when the list is unfiltered and clearing is what it
+                does. It is not a sixth status.
+              */}
+              <button
+                type="button"
+                className="chip"
+                aria-pressed={!isFiltered}
+                onClick={() => setStatuses([])}
+              >
+                All
+              </button>
+              {STATUS_TYPES.map((option) => (
                 <button
                   key={option}
                   type="button"
                   className="chip"
-                  aria-pressed={status === option}
-                  onClick={() => setStatus(option)}
+                  aria-pressed={statuses.includes(option)}
+                  onClick={() => toggleStatus(option)}
                 >
-                  {option === "ALL" ? "All" : STATUS_LABELS[option]}
+                  {STATUS_LABELS[option]}
                 </button>
               ))}
             </div>

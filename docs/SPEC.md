@@ -208,8 +208,15 @@ a large candidate set, so trigram makes substring search viable rather than free
 cursor-paginated, so the result set is never materialized in full.
 
 ```
-GET /api/jobs/?status=RUNNING&search=fluid&cursor=<opaque>&page_size=25
+GET /api/jobs/?status=RUNNING&status=FAILED&search=fluid&cursor=<opaque>&page_size=25
 ```
+
+`status` repeats to select several at once, and the values are OR-ed. Repetition rather than a
+comma-separated list because it is what `URLSearchParams` and DRF's `getlist()` both produce by
+default, so neither end needs a parsing rule. Omitting the parameter means unfiltered — there is no
+"all" sentinel for the two sides to keep in agreement. An unrecognized value is a 400 naming it,
+never a silently empty result. `IN` over the leading column of `(current_status, created_at, id)`
+stays a set of index range seeks, so selecting four statuses costs about what selecting one does.
 
 ```json
 {

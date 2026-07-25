@@ -70,15 +70,15 @@ with the spec that proves it; full matrix in [`docs/TEST_PLAN.md`](docs/TEST_PLA
 | 2 | `POST` + automatic PENDING | `02-create-job-api` | ✅ |
 | 3 | `PATCH` + the state machine | `03-update-job-api` | ✅ |
 | 4 | `DELETE` + cascade, status history | `04-delete-job-api` | ✅ |
-| 5 | UI: job list, badges, loading/empty/error | `05-job-list-ui` | 🔨 |
-| 6 | UI: create form + validation | `06-create-job-ui` | ⏳ |
-| 7 | ⭐ UI: status update — the critical flow | `07-update-status-ui` | ⏳ |
+| 5 | UI: job list, badges, loading/empty/error, status filter | `05-job-list-ui` | ✅ |
+| 6 | UI: create form + validation | `06-create-job-ui` | ✅ |
+| 7 | ⭐ UI: status update — the critical flow | `07-update-status-ui` | ✅ |
 | 8 | UI: delete | `08-delete-job-ui` | ⏳ |
 | 9 | Fault-injection sweep | `09-fault-injection` | ⏳ |
 | 10 | Scale: pagination, filter, search at 250k rows | `10-pagination-scale` | ⏳ |
 | 11 | README, writeups, final cold gate | full suite | ⏳ |
 
-Currently green: **57 E2E specs, 43 backend unit tests.**
+Currently green: **96 E2E specs, 43 backend unit tests.**
 
 ---
 
@@ -168,7 +168,7 @@ history worth auditing.
 
 | | |
 |---|---|
-| `GET /api/jobs/` | List, newest first, cursor-paginated. `?status=` and `?search=` are applied server-side across the whole table |
+| `GET /api/jobs/` | List, newest first, cursor-paginated. `?status=` (repeatable, OR-ed) and `?search=` are applied server-side across the whole table |
 | `POST /api/jobs/` | Create. The job and its initial `PENDING` status are written in one transaction |
 | `GET /api/jobs/<id>/` | Retrieve |
 | `PATCH /api/jobs/<id>/` | Rename and/or change status. `status` is a write-only instruction to append to the log |
@@ -237,6 +237,53 @@ encoding a composite position.
 
 **Described but not built** — honestly out of scope for a few-hour build: read replicas, a
 caching layer, `JobStatus` partitioned by time, approximate counts from `pg_class.reltuples`.
+
+### Counts by status — designed, deliberately not built
+
+A dashboard wants a total and a per-status breakdown. The obvious implementation is the one this
+design specifically rules out: `SELECT current_status, COUNT(*) … GROUP BY current_status` on
+every page load is a scan of the whole table for a number that changes by one at a time, on the
+hot path, exactly like the `COUNT(*)` that cursor pagination exists to avoid.
+
+The answer is to **maintain the counts on write instead of deriving them on read**, and the
+architecture already has the one thing that makes it cheap: `services.record_status()` is the
+sole writer of the projection, so the counter moves inside the transaction that is already open
+and already holds the job's row lock.
+
+| Path | Effect on the counters |
+|---|---|
+| `create_job()` | `PENDING` +1 |
+| `record_status()`, when the projection advances | old −1, new +1 |
+| delete | current −1 |
+| `seed_jobs` | tallies each batch it builds and applies one update per batch |
+| `seed_jobs --clear` | resets to zero |
+
+Note the seed row. It bypasses `record_status()` by design — 250k jobs cannot be a quarter of a
+million round trips — so the naive version of this feature drifts every time the database is
+seeded. It tallies instead, which costs about four lines and keeps the counts exact on every path
+the application actually uses.
+
+Two things would still be true, and both are the interesting part of the conversation rather than
+the code:
+
+- **Drift is possible, just not from the app.** Raw SQL or a shell session that writes around the
+  services can desynchronize the counters. Production wants a periodic reconciler recomputing from
+  the projection and reporting the delta — cheap to write, and its output is a genuine health
+  signal, since a non-zero delta means something is writing outside the service layer.
+- **One row per status is a hot row.** Every concurrent transition into `RUNNING` serializes on
+  the same counter row. Fine here, a real bottleneck at write volume; the standard fix is a
+  sharded counter — *N* rows per status, summed on read — trading a slightly more expensive read
+  for contention that scales.
+
+The same reconciler answers a second question this design leaves open: **orphaned `JobStatus`
+rows.** The cascade is Django's ORM collector rather than an `ON DELETE CASCADE` constraint, which
+is sufficient while every write goes through the ORM but leaves nothing at the database level to
+prevent orphans if a delete fails partway. A sweeper reaping status rows whose job no longer
+exists covers it, and is the same shape of job.
+
+Left out because the assignment is a few hours and this is a systems-design discussion, not a
+requirement — but the design is settled rather than hand-waved, which is why it is written down
+here.
 
 ---
 

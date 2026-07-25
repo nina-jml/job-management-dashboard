@@ -185,6 +185,9 @@ constraint (see SPEC.md §2).
 | F1 | + | First render, N ≫ page size | exactly one page requested | network log: 1 list request, 25 rows |
 | F2 | + | Load more | next page appended | **no duplicate ids, no skipped ids** across the full walk |
 | F3 | + | Filter by status | list narrows | **server-side request issued** — not a client-side filter |
+| F3a | + | Select a second status | list widens to the union | `?status=A&status=B`; a job in neither state stays excluded, so this is a union and not a widening to everything |
+| F3b | + | Deselect a selected status | that status drops out of the filter | the chip releases; deselecting the last one returns to unfiltered without touching "All" |
+| F3c | − | Unknown status value | 400 in the standard error shape | naming the bad value — returning an empty list would read as "no jobs match" rather than "that isn't a status" |
 | F10 | + | Search a term whose only match is far outside the first page | the match is returned | **the assertion that proves search is whole-table, not page-local.** Seed 250k, search a name known to live ~page 400, expect one result. A client-side filter returns nothing here |
 | F4 | + | Type a search burst | debounced | requests ≪ keystrokes |
 | F5 | − | Tampered / invalid cursor | 400 | graceful UI error, no crash |

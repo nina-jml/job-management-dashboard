@@ -9,7 +9,11 @@ import type { Job, Page, StatusEntry } from "../api/types";
  */
 export const jobKeys = {
   all: ["jobs"] as const,
-  list: (filters: JobFilters) => ["jobs", "list", filters] as const,
+  // Statuses are sorted here rather than at the call site: the same selection
+  // reached in a different click order has to be the same cache entry, and
+  // sorting where the key is built is the one place it cannot be forgotten.
+  list: (filters: JobFilters) =>
+    ["jobs", "list", { ...filters, statuses: [...(filters.statuses ?? [])].sort() }] as const,
   history: (id: number) => ["jobs", "history", id] as const,
 };
 

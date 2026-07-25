@@ -9,3 +9,4 @@ start_epoch	end_epoch	start_iso	end_iso	label
 1785008222	1785009730	2026-07-25T19:37:02Z	2026-07-25T20:02:10Z	review fixes + db port — slice 5 — job list UI; 67 e2e, 43 unit green
 1785009737	1785010272	2026-07-25T20:02:17Z	2026-07-25T20:11:12Z	slice 6 — create form — slice 6 — create form; 77 e2e green
 1785010280	1785012654	2026-07-25T20:11:20Z	2026-07-25T20:50:54Z	slice 7 — status update — slice 7 — status update; T3 green, 87 e2e + 43 unit
+1785013920	1785015420	2026-07-25T21:12:00Z	2026-07-25T21:37:00Z	slice 7.5 — review fixes — tz on timestamps, multi-select filter, counts deferred to README; 96 e2e + 43 unit green (start reconstructed: timelog start hit a tool error)

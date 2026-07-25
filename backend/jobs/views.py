@@ -62,18 +62,34 @@ class JobViewSet(
 
         This is the query the `current_status` projection exists to serve — it
         is an indexed column read, not a per-row subquery over the status log.
+
+        The parameter repeats to select several at once —
+        `?status=RUNNING&status=FAILED` means either. Repetition rather than a
+        comma-separated list because it is what `URLSearchParams` and DRF both
+        produce by default, so neither side needs a parsing rule. Omitting it
+        entirely means no filter; there is no "all" sentinel to keep in sync
+        between the client and the server.
+
+        `IN` over the leading column of `(current_status, created_at, id)` is a
+        handful of index range seeks, so selecting four statuses costs about
+        what selecting one does — it does not degrade into a scan.
         """
         queryset = super().get_queryset()
 
-        status = self.request.query_params.get("status")
-        if status:
-            if status not in StatusType.values:
+        # Drop empties so a stray `?status=` is "no filter", not "no results".
+        statuses = [s for s in self.request.query_params.getlist("status") if s]
+        if statuses:
+            invalid = [s for s in statuses if s not in StatusType.values]
+            if invalid:
                 # Silently returning nothing would look like "no jobs match"
-                # rather than "that isn't a status".
+                # rather than "that isn't a status". Every bad value is named,
+                # so a caller fixes them in one round trip rather than five.
                 raise ValidationError(
-                    {"status": [f"'{status}' is not a valid status."]}
+                    {"status": [f"'{s}' is not a valid status." for s in invalid]}
                 )
-            queryset = queryset.filter(current_status=status)
+            # dict.fromkeys dedupes and keeps order, so the generated SQL is
+            # stable — a repeated value must not turn into a longer IN list.
+            queryset = queryset.filter(current_status__in=list(dict.fromkeys(statuses)))
 
         return queryset
 

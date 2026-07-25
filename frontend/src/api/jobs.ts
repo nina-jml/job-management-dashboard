@@ -2,14 +2,21 @@ import { api } from "./client";
 import type { Job, Page, StatusEntry, StatusType } from "./types";
 
 export interface JobFilters {
-  /** Server-side, across the whole table — never a filter over loaded rows. */
-  status?: StatusType | "ALL";
+  /**
+   * Server-side, across the whole table — never a filter over loaded rows.
+   *
+   * Empty means unfiltered. There is no "ALL" sentinel: an empty selection
+   * already says it, and a sentinel is a value both ends have to agree to
+   * ignore.
+   */
+  statuses?: StatusType[];
   search?: string;
 }
 
 function query(filters: JobFilters, pageSize: number): string {
   const params = new URLSearchParams();
-  if (filters.status && filters.status !== "ALL") params.set("status", filters.status);
+  // Repeated, one per selection: `?status=RUNNING&status=FAILED`.
+  for (const status of filters.statuses ?? []) params.append("status", status);
   if (filters.search?.trim()) params.set("search", filters.search.trim());
   params.set("page_size", String(pageSize));
   return params.toString();

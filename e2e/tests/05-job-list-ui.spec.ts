@@ -127,6 +127,103 @@ test.describe("job list", () => {
     expect(new Set(statuses)).toEqual(new Set(["RUNNING"]));
   });
 
+  test("selects several statuses at once", async ({ page, request }) => {
+    const prefix = uniquePrefix("multi");
+    // One job per state, so a filter that quietly returned everything and a
+    // filter that returned the right union would look different.
+    const running = (await (
+      await request.post("/api/jobs/", { data: { name: `${prefix}Running` } })
+    ).json()) as Job;
+    const failed = (await (
+      await request.post("/api/jobs/", { data: { name: `${prefix}Failed` } })
+    ).json()) as Job;
+    const pending = (await (
+      await request.post("/api/jobs/", { data: { name: `${prefix}Pending` } })
+    ).json()) as Job;
+
+    await request.patch(`/api/jobs/${running.id}/`, { data: { status: "RUNNING" } });
+    await request.patch(`/api/jobs/${failed.id}/`, { data: { status: "FAILED" } });
+
+    await page.goto("/");
+
+    const requests: string[] = [];
+    page.on("request", (req) => {
+      if (req.url().includes("/api/jobs/?")) requests.push(req.url());
+    });
+
+    await page.getByRole("button", { name: "Running", exact: true }).click();
+    await page.getByRole("button", { name: "Failed", exact: true }).click();
+
+    await expect(row(page, running.id)).toBeVisible();
+    await expect(row(page, failed.id)).toBeVisible();
+    // The point of the case: the third job is excluded, so this is a union of
+    // two states and not simply an unfiltered list.
+    await expect(row(page, pending.id)).toHaveCount(0);
+
+    // Repeated parameters, one per selection — the shape the server reads.
+    expect(
+      requests.some((url) => url.includes("status=RUNNING") && url.includes("status=FAILED")),
+    ).toBe(true);
+
+    const statuses = await page
+      .locator(".rows .row")
+      .evaluateAll((nodes) => nodes.map((n) => n.getAttribute("data-status")));
+    expect(new Set(statuses)).toEqual(new Set(["RUNNING", "FAILED"]));
+  });
+
+  test("deselects a status, and the last one clears back to All", async ({ page, request }) => {
+    const prefix = uniquePrefix("deselect");
+    const running = (await (
+      await request.post("/api/jobs/", { data: { name: `${prefix}Running` } })
+    ).json()) as Job;
+    const pending = (await (
+      await request.post("/api/jobs/", { data: { name: `${prefix}Pending` } })
+    ).json()) as Job;
+    await request.patch(`/api/jobs/${running.id}/`, { data: { status: "RUNNING" } });
+
+    await page.goto("/");
+
+    const runningChip = page.getByRole("button", { name: "Running", exact: true });
+    const allChip = page.getByRole("button", { name: "All", exact: true });
+
+    await runningChip.click();
+    await expect(runningChip).toHaveAttribute("aria-pressed", "true");
+    await expect(allChip).toHaveAttribute("aria-pressed", "false");
+    await expect(row(page, pending.id)).toHaveCount(0);
+
+    // Clicking the same chip again releases it — no separate escape hatch.
+    await runningChip.click();
+    await expect(runningChip).toHaveAttribute("aria-pressed", "false");
+    // Nothing selected *is* the unfiltered state, so All lights up on its own.
+    await expect(allChip).toHaveAttribute("aria-pressed", "true");
+    await expect(row(page, pending.id)).toBeVisible();
+    await expect(row(page, running.id)).toBeVisible();
+  });
+
+  test("All clears an existing selection", async ({ page, request }) => {
+    const prefix = uniquePrefix("clear");
+    const pending = (await (
+      await request.post("/api/jobs/", { data: { name: `${prefix}Pending` } })
+    ).json()) as Job;
+
+    await page.goto("/");
+
+    await page.getByRole("button", { name: "Completed", exact: true }).click();
+    await page.getByRole("button", { name: "Cancelled", exact: true }).click();
+    await expect(row(page, pending.id)).toHaveCount(0);
+
+    await page.getByRole("button", { name: "All", exact: true }).click();
+
+    // Every chip released, not just the ones All happens to know about.
+    for (const label of ["Pending", "Running", "Completed", "Failed", "Cancelled"]) {
+      await expect(page.getByRole("button", { name: label, exact: true })).toHaveAttribute(
+        "aria-pressed",
+        "false",
+      );
+    }
+    await expect(row(page, pending.id)).toBeVisible();
+  });
+
   test("shows an error banner and stays interactive when the list fails (E4)", async ({ page }) => {
     await page.route("**/api/jobs/?*", (route) =>
       route.fulfill({

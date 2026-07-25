@@ -7,6 +7,11 @@ const FORMATTER = new Intl.DateTimeFormat(undefined, {
   hour: "2-digit",
   minute: "2-digit",
   hour12: false,
+  // Named explicitly: a job dashboard is read by people in several time zones,
+  // and "13:50" with no zone is the kind of ambiguity that gets an incident
+  // timeline wrong. The zone is the viewer's, not the server's — the API is
+  // UTC throughout, and this is the only place that leaves it.
+  timeZoneName: "short",
 });
 
 export function formatTimestamp(iso: string): string {
