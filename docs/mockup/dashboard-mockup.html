@@ -322,9 +322,32 @@
     letter-spacing: 0.07em;
     text-transform: uppercase;
   }
-  .menu button:hover { background: var(--surface-alt); }
+  .menu button:hover:not([disabled]) { background: var(--surface-alt); }
   .menu button[aria-current="true"] { color: var(--accent); }
+  .menu button[disabled] { opacity: 0.45; cursor: not-allowed; }
+  .menu-note {
+    margin-left: auto;
+    font-size: 0.62rem;
+    letter-spacing: 0.08em;
+    color: var(--faint);
+    text-transform: uppercase;
+  }
   .swatch { width: 8px; height: 8px; border-radius: 2px; flex: none; }
+
+  .terminal-note {
+    font-family: var(--mono);
+    font-size: 0.66rem;
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    color: var(--faint);
+    white-space: nowrap;
+  }
+
+  .scope-hint {
+    font-size: 0.72rem;
+    color: var(--faint);
+    font-style: italic;
+  }
 
   /* ---------- history timeline ---------- */
   .history {
@@ -524,8 +547,10 @@
 
       <div class="toolbar">
         <div class="field grow">
-          <label for="q">Search</label>
-          <input type="search" id="q" placeholder="Filter by job name…" />
+          <label for="q">Search all jobs</label>
+          <input type="search" id="q" placeholder="Search every job by name…" />
+          <span class="scope-hint">Mockup filters the loaded rows; the real search is server-side
+            across the whole table, debounced.</span>
         </div>
         <div class="field">
           <label>Status</label>
@@ -697,19 +722,55 @@
             <thead><tr><th>State</th><th>Meaning</th><th>Reachable from</th></tr></thead>
             <tbody>
               <tr><td><span class="status" data-status="PENDING">Pending</span></td>
-                  <td>Accepted, not yet started. Every job's first status.</td><td>any</td></tr>
+                  <td>Accepted, not yet started. Every job's first status.</td>
+                  <td>Running · Failed</td></tr>
               <tr><td><span class="status" data-status="RUNNING">Running</span></td>
-                  <td>Executing now. Carries a live pulse dot.</td><td>any</td></tr>
+                  <td>Executing now. Carries a live pulse dot.</td>
+                  <td>Completed · Failed</td></tr>
               <tr><td><span class="status" data-status="COMPLETED">Completed</span></td>
-                  <td>Finished successfully.</td><td>any</td></tr>
+                  <td>Finished successfully. Terminal — no further changes.</td>
+                  <td>— (delete only)</td></tr>
               <tr><td><span class="status" data-status="FAILED">Failed</span></td>
-                  <td>Terminated with an error.</td><td>any</td></tr>
+                  <td>Terminated with an error. Terminal, but retryable.</td>
+                  <td>Re-run → Pending</td></tr>
             </tbody>
           </table>
         </div>
-        <p class="plate-note">“Reachable from: any” is the shipped permissive policy (Q7). The status
-          control stands in for scheduler events rather than a user workflow, so every state stays
-          reachable; the strict map lives beside it in <code>jobs/transitions.py</code>.</p>
+        <p class="plate-note">Transitions are enforced by <code>jobs/transitions.py</code> and mirrored in
+          the dropdown, so an illegal move is <em>unreachable</em> rather than merely rejected. The
+          asymmetry at the bottom is deliberate: you retry a failure, but re-running a success isn't a
+          retry — it's a new job.</p>
+      </div>
+
+      <div class="plate">
+        <div class="plate-head"><h3>Status control by state</h3><span class="case-tag">C12</span><span class="case-tag">C3</span></div>
+        <p class="plate-note">What each row offers. A completed job says why it has no control instead of
+          showing a disabled button with no explanation.</p>
+        <div class="frame">
+          <div class="rows">
+            <div class="row">
+              <span class="status" data-status="PENDING">Pending</span>
+              <span class="name"><b>Rotor Blade Modal Analysis</b>
+                <span class="meta"><span>#4811</span><span>queued 07:58</span></span></span>
+              <span></span>
+              <span class="actions"><button>Change status</button><button class="danger">Delete</button></span>
+            </div>
+            <div class="row">
+              <span class="status" data-status="COMPLETED">Completed</span>
+              <span class="name"><b>LES Combustor Validation</b>
+                <span class="meta"><span>#4813</span><span>finished 10:58</span></span></span>
+              <span></span>
+              <span class="actions"><span class="terminal-note">Completed — no further changes</span><button class="danger">Delete</button></span>
+            </div>
+            <div class="row">
+              <span class="status" data-status="FAILED">Failed</span>
+              <span class="name"><b>Crash Pulse — Frontal Offset 40%</b>
+                <span class="meta"><span>#4809</span><span>failed 07:44</span></span></span>
+              <span></span>
+              <span class="actions"><button>↻ Re-run</button><button class="danger">Delete</button></span>
+            </div>
+          </div>
+        </div>
       </div>
 
     </div>
@@ -722,6 +783,23 @@
 
   var STATUSES = ["PENDING", "RUNNING", "COMPLETED", "FAILED"];
   var LABEL = { PENDING: "Pending", RUNNING: "Running", COMPLETED: "Completed", FAILED: "Failed" };
+
+  // The state machine (OPEN_QUESTIONS Q7). The dropdown disables what this
+  // forbids, so an invalid transition is unreachable rather than merely
+  // rejected — and the same map is enforced server-side.
+  var ALLOWED = {
+    PENDING:   ["RUNNING", "FAILED"],
+    RUNNING:   ["COMPLETED", "FAILED"],
+    COMPLETED: [],           // terminal — done is done
+    FAILED:    []            // terminal, but retryable below
+  };
+  // You retry a failure; you do not re-run a success. Re-running something that
+  // succeeded is a new job, not a resurrection.
+  var RETRYABLE = ["FAILED"];
+
+  function canTransition(from, to) { return ALLOWED[from].indexOf(to) !== -1; }
+  function canRetry(status) { return RETRYABLE.indexOf(status) !== -1; }
+  function isTerminal(status) { return ALLOWED[status].length === 0; }
 
   var jobs = [
     { id: 4814, name: "Transonic Wing Sweep — Re 6.5×10⁶", status: "RUNNING",
@@ -813,9 +891,10 @@
     return wrap;
   }
 
-  function changeStatus(job, next) {
+  function changeStatus(job, next, isRetry) {
     menuFor = null;
     var previous = job.status;
+    if (!isRetry && !canTransition(previous, next)) return;   // unreachable via the UI
     job.status = next;
     savingId = job.id;
     render();
@@ -904,34 +983,59 @@
     row.appendChild(histBtn);
 
     var actions = el("div", "actions");
-    var menuWrap = el("div", "menu-wrap");
-    var trigger = el("button", null, "Change status");
-    trigger.disabled = savingId === job.id;
-    trigger.setAttribute("aria-haspopup", "true");
-    trigger.setAttribute("aria-expanded", menuFor === job.id ? "true" : "false");
-    trigger.addEventListener("click", function (e) {
-      e.stopPropagation();
-      menuFor = menuFor === job.id ? null : job.id;
-      render();
-    });
-    menuWrap.appendChild(trigger);
 
-    if (menuFor === job.id) {
-      var menu = el("div", "menu");
-      menu.addEventListener("click", function (e) { e.stopPropagation(); });
-      STATUSES.forEach(function (s) {
-        var b = el("button", null, null);
-        var sw = el("span", "swatch");
-        sw.style.background = "var(--st-" + s.toLowerCase() + ")";
-        b.appendChild(sw);
-        b.appendChild(document.createTextNode(LABEL[s]));
-        if (s === job.status) b.setAttribute("aria-current", "true");
-        b.addEventListener("click", function () { changeStatus(job, s); });
-        menu.appendChild(b);
+    if (canRetry(job.status)) {
+      // Failed jobs get a re-run instead of a status menu.
+      var retry = el("button", null, "↻ Re-run");
+      retry.disabled = savingId === job.id;
+      retry.title = "Start this job again — appends a Pending event to its history";
+      retry.addEventListener("click", function () { changeStatus(job, "PENDING", true); });
+      actions.appendChild(retry);
+    } else if (isTerminal(job.status)) {
+      // Completed is a genuine dead end: no menu, no re-run. Say so, rather
+      // than showing a disabled control with no explanation.
+      var done = el("span", "terminal-note", "Completed — no further changes");
+      actions.appendChild(done);
+    } else {
+      var menuWrap = el("div", "menu-wrap");
+      var trigger = el("button", null, "Change status");
+      trigger.disabled = savingId === job.id;
+      trigger.setAttribute("aria-haspopup", "true");
+      trigger.setAttribute("aria-expanded", menuFor === job.id ? "true" : "false");
+      trigger.addEventListener("click", function (e) {
+        e.stopPropagation();
+        menuFor = menuFor === job.id ? null : job.id;
+        render();
       });
-      menuWrap.appendChild(menu);
+      menuWrap.appendChild(trigger);
+
+      if (menuFor === job.id) {
+        var menu = el("div", "menu");
+        menu.addEventListener("click", function (e) { e.stopPropagation(); });
+        STATUSES.forEach(function (s) {
+          var allowed = canTransition(job.status, s);
+          var current = s === job.status;
+          var b = el("button", null, null);
+          var sw = el("span", "swatch");
+          sw.style.background = "var(--st-" + s.toLowerCase() + ")";
+          b.appendChild(sw);
+          b.appendChild(document.createTextNode(LABEL[s]));
+          if (current) {
+            b.appendChild(el("span", "menu-note", "current"));
+            b.setAttribute("aria-current", "true");
+          } else if (!allowed) {
+            b.appendChild(el("span", "menu-note", "not allowed"));
+          }
+          // Every state stays visible so the rules are legible; only the legal
+          // ones are actionable.
+          b.disabled = !allowed;
+          if (allowed) b.addEventListener("click", function () { changeStatus(job, s); });
+          menu.appendChild(b);
+        });
+        menuWrap.appendChild(menu);
+      }
+      actions.appendChild(menuWrap);
     }
-    actions.appendChild(menuWrap);
 
     var del = el("button", "danger", "Delete");
     del.addEventListener("click", function () { confirmDelete(job); });
@@ -1017,13 +1121,21 @@
   });
 
   document.getElementById("load-more").addEventListener("click", function () {
-    var base = jobs.length;
-    ["Aeroacoustic Far-Field Propagation", "Turbine Disc Creep — 1200 h",
-     "Multiphase Separator CFD"].forEach(function (n, i) {
+    // Lifecycles, not arbitrary statuses — every history here is a legal walk
+    // through the state machine.
+    var extra = [
+      ["Aeroacoustic Far-Field Propagation", ["PENDING", "RUNNING", "COMPLETED"]],
+      ["Turbine Disc Creep — 1200 h",        ["PENDING", "RUNNING"]],
+      ["Multiphase Separator CFD",           ["PENDING", "RUNNING", "FAILED"]]
+    ];
+    extra.forEach(function (row, i) {
+      var lifecycle = row[1];
+      var history = lifecycle.map(function (s, step) {
+        return [s, "2026-07-24 22:" + String(10 + step * 7).padStart(2, "0")];
+      }).reverse();
       jobs.push({
-        id: 4790 - i, name: n, status: STATUSES[(base + i) % 4],
-        created: "2026-07-24 22:0" + i, updated: "2026-07-25 04:1" + i,
-        history: [[STATUSES[(base + i) % 4], "2026-07-25 04:1" + i], ["PENDING", "2026-07-24 22:0" + i]]
+        id: 4790 - i, name: row[0], status: lifecycle[lifecycle.length - 1],
+        created: history[history.length - 1][1], updated: history[0][1], history: history
       });
     });
     render();

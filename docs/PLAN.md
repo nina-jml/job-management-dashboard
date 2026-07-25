@@ -146,10 +146,12 @@ handler, `seed_jobs` management command.
 `POST /api/jobs/`, atomic job + initial status, name validation. A job must never exist with an empty log.
 
 ### Slice 3 — PATCH: append event, update projection
-**S: M** · **Spec:** `03-update-job-api` · **Cases:** C1, C3, C4, C5, C6, C8, C9, C10 · **Validation: T1 → T2**
+**S: M** · **Spec:** `03-update-job-api` · **Cases:** C1, C3–C8, C10, C11, C13 · **Validation: T1 → T2**
 
 Write-only `status` serializer field, `record_status()` with `select_for_update()` + atomic block, the
-monotonic guard. C9 (two concurrent PATCHes, no lost update) is the case that proves the lock.
+monotonic guard, and `transitions.py` enforcing the state machine (Q7). C11 (two concurrent PATCHes, no
+lost update) is the case that proves the lock; C6 pins the idempotent no-op that keeps a double-click from
+becoming a 400.
 
 ### Slice 4 — Delete + cascade + history endpoint
 **S: S** · **Spec:** `04-delete-job-api` · **Cases:** D1, D2, D3, D4 · **Validation: T3** (backend complete)
@@ -202,7 +204,7 @@ Empty and whitespace-only names blocked client-side with **zero network requests
 the top of the list without a refresh; input clears on success.
 
 ### Slice 8 — Frontend: status update ⭐
-**S: M** · **Spec:** `08-update-status-ui` · **Cases:** C1, C2, C7 · **Validation: T3**
+**S: M** · **Spec:** `08-update-status-ui` · **Cases:** C1, C2, C12, C9 · **Validation: T3**
 
 *The prompt's named critical flow — the one an evaluator looks for first.*
 
@@ -216,13 +218,13 @@ Row disappears without refresh and stays gone after reload. Any confirm step is 
 **never `window.confirm`**, which blocks automation and would hang the suite.
 
 ### Slice 10 — Fault-injection sweep
-**S: M** · **Spec:** `10-fault-injection` · **Cases:** B5, C7, D5, E4, E5 · **Validation: T2**
+**S: M** · **Spec:** `10-fault-injection` · **Cases:** B5, C9, D5, E4, E5 · **Validation: T2**
 
 `page.route()` fault injection proves the handling built in slices 1–9 holds: 500 on each verb, aborted
 requests, slow responses, optimistic rollback, and recovery once the route is unblocked.
 
 ### Slice 11 — Scale: pagination, filter, search
-**S: M** · **Spec:** `11-pagination-scale` · **Cases:** F1–F9 · **Validation: T2 + latency measurement**
+**S: M** · **Spec:** `11-pagination-scale` · **Cases:** F1–F10 · **Validation: T2 + latency measurement**
 
 Seed a large dataset (`make seed N=250000`), load-more/infinite scroll, server-side status filter,
 debounced search. F8/F9 mutate the list *during* a walk — deleting rows behind the cursor is the case

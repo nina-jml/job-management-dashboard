@@ -178,7 +178,27 @@ an identical timestamp must still have a stable order or keyset pagination can s
 Django REST Framework, `ModelViewSet`-shaped, JSON only.
 
 ### `GET /api/jobs/`
-List jobs, newest first, **cursor-paginated**.
+List jobs, newest first, **cursor-paginated**. `status` and `search` are both applied **server-side, across
+the whole table** — never to the loaded page.
+
+That distinction is the difference between a working feature and a misleading one. Filtering a loaded page
+client-side means searching "combustor" returns nothing when the match sits on page 400, and the user
+concludes the job doesn't exist. At the scale this design targets, client-side filtering is not a cheaper
+version of search — it is a wrong answer delivered quickly.
+
+The cost is an index question. `name ILIKE '%combustor%'` **cannot use a btree index** — a leading wildcard
+makes it a sequential scan, which is exactly the query shape that falls over on a multi-million-row table.
+The fix is a trigram index:
+
+```sql
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+CREATE INDEX job_name_trgm_idx ON jobs_job USING gin (name gin_trgm_ops);
+```
+
+`pg_trgm` ships with the official `postgres:16` image, so this is a migration (`CreateExtension` +
+`AddIndex`), not a deployment prerequisite. Stated honestly: a *highly unselective* search still has to sort
+a large candidate set, so trigram makes substring search viable rather than free. Search results stay
+cursor-paginated, so the result set is never materialized in full.
 
 ```
 GET /api/jobs/?status=RUNNING&search=fluid&cursor=<opaque>&page_size=25

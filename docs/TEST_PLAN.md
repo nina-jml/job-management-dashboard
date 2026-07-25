@@ -18,15 +18,15 @@ Slice detail lives in [PLAN.md](./PLAN.md).
 | 0 | Walking skeleton: compose, Dockerfiles, Makefile, `/api/health/`, React shell | `00-smoke` | A1, A2, A4 | — | T3 | ✅ done |
 | 1 | Models, indexes, cursor-paginated `GET /api/jobs/`, error handler, seed command | `01-jobs-list-api` | E1, E2 | E7, E8 | T2 | ✅ done |
 | 2 | `POST /api/jobs/` + automatic PENDING, atomic, name validation | `02-create-job-api` | B1, B6, B7 | B2, B3, B4 | T2 | pending |
-| 3 | `PATCH` appends event, projection guard, `select_for_update`, transition policy | `03-update-job-api` | C1, C3, C4, C8, C9, C10 | C5, C6 | T2 | pending |
+| 3 | `PATCH` appends event, projection guard, `select_for_update`, transition policy | `03-update-job-api` | C1, C5, C6, C10, C11 | C3, C4, C7, C8, C13 | T2 | pending |
 | 4 | `DELETE` + cascade, `GET /api/jobs/<id>/statuses/` | `04-delete-job-api` | D1, D2, D3 | D4 | **T3** | pending |
 | **5** | 🔍 **UI mockup — design & test-plan sign-off.** Every UI state on one page, no backend | — | — | — | review gate | ✅ built · ⏳ **awaiting sign-off** |
 | 6 | UI: list, badges, typed client, `ErrorBanner`, loading/empty states | `06-job-list-ui` | E1, E3, E6 | — † | T2 | pending |
 | 7 | UI: create form + client-side validation | `07-create-job-ui` | B1 | B2, B3 | T2 | pending |
-| 8 | ⭐ UI: status update — **the prompt's required critical flow** | `08-update-status-ui` | C1, C2 | C7 | **T3** | pending |
+| 8 | ⭐ UI: status update — **the prompt's required critical flow** | `08-update-status-ui` | C1, C2, C12 | C9 | **T3** | pending |
 | 9 | UI: delete (in-app confirm, never `window.confirm`) | `09-delete-job-ui` | D1, D6 | D5 | T2 | pending |
-| 10 | Fault-injection sweep: 500 per verb, abort, slow, rollback, recovery | `10-fault-injection` | — ‡ | B5, C7, D5, E4, E5 | T2 | pending |
-| 11 | Scale: load-more, status filter, debounced search, 250k seeded | `11-pagination-scale` | F1–F4, F6–F9 | F5 | T2 | pending |
+| 10 | Fault-injection sweep: 500 per verb, abort, slow, rollback, recovery | `10-fault-injection` | — ‡ | B5, C9, D5, E4, E5 | T2 | pending |
+| 11 | Scale: load-more, status filter, debounced search, 250k seeded | `11-pagination-scale` | F1–F4, F6–F10 | F5 | T2 | pending |
 | 12 | README, performance + prompt-engineering writeups, final tidy | full suite | A1–A4 | — | **T3 ×2** | pending |
 
 † Slice 6 builds the error-handling machinery (`ApiError`, `ErrorBanner`, query error states); the failure
@@ -78,7 +78,7 @@ is exactly the failure the evaluator's one-shot `make test` would surface.
 
 ## 3. Case matrix
 
-`+` positive · `−` negative. **44 cases, 14 negative.** Each ID maps to an assertion in the named spec file.
+`+` positive · `−` negative. **48 cases, 17 negative.** Each ID maps to an assertion in the named spec file.
 
 ### A · Infrastructure gate — `00-smoke` + manual
 
@@ -106,24 +106,36 @@ it is the evaluation not starting.
 
 ### C · Update status — `03-update-job-api`, `08-update-status-ui`
 
+Transitions are enforced against the map in `jobs/transitions.py` (OPEN_QUESTIONS Q7):
+`PENDING → {RUNNING, FAILED}`, `RUNNING → {COMPLETED, FAILED}`, and both `COMPLETED` and `FAILED` are
+terminal. **Re-run** is the only way out of a terminal state, and only from `FAILED` — you retry a failure,
+you do not re-run a success. `COMPLETED` is a genuine dead end.
+
 | ID | ± | Action | Expected behaviour | Validation |
 |---|---|---|---|---|
-| C1 | + | PENDING → RUNNING | badge updates immediately | **persists across reload**; log has 2 entries, `PENDING` still present; **`current_status_at` and `updated_at` both advance** |
-| C2 | + | Reach all four states | each selectable and persisted | badge label + colour correct per state |
-| C3 | + | COMPLETED → RUNNING (backwards) | allowed under the shipped permissive policy | documents `transitions.POLICY` (Q7) rather than asserting an absence of rules; log grows |
-| C4 | + | Same status twice — double-submit or retry race | handled as an ordinary update | API-level only; unreachable through the dropdown. Appends an event, `current_status` unchanged, **`current_status_at` and `updated_at` advance**, nothing corrupted |
-| C5 | − | `status: "NOT_A_STATUS"` | 400 | log unchanged; projection unchanged |
-| C6 | − | PATCH nonexistent id | 404 | no side effects |
-| C7 | − | PATCH returns 500 | **optimistic badge rolls back** to prior value | error shown; log unchanged after reload |
-| C8 | + | Rename only, no `status` key | name changes | **no status event appended**; **`updated_at` advances but `current_status_at` does not** — the exact divergence the projection guard depends on |
-| C9 | + | Two concurrent PATCHes | both events logged | `current_status` = the later event; no lost update (row lock holds) |
-| C10 | + | Backend unit: policy swapped to `STRICT` | COMPLETED → RUNNING rejected with 400 | proves the strict map is functional rather than decorative (`make test-backend`) |
+| C1 | + | PENDING → RUNNING | allowed; badge updates immediately | **persists across reload**; log has 2 entries, `PENDING` still present; **`current_status_at` and `updated_at` both advance** |
+| C2 | + | Full lifecycle reaches all four states | PENDING → RUNNING → FAILED, then Re-run → PENDING → RUNNING → COMPLETED | every state is reachable, none by accident; the log records all six steps in order and ends terminal |
+| C3 | − | COMPLETED → RUNNING | **400** | terminal states cannot be edited; log unchanged, projection unchanged |
+| C4 | − | PENDING → COMPLETED (skipping RUNNING) | **400** | the map allows `PENDING → {RUNNING, FAILED}` only; a job cannot finish without having run |
+| C5 | + | Re-run a **failed** job | 200; status becomes `PENDING` | appends a `PENDING` event — the earlier `FAILED` entry survives, since the log is append-only; timestamps advance |
+| C6 | + | Same status re-applied (double-submit / retry race) | **200, idempotent no-op** | no event appended; `current_status_at` unchanged; explicitly **not** a 400, so a double click is harmless |
+| C7 | − | `status: "NOT_A_STATUS"` | 400 | log unchanged; projection unchanged |
+| C8 | − | PATCH nonexistent id | 404 | no side effects |
+| C9 | − | PATCH returns 500 | **optimistic badge rolls back** to prior value | error shown; log unchanged after reload |
+| C10 | + | Rename only, no `status` key | name changes | **no status event appended**; **`updated_at` advances but `current_status_at` does not** — the exact divergence the projection guard depends on |
+| C11 | + | Two concurrent PATCHes | serialized by the row lock | both outcomes are individually legal under the map; no lost update; log and projection agree |
+| C12 | + | UI: controls offered per state | `FAILED` → **Re-run**; `COMPLETED` → delete only; `RUNNING` → menu with `COMPLETED`/`FAILED` enabled and the rest disabled | invalid transitions are *unreachable*, not merely rejected |
+| C13 | − | Re-run a **completed** job | **400** | done is done; a re-run of a success is a new job, not a resurrection. The UI never offers the action |
 
 **On timestamps.** `updated_at` and `current_status_at` are asserted separately throughout this group
 because they are *meant* to diverge: any save moves `updated_at`, but only a status event moves
-`current_status_at`. C8 pins that divergence down — and it is precisely why `record_status()` guards on
+`current_status_at`. C10 pins that down — and it is precisely why `record_status()` guards on
 `current_status_at`. Guarding on `updated_at` would let a rename make a later legitimate status event look
 stale and be silently dropped.
+
+**Why C3 and C4 are negative cases now.** An earlier draft shipped a permissive policy, where the
+equivalent of C3 asserted that a backwards transition was *allowed*. Enforcing the map turns those into
+rejections, and adds C12 — because a rule the UI still offers is a worse experience than no rule at all.
 
 ### D · Delete — `04-delete-job-api`, `09-delete-job-ui`
 
@@ -163,6 +175,7 @@ constraint (see SPEC.md §2).
 | F1 | + | First render, N ≫ page size | exactly one page requested | network log: 1 list request, 25 rows |
 | F2 | + | Load more | next page appended | **no duplicate ids, no skipped ids** across the full walk |
 | F3 | + | Filter by status | list narrows | **server-side request issued** — not a client-side filter |
+| F10 | + | Search a term whose only match is far outside the first page | the match is returned | **the assertion that proves search is whole-table, not page-local.** Seed 250k, search a name known to live ~page 400, expect one result. A client-side filter returns nothing here |
 | F4 | + | Type a search burst | debounced | requests ≪ keystrokes |
 | F5 | − | Tampered / invalid cursor | 400 | graceful UI error, no crash |
 | F6 | + | Job created mid-pagination | walk stays consistent | no dupes/skips from the shifting head |
@@ -188,17 +201,17 @@ gate (group A) is positive-only by nature — there is no meaningful "negative" 
 |---|---|---|
 | `GET /api/jobs/` includes current status | E1, E2 | E4, E7 |
 | `POST /api/jobs/` auto-creates PENDING | B1 | B2, B3, B4, B5 |
-| `PATCH` creates a new JobStatus entry | C1, C4, C8 | C5, C6, C7 |
+| `PATCH` creates a new JobStatus entry | C1, C5, C10, C11 | C3, C4, C7, C8, C9, C13 |
 | `DELETE` cascades to JobStatus | D1, D2, D3 | D4, D5 |
 | Frontend lists jobs with status | E1, E3 | E4 |
 | Create form | B1, B6, B7 | B2, B3 |
-| Status update control | C1, C2, C3 | C7 |
+| Status update control | C1, C2, C5, C12 | C3, C4, C9, C13 |
 | Delete button | D1, D6 | D5 |
-| API error handling | E5 (recovery) | B5, C7, D5, E4, F5 |
+| API error handling | E5 (recovery) | B5, C9, D5, E4, F5 |
 | Client-side validation | B1 | B2, B3, B4 |
-| UI updates dynamically | B1, C1, D1 | C7, D5 (rollback) |
-| **Required E2E critical flow** | **C1** (create → PENDING → RUNNING) | C7 |
-| Performance at scale | F1–F4, F6–F9 | F5, E8 |
+| UI updates dynamically | B1, C1, D1 | C9, D5 (rollback) |
+| **Required E2E critical flow** | **C1** (create → PENDING → RUNNING) | C9 |
+| Performance at scale | F1–F4, F6–F10 | F5, E8 |
 | `make test` from clean | A1, A2, A3, A4 | — |
 
 ---
@@ -218,7 +231,7 @@ Stated rather than hidden — each is a deliberate scope call, not an oversight.
   `(created_at, id)` position — noted in the README as the hardening step.
 - **No load/soak testing.** F7 measures single-request latency against a seeded 250k-row table; it is not a
   concurrency benchmark.
-- **C9 (concurrency) is a two-in-flight check, not a stress test.** It proves the row lock serializes
+- **C11 (concurrency) is a two-in-flight check, not a stress test.** It proves the row lock serializes
   writers; it does not characterize behaviour under sustained contention.
 - **Single browser (Chromium).** Cross-browser adds CI time for little signal on a prototype.
 - **No accessibility audit.** Semantic HTML and labelled controls are used throughout, but there is no

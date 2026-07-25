@@ -87,42 +87,56 @@ one gate would mean an unrelated unit failure blocks everything, for no gain in 
 
 ### Q7 · Should status transitions be constrained by a state machine?
 
-**Decision: permissive, but the policy is named and explicit.** Every transition is allowed, and the rule
-lives in one place — `jobs/transitions.py` — holding a permissive default with the strict map written out
-beside it:
+**Decision: yes — strict, with an explicit re-run.** `jobs/transitions.py` enforces:
 
 ```python
-TERMINAL = {StatusType.COMPLETED, StatusType.FAILED}
-
-# What a real scheduler would enforce. A re-run creates a new attempt rather
-# than moving a finished job backwards.
-STRICT = {
+ALLOWED = {
     StatusType.PENDING:   {StatusType.RUNNING, StatusType.FAILED},
     StatusType.RUNNING:   {StatusType.COMPLETED, StatusType.FAILED},
-    StatusType.COMPLETED: set(),
-    StatusType.FAILED:    set(),
+    StatusType.COMPLETED: set(),   # terminal — done is done
+    StatusType.FAILED:    set(),   # terminal, but retryable (below)
 }
 
-POLICY = PERMISSIVE  # swap to STRICT to enforce the map above
+# Re-run is the only way out of a terminal state, and only from FAILED.
+RETRYABLE = {StatusType.FAILED}
 ```
 
-The domain instinct against `COMPLETED → RUNNING` is correct — it is meaningless in a real scheduler. What
-makes permissive the right call *here* is what the status control actually is: the prompt excludes building
-a scheduler (§6), so the dropdown stands in for the events a scheduler would emit rather than modelling a
-user workflow. Enforcing terminal states would make those states unreachable for demonstration and testing,
-and the prompt explicitly asks for a mechanism to update a job "to any of the defined states" — an
-evaluator finding greyed-out options would reasonably read that as a bug, not a design decision.
+A disallowed transition is a `400`, not a silent no-op. The UI never offers one: the dropdown disables
+what the map forbids, so invalid transitions are *unreachable* rather than merely rejected.
 
-Naming the policy keeps the judgement visible rather than implicit. The strict map is real code, unit
-tested (TEST_PLAN case C10), and one constant away from being enforced — so the reasoning is legible and
-the alternative is a one-line change rather than a rewrite.
+`COMPLETED → RUNNING` is meaningless in a real scheduler — a job that finished does not un-finish, and a
+retry is a new attempt, not a backwards edit of the old one. Modelling that honestly is worth more than the
+flexibility of arbitrary edits.
 
-### Q8 · Does the same status applied twice need special handling?
+**The escape hatch, and its limit.** A **failed** job offers an explicit **Re-run** action that moves it to
+`PENDING` and appends that event to the log. A **completed** job offers nothing — its only remaining action
+is delete.
 
-**Decision: no — it is an ordinary update.** The UI is a dropdown, so a user cannot realistically produce
-it; a double-submit or a retry can. The behaviour is simply the normal path: append the event, leave
-`current_status` unchanged, advance `current_status_at` and `updated_at`. Tested at API level only
-(TEST_PLAN case C4), as robustness against a race rather than as a product feature.
+That asymmetry is the point. You retry a failure; you do not re-run a success. Re-running something that
+already succeeded is not a retry, it is a *new job* — which is exactly how a user should express it, and
+how real schedulers model it (Rescale clones a job rather than resurrecting one).
+
+So every state remains **reachable** — a job's lifecycle can visit all four — but `COMPLETED` is a genuine
+dead end rather than a way back round. Re-running a completed job is a `400`, not a hidden button
+(TEST_PLAN case C13).
+
+*Superseded:* an earlier draft shipped a permissive policy with the strict map written beside it as
+documentation. Enforcing the map is the better call — a rule that is only commentary is not a rule.
+
+### Q8 · What happens when the same status is applied twice?
+
+**Decision: an idempotent no-op.** `PATCH {"status": "RUNNING"}` on a job already `RUNNING` returns `200`
+with the unchanged job. No event is appended, `current_status_at` does not move, and it is **not** a `400`.
+
+This follows from Q7. Under strict transitions the map has no self-edges, so a literal reading would reject
+a repeat as an invalid transition — which would turn an accidental double-click, or a retried request after
+a dropped response, into a visible error for a request that asked for the state the job is already in.
+Idempotency is the correct response to a duplicate, not a rejection.
+
+It also reverses an earlier decision. Under the permissive model, `JobStatus` was framed as a log of
+*observations*, where "still RUNNING at 10:42" carried information. Under a strict workflow model there are
+no observers — only deliberate transitions — so a duplicate entry is timeline noise rather than a data
+point. TEST_PLAN case C6.
 
 ---
 
