@@ -161,4 +161,4 @@ point. TEST_PLAN case C6.
 | **The standard Playwright image is not on DockerHub.** `mcr.microsoft.com/playwright` is a Microsoft registry; the prompt only guarantees DockerHub access. Using it would fail `make test` on the evaluator's machine — which per the prompt ends the evaluation. | Build the e2e image from `node:22-bookworm` (DockerHub) with `npx playwright install --with-deps chromium`. Verified by TEST_PLAN case A1 on a pruned Docker. |
 | Tests racing Postgres initialization — the classic intermittent CI failure. | `GET /api/health/` checks the DB connection; compose healthchecks and `make test` both gate on it. TEST_PLAN case A2. |
 | E2E state leaking between runs, making the suite pass once and fail on re-run. | Every spec namespaces its fixtures with a run-unique prefix and scopes assertions to them. TEST_PLAN case A3. |
-| Apple Silicon build that doesn't work on the evaluator's amd64 Linux. | Explicit `--platform linux/amd64` build check at slices 0 and 12. TEST_PLAN case A4. |
+| Apple Silicon build that doesn't work on the evaluator's amd64 Linux. | Explicit `--platform linux/amd64` build check at slices 0 and 11. TEST_PLAN case A4. |

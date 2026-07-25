@@ -92,13 +92,13 @@ It is part of each slice's definition of done, never retrofitted:
 |---|---|---|
 | DRF exception handler → uniform `{detail, errors}` | Slice 1 | every 4xx/5xx has one predictable shape |
 | Model + serializer validation | Slice 2 | rejects blank/oversized names at the boundary |
-| Typed client normalizes network + HTTP + parse failures | Slice 6 | one `ApiError` type, one place to change |
-| `ErrorBanner` + query error states | Slice 6 | no blank screens, ever |
-| Client-side form validation | Slice 7 | blocks the request before it is sent |
-| Optimistic mutation + rollback on failure | Slice 8 | the UI never lies about persisted state |
+| Typed client normalizes network + HTTP + parse failures | Slice 5 | one `ApiError` type, one place to change |
+| `ErrorBanner` + query error states | Slice 5 | no blank screens, ever |
+| Client-side form validation | Slice 6 | blocks the request before it is sent |
+| Optimistic mutation + rollback on failure | Slice 7 | the UI never lies about persisted state |
 
-Slice 10 is therefore a **fault-injection sweep** — a spec that systematically proves the handling built in
-slices 1–9 holds under 500s, aborts, and slow responses — not the place where handling gets written.
+Slice 9 is therefore a **fault-injection sweep** — a spec that systematically proves the handling built in
+slices 1–8 holds under 500s, aborts, and slow responses — not the place where handling gets written.
 
 ---
 
@@ -108,7 +108,7 @@ slices 1–9 holds under 500s, aborts, and slow responses — not the place wher
 |---|---|---|---|
 | **T1 — lightweight** | `make test-spec SPEC=<name>` (one spec, running stack, no rebuild) · `make test-backend` | seconds | after every meaningful change, inside a slice |
 | **T2 — suite** | `make test` (rebuild + full Playwright suite) | ~1–2 min | close of **every** slice |
-| **T3 — cold gate** | `make clean && make build && make test` from pruned Docker + `--platform linux/amd64` check | several min | slices **0, 4, 8, 12**, and any slice touching Docker/compose/Makefile/dependencies |
+| **T3 — cold gate** | `make clean && make build && make test` from pruned Docker + `--platform linux/amd64` check | several min | slices **0, 4, 7, 11**, and any slice touching Docker/compose/Makefile/dependencies |
 
 ---
 
@@ -160,8 +160,8 @@ becoming a 400.
 D2 proves the history is unreachable via the API, D3 (backend unit) proves no orphan rows survive — the
 E2E check alone cannot tell those apart.
 
-### Slice 5 — UI mockup, design & test-plan sign-off 🔍
-**S: S** · **Spec:** none — this is the review gate · **Validation: explicit approval before slice 6**
+### Slice 1.5 — UI mockup, design & test-plan sign-off 🔍
+**S: S** · **Spec:** none — this is the review gate · **Validation: explicit approval before slice 5**
 
 One self-contained HTML page showing **every state the UI can be in**, with hard-coded data, no backend and
 no React. Reviewed and approved before a line of component code is written.
@@ -178,60 +178,60 @@ States it must show:
 | Scale controls | status filter, search box, "load more" affordance, end-of-list |
 
 *Why the gate exists:* a layout or interaction problem caught on a static page costs minutes. The same
-problem caught after slices 6–9 are wired through TanStack Query means unpicking components, tests and
+problem caught after slices 5–8 are wired through TanStack Query means unpicking components, tests and
 optimistic-update logic that were all built on the wrong shape.
 
-*Why it sits here but need not run here:* it has **no backend dependency**, so it was built early and can be
-reviewed in parallel with slices 2–4 rather than blocking after them. The only hard constraint is that it is
-approved before slice 6 starts.
+*Why it sits at 1.5:* it has **no backend dependency**, so it is built as soon as there is a harness to show
+it against, and reviewed **in parallel with slices 2–4** rather than blocking them. The only hard constraint
+is approval before slice 5 starts.
 
-*Both sign-offs land here.* The **test plan** is approved at this same point rather than earlier — reviewing
-it alongside a working harness *and* a clickable UI gives far more to react to than reading a case matrix
-cold. Slices 6–12 are what the approved plan governs, so nothing downstream proceeds until both are signed.
+*Both sign-offs land here.* The **test plan** is approved at this same point — reviewing it alongside a
+working harness and a clickable UI gives far more to react to than reading a case matrix cold. Slices 5–11
+are what the approved plan governs, so nothing downstream proceeds until both are signed.
 
 Deliverable: a viewable page (published artifact link) plus the same file committed under `docs/mockup/`.
 
-### Slice 6 — Frontend: job list
-**S: M** · **Spec:** `06-job-list-ui` · **Cases:** E1, E3, E6 · **Validation: T1 → T2**
+### Slice 5 — Frontend: job list
+**S: M** · **Spec:** `05-job-list-ui` · **Cases:** E1, E3, E6 · **Validation: T1 → T2**
 
 Typed API client, TanStack Query, `JobList`/`JobRow`/`StatusBadge`/`StatusTimeline`/`ErrorBanner`, loading
 and empty states, styling pass.
 
-### Slice 7 — Frontend: create form
-**S: S** · **Spec:** `07-create-job-ui` · **Cases:** B1, B2, B3 · **Validation: T1 → T2**
+### Slice 6 — Frontend: create form
+**S: S** · **Spec:** `06-create-job-ui` · **Cases:** B1, B2, B3 · **Validation: T1 → T2**
 
 Empty and whitespace-only names blocked client-side with **zero network requests**; valid name appears at
 the top of the list without a refresh; input clears on success.
 
-### Slice 8 — Frontend: status update ⭐
-**S: M** · **Spec:** `08-update-status-ui` · **Cases:** C1, C2, C12, C9 · **Validation: T3**
+### Slice 7 — Frontend: status update ⭐
+**S: M** · **Spec:** `07-update-status-ui` · **Cases:** C1, C2, C12, C9 · **Validation: T3**
 
 *The prompt's named critical flow — the one an evaluator looks for first.*
 
 Create → assert `PENDING` → change to `RUNNING` → badge updates → **survives reload**. All four states
 reachable. Optimistic update with rollback on failure.
 
-### Slice 9 — Frontend: delete
-**S: S** · **Spec:** `09-delete-job-ui` · **Cases:** D1, D5, D6 · **Validation: T1 → T2**
+### Slice 8 — Frontend: delete
+**S: S** · **Spec:** `08-delete-job-ui` · **Cases:** D1, D5, D6 · **Validation: T1 → T2**
 
 Row disappears without refresh and stays gone after reload. Any confirm step is an in-app dialog —
 **never `window.confirm`**, which blocks automation and would hang the suite.
 
-### Slice 10 — Fault-injection sweep
-**S: M** · **Spec:** `10-fault-injection` · **Cases:** B5, C9, D5, E4, E5 · **Validation: T2**
+### Slice 9 — Fault-injection sweep
+**S: M** · **Spec:** `09-fault-injection` · **Cases:** B5, C9, D5, E4, E5 · **Validation: T2**
 
-`page.route()` fault injection proves the handling built in slices 1–9 holds: 500 on each verb, aborted
+`page.route()` fault injection proves the handling built in slices 1–8 holds: 500 on each verb, aborted
 requests, slow responses, optimistic rollback, and recovery once the route is unblocked.
 
-### Slice 11 — Scale: pagination, filter, search
-**S: M** · **Spec:** `11-pagination-scale` · **Cases:** F1–F10 · **Validation: T2 + latency measurement**
+### Slice 10 — Scale: pagination, filter, search
+**S: M** · **Spec:** `10-pagination-scale` · **Cases:** F1–F10 · **Validation: T2 + latency measurement**
 
 Seed a large dataset (`make seed N=250000`), load-more/infinite scroll, server-side status filter,
 debounced search. F8/F9 mutate the list *during* a walk — deleting rows behind the cursor is the case
 that breaks offset pagination and that keyset pagination is immune to.
  Virtualize if rendered row count warrants it. F7's measured numbers go in the README.
 
-### Slice 12 — Delivery
+### Slice 11 — Delivery
 **S: M** · **Spec:** full suite · **Validation: T3 ×2** (warm, then fully pruned)
 
 README: setup, architecture, **performance writeup**, **prompt-engineering writeup**, time spent (from
@@ -243,8 +243,8 @@ README: setup, architecture, **performance writeup**, **prompt-engineering write
 
 - Slices 0–4 give a complete, demonstrable backend before any UI exists. If time runs short the fallback is
   a smaller UI, never a broken `make test`.
-- Slice 8 is the prompt's explicitly required E2E test. It ships mid-build, not at the end.
-- Slices 10 and 11 are where the "error handling" and "performance" criteria are actually won — not optional
+- Slice 7 is the prompt's explicitly required E2E test. It ships mid-build, not at the end.
+- Slices 9 and 10 are where the "error handling" and "performance" criteria are actually won — not optional
   polish.
 
 ## Test isolation
