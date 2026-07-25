@@ -1,5 +1,9 @@
 from django.db import connection
 from django.http import JsonResponse
+from rest_framework import viewsets
+
+from .models import Job
+from .serializers import JobSerializer
 
 
 def health(request):
@@ -20,3 +24,15 @@ def health(request):
         return JsonResponse({"status": "error", "database": "error", "detail": str(exc)}, status=503)
 
     return JsonResponse({"status": "ok", "database": "ok"})
+
+
+class JobViewSet(viewsets.ReadOnlyModelViewSet):
+    """Read access to jobs.
+
+    Write endpoints (POST/PATCH/DELETE) arrive in slices 2–4 with their specs;
+    keeping them out until then means every slice ships tested rather than
+    merely present.
+    """
+
+    queryset = Job.objects.all()
+    serializer_class = JobSerializer
