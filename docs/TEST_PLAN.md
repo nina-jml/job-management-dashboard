@@ -25,7 +25,7 @@ Slice detail lives in [PLAN.md](./PLAN.md).
 | 7 | ⭐ UI: status update — **the prompt's required critical flow** | `07-update-status-ui` | C1, C2 | C7 | **T3** | pending |
 | 8 | UI: delete (in-app confirm, never `window.confirm`) | `08-delete-job-ui` | D1, D6 | D5 | T2 | pending |
 | 9 | Fault-injection sweep: 500 per verb, abort, slow, rollback, recovery | `09-fault-injection` | — ‡ | B5, C7, D5, E4, E5 | T2 | pending |
-| 10 | Scale: load-more, status filter, debounced search, 250k seeded | `10-pagination-scale` | F1–F4, F6, F7 | F5 | T2 | pending |
+| 10 | Scale: load-more, status filter, debounced search, 250k seeded | `10-pagination-scale` | F1–F4, F6–F9 | F5 | T2 | pending |
 | 11 | README, performance + prompt-engineering writeups, final tidy | full suite | A1–A4 | — | **T3 ×2** | pending |
 
 † Slice 5 builds the error-handling machinery (`ApiError`, `ErrorBanner`, query error states); the failure
@@ -76,7 +76,7 @@ is exactly the failure the evaluator's one-shot `make test` would surface.
 
 ## 3. Case matrix
 
-`+` positive · `−` negative. **42 cases, 14 negative.** Each ID maps to an assertion in the named spec file.
+`+` positive · `−` negative. **44 cases, 14 negative.** Each ID maps to an assertion in the named spec file.
 
 ### A · Infrastructure gate — `00-smoke` + manual
 
@@ -165,6 +165,15 @@ constraint (see SPEC.md §2).
 | F5 | − | Tampered / invalid cursor | 400 | graceful UI error, no crash |
 | F6 | + | Job created mid-pagination | walk stays consistent | no dupes/skips from the shifting head |
 | F7 | + | 250k rows seeded | page latency ≈ flat vs 100 rows | measured; the number goes in the README |
+| F8 | + | **Delete rows already returned**, mid-walk — including the exact row the cursor encodes | remaining pages unaffected | no skipped and no duplicated ids across the full walk. The cursor holds a *value*, not a position, so removing rows behind it changes nothing — this is the case where `OFFSET` pagination would silently skip one row per deletion |
+| F9 | + | **Delete a row on a page not yet fetched** | that row is simply absent | no *other* row skipped or duplicated; the walk completes normally |
+
+**Why deletion is the sharper pagination test.** Creating a row mid-walk (F6) shifts the head of the list,
+which keyset pagination is immune to by construction. Deleting rows *behind* the cursor is the case that
+breaks offset pagination outright — every deletion shifts the window and a row is skipped at each
+subsequent boundary. F8 is therefore the case that demonstrates the choice of cursor pagination was
+load-bearing rather than stylistic. See §5 for the one situation where our implementation is still
+vulnerable.
 
 ---
 
@@ -187,7 +196,7 @@ gate (group A) is positive-only by nature — there is no meaningful "negative" 
 | Client-side validation | B1 | B2, B3, B4 |
 | UI updates dynamically | B1, C1, D1 | C7, D5 (rollback) |
 | **Required E2E critical flow** | **C1** (create → PENDING → RUNNING) | C7 |
-| Performance at scale | F1–F4, F6, F7 | F5, E8 |
+| Performance at scale | F1–F4, F6–F9 | F5, E8 |
 | `make test` from clean | A1, A2, A3, A4 | — |
 
 ---
@@ -196,6 +205,15 @@ gate (group A) is positive-only by nature — there is no meaningful "negative" 
 
 Stated rather than hidden — each is a deliberate scope call, not an oversight.
 
+- **Deletion inside a `created_at` tie group can still skip a row.** Verified against DRF 3.15.2: the
+  cursor predicate is built from `self.ordering[0]` alone (`created_at`), and rows sharing that value are
+  paged with an integer `offset`. Our `-id` tiebreaker makes the SQL `ORDER BY` total — which is what
+  guarantees deterministic ordering — but it never reaches the cursor. So if two jobs share a `created_at`
+  to the microsecond and one is deleted between page fetches, the offset lands one row further along and a
+  row is skipped. F8 and F9 cover the dominant non-tie case; this residual is documented rather than
+  fixed, because `created_at` is microsecond-precision `auto_now_add` and collisions require two inserts
+  in the same microsecond. The real fix is a `CursorPagination` subclass encoding a composite
+  `(created_at, id)` position — noted in the README as the hardening step.
 - **No load/soak testing.** F7 measures single-request latency against a seeded 250k-row table; it is not a
   concurrency benchmark.
 - **C9 (concurrency) is a two-in-flight check, not a stress test.** It proves the row lock serializes

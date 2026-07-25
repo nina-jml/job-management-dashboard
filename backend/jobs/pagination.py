@@ -23,6 +23,17 @@ class JobCursorPagination(CursorPagination):
     # Must match Job.Meta.ordering. The `-id` tiebreaker makes the ordering
     # total, which keyset pagination requires for correctness: with ties, rows
     # can be skipped or repeated across page boundaries (TEST_PLAN case F2).
+    #
+    # Known limitation, verified against DRF 3.15.2: the cursor predicate is
+    # built from `ordering[0]` alone — here `created_at` — and rows sharing that
+    # value are paged with an integer offset rather than by the tiebreaker. So
+    # `-id` makes the SQL ORDER BY total but never reaches the cursor itself. If
+    # two jobs share a `created_at` to the microsecond and one is deleted
+    # between page fetches, the offset lands a row further along and one row is
+    # skipped. `created_at` is microsecond-precision auto_now_add, so a
+    # collision needs two inserts in the same microsecond; the exposure is
+    # accepted and documented rather than fixed. The fix, if this ever mattered,
+    # is an override encoding a composite (created_at, id) position.
     ordering = ("-created_at", "-id")
 
     page_size_query_param = "page_size"

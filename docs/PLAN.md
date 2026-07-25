@@ -191,10 +191,12 @@ Row disappears without refresh and stays gone after reload. Any confirm step is 
 requests, slow responses, optimistic rollback, and recovery once the route is unblocked.
 
 ### Slice 10 — Scale: pagination, filter, search
-**S: M** · **Spec:** `10-pagination-scale` · **Cases:** F1–F7 · **Validation: T2 + latency measurement**
+**S: M** · **Spec:** `10-pagination-scale` · **Cases:** F1–F9 · **Validation: T2 + latency measurement**
 
 Seed a large dataset (`make seed N=250000`), load-more/infinite scroll, server-side status filter,
-debounced search. Virtualize if rendered row count warrants it. F7's measured numbers go in the README.
+debounced search. F8/F9 mutate the list *during* a walk — deleting rows behind the cursor is the case
+that breaks offset pagination and that keyset pagination is immune to.
+ Virtualize if rendered row count warrants it. F7's measured numbers go in the README.
 
 ### Slice 11 — Delivery
 **S: M** · **Spec:** full suite · **Validation: T3 ×2** (warm, then fully pruned)
