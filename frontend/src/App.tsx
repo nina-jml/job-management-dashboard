@@ -1,11 +1,17 @@
 import { useState } from "react";
 
 import { useJobs } from "./hooks/useJobs";
-import { statusErrorMessage, useCreateJob, useStatusChange } from "./hooks/useJobMutations";
+import {
+  statusErrorMessage,
+  useCreateJob,
+  useDeleteJob,
+  useStatusChange,
+} from "./hooks/useJobMutations";
 import { JobList } from "./components/JobList";
 import { CreateJobForm } from "./components/CreateJobForm";
+import { ConfirmDeleteDialog } from "./components/ConfirmDeleteDialog";
 import { ErrorBanner } from "./components/ErrorBanner";
-import { STATUS_LABELS, STATUS_TYPES, type StatusType } from "./api/types";
+import { STATUS_LABELS, STATUS_TYPES, type Job, type StatusType } from "./api/types";
 import { ApiError } from "./api/client";
 
 export function App() {
@@ -20,6 +26,16 @@ export function App() {
   const createJob = useCreateJob();
   // Per-row state, not one mutation shared by every row — see useStatusChange.
   const { changeStatus, savingIds, errors: statusErrors, dismissError } = useStatusChange();
+  const {
+    deleteJob,
+    deletingIds,
+    errors: deleteErrors,
+    dismissError: dismissDeleteError,
+  } = useDeleteJob();
+
+  // The job awaiting confirmation. Held as the job rather than an id so the
+  // dialog can name it even after the row has left the list.
+  const [pendingDelete, setPendingDelete] = useState<Job | null>(null);
 
   const jobs = data?.pages.flatMap((page) => page.results) ?? [];
   const isFiltered = statuses.length > 0;
@@ -93,10 +109,17 @@ export function App() {
         )}
         {[...statusErrors].map(([id, failure]) => (
           <ErrorBanner
-            key={id}
+            key={`status-${id}`}
             error={failure}
             message={statusErrorMessage(failure)}
             onDismiss={() => dismissError(id)}
+          />
+        ))}
+        {[...deleteErrors].map(([id, failure]) => (
+          <ErrorBanner
+            key={`delete-${id}`}
+            error={failure}
+            onDismiss={() => dismissDeleteError(id)}
           />
         ))}
 
@@ -114,12 +137,14 @@ export function App() {
           isFiltered={isFiltered}
           isError={Boolean(error)}
           savingIds={savingIds}
+          deletingIds={deletingIds}
           onStatusChange={(job, status) => void changeStatus(job.id, status)}
           onRetry={(job) => {
             // Re-run is the same PATCH; the server decides whether PENDING is
             // reachable from where the job is (OPEN_QUESTIONS Q7, Q10).
             void changeStatus(job.id, "PENDING");
           }}
+          onDelete={setPendingDelete}
         />
 
         <div className="foot">
@@ -139,6 +164,22 @@ export function App() {
           </button>
         </div>
       </div>
+
+      {pendingDelete && (
+        <ConfirmDeleteDialog
+          job={pendingDelete}
+          isDeleting={deletingIds.has(pendingDelete.id)}
+          onCancel={() => setPendingDelete(null)}
+          onConfirm={() => {
+            const job = pendingDelete;
+            // Closed straight away rather than on completion: the row is
+            // removed optimistically, so leaving the dialog up would keep a
+            // job named on screen that the list no longer shows.
+            setPendingDelete(null);
+            void deleteJob(job.id);
+          }}
+        />
+      )}
     </main>
   );
 }

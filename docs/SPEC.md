@@ -204,7 +204,7 @@ default, so neither end needs a parsing rule. Omitting the parameter means unfil
 never a silently empty result. `IN` over the leading column of `(current_status, created_at, id)`
 stays a set of index range seeks, so selecting four statuses costs about what selecting one does.
 
-**Search by name is designed and deliberately not built** (see PLAN.md slice 10). It is not a text box:
+**Search by name is designed and deliberately not built** (see PLAN.md slice 9). It is not a text box:
 `name ILIKE '%combustor%'` **cannot use a btree index** — a leading wildcard forces a sequential scan,
 exactly the query shape that falls over on a multi-million-row table. Doing it honestly needs a trigram
 index:

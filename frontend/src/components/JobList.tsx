@@ -12,7 +12,9 @@ interface Props {
   isError?: boolean;
   onStatusChange?: (job: Job, status: StatusType) => void;
   onRetry?: (job: Job) => void;
+  onDelete?: (job: Job) => void;
   savingIds?: ReadonlySet<number>;
+  deletingIds?: ReadonlySet<number>;
 }
 
 /**
@@ -45,7 +47,9 @@ export function JobList({
   isError = false,
   onStatusChange,
   onRetry,
+  onDelete,
   savingIds,
+  deletingIds,
 }: Props) {
   const [expanded, setExpanded] = useState<number | null>(null);
 
@@ -84,7 +88,9 @@ export function JobList({
             onToggleHistory={() => setExpanded(expandedId === job.id ? null : job.id)}
             onStatusChange={onStatusChange ? (status) => onStatusChange(job, status) : undefined}
             onRetry={onRetry ? () => onRetry(job) : undefined}
+            onDelete={onDelete ? () => onDelete(job) : undefined}
             isSaving={savingIds?.has(job.id) ?? false}
+            isDeleting={deletingIds?.has(job.id) ?? false}
           />
           {expandedId === job.id && <StatusTimeline jobId={job.id} />}
         </div>

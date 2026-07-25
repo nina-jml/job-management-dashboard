@@ -11,7 +11,10 @@ interface Props {
   /** Slice 7 wires these; the row renders read-only until then. */
   onStatusChange?: (status: StatusType) => void;
   onRetry?: () => void;
+  /** Slice 8. Opens the confirmation dialog — it never deletes directly. */
+  onDelete?: () => void;
   isSaving?: boolean;
+  isDeleting?: boolean;
 }
 
 export function JobRow({
@@ -20,7 +23,9 @@ export function JobRow({
   onToggleHistory,
   onStatusChange,
   onRetry,
+  onDelete,
   isSaving = false,
+  isDeleting = false,
 }: Props) {
   const [editing, setEditing] = useState(false);
 
@@ -113,6 +118,24 @@ export function JobRow({
             Edit
           </button>
         ) : null}
+
+        {/*
+          Delete is offered in every state, terminal included: a completed job
+          is exactly the kind you eventually clear out. It is the only control
+          that survives `isTerminal`, which is why it sits outside the chain
+          above rather than in it.
+        */}
+        {onDelete && (
+          <button
+            type="button"
+            className="danger"
+            onClick={onDelete}
+            disabled={isSaving || isDeleting}
+            aria-label={`Delete ${job.name}`}
+          >
+            {isDeleting ? "Deleting…" : "Delete"}
+          </button>
+        )}
       </span>
     </div>
   );

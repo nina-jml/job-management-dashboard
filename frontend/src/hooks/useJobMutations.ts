@@ -147,6 +147,87 @@ export function useStatusChange() {
   return { changeStatus, savingIds, errors, dismissError };
 }
 
+/** Drop one job from every cached list page. */
+function removeCachedJob(queryClient: QueryClient, id: number) {
+  queryClient.setQueriesData<JobPages>({ queryKey: jobKeys.lists }, (cached) =>
+    !cached?.pages
+      ? cached
+      : {
+          ...cached,
+          pages: cached.pages.map((page) => ({
+            ...page,
+            results: page.results.filter((job) => job.id !== id),
+          })),
+        },
+  );
+}
+
+/**
+ * Delete a job, optimistically, with per-row state.
+ *
+ * Optimistic for the same reason the status change is: the row leaving
+ * immediately is the "UI updates dynamically" requirement, and the user has
+ * already committed through a confirmation dialog.
+ *
+ * Rollback restores a snapshot rather than re-inserting the row, because a
+ * removal has no single field to put back — position within the page matters.
+ * The cost is that a concurrent status change landing in the same instant would
+ * be reverted with it; the awaited invalidation below corrects that within one
+ * refetch, and two mutations on different rows inside the same tick is a much
+ * narrower case than the one this avoids.
+ */
+export function useDeleteJob() {
+  const queryClient = useQueryClient();
+  const [deletingIds, setDeletingIds] = useState<ReadonlySet<number>>(() => new Set());
+  const [errors, setErrors] = useState<ReadonlyMap<number, unknown>>(() => new Map());
+
+  const dismissError = useCallback((id: number) => {
+    setErrors((current) => {
+      const next = new Map(current);
+      next.delete(id);
+      return next;
+    });
+  }, []);
+
+  const deleteJob = useCallback(
+    async (id: number) => {
+      setDeletingIds((current) => new Set(current).add(id));
+      dismissError(id);
+
+      await queryClient.cancelQueries({ queryKey: jobKeys.lists });
+      const snapshot = queryClient.getQueriesData<JobPages>({ queryKey: jobKeys.lists });
+      removeCachedJob(queryClient, id);
+
+      try {
+        await jobsApi.remove(id);
+      } catch (failure) {
+        // A 404 is success. The user asked for this job to be gone and it is
+        // gone — someone else got there first. Surfacing an error for an
+        // outcome that matches the intent teaches people to ignore errors.
+        if (!(failure instanceof ApiError && failure.status === 404)) {
+          snapshot.forEach(([key, data]) => {
+            queryClient.setQueryData<JobPages>(key, data);
+          });
+          setErrors((current) => new Map(current).set(id, failure));
+        }
+      } finally {
+        // Its history describes a job that no longer exists either way: on
+        // success because it cascaded, on a 404 because it already had.
+        queryClient.removeQueries({ queryKey: jobKeys.history(id) });
+        await queryClient.invalidateQueries({ queryKey: jobKeys.lists });
+        setDeletingIds((current) => {
+          const next = new Set(current);
+          next.delete(id);
+          return next;
+        });
+      }
+    },
+    [queryClient, dismissError],
+  );
+
+  return { deleteJob, deletingIds, errors, dismissError };
+}
+
 /**
  * What to tell the user when a status change fails.
  *

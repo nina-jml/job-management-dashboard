@@ -16,7 +16,8 @@ Do not edit by hand — edit the ledger instead.
 | 2026-07-25 | 20:02 | 20:11 | 0h 08m | slice 6 — create form — slice 6 — create form; 77 e2e green |
 | 2026-07-25 | 20:11 | 20:50 | 0h 39m | slice 7 — status update — slice 7 — status update; T3 green, 87 e2e + 43 unit |
 | 2026-07-25 | 21:12 | 21:37 | 0h 25m | slice 7.5 — review fixes — tz on timestamps, multi-select filter, counts deferred to README; 96 e2e + 43 unit green (start reconstructed: timelog start hit a tool error) |
+| 2026-07-25 | 23:21 | 23:34 | 0h 13m | slice 8 — delete UI + client.ts fault cases — slice 8 — delete UI + E9/E10; 116 e2e green, no flakes |
 
-**Total logged: 2h 58m**
+**Total logged: 3h 11m**
 
 This total is the figure reported in `README.md` as time spent on the assignment.

@@ -97,8 +97,8 @@ It is part of each slice's definition of done, never retrofitted:
 | Client-side form validation | Slice 6 | blocks the request before it is sent |
 | Optimistic mutation + rollback on failure | Slice 7 | the UI never lies about persisted state |
 
-Slice 9 is therefore a **fault-injection sweep** — a spec that systematically proves the handling built in
-slices 1–8 holds under 500s, aborts, and slow responses — not the place where handling gets written.
+Slice 10 is therefore a **fault-injection pass** — a spec that systematically proves the handling built in
+slices 1–9 holds under 500s, aborts, and slow responses — not the place where handling gets written.
 
 ---
 
@@ -217,13 +217,14 @@ reachable. Optimistic update with rollback on failure.
 Row disappears without refresh and stays gone after reload. Any confirm step is an in-app dialog —
 **never `window.confirm`**, which blocks automation and would hang the suite.
 
-Also picks up the two `client.ts` error branches nothing currently exercises, pulled forward from slice 9:
+Also picks up the two `client.ts` error branches nothing previously exercised, pulled forward from the
+fault-injection pass:
 `route.abort()` (network failure → `ApiError(0)`, the thing that decides whether Retry appears) and a
 non-JSON body (a proxy error page). Every network call goes through that file, so its failure paths are
 worth covering before the last slice rather than after.
 
-### Slice 10 — Scale: pagination and filter
-**S: M** · **Spec:** `10-pagination-scale` · **Cases:** F1–F3, F5–F9 · **Validation: T2 + latency
+### Slice 9 — Scale: pagination and filter
+**S: M** · **Spec:** `09-pagination-scale` · **Cases:** F1–F3, F5–F9 · **Validation: T2 + latency
 measurement**
 
 Seed a large dataset (`make seed N=250000`), load-more/infinite scroll, and the server-side status filter
@@ -239,33 +240,31 @@ unindexed substring scan at 250k rows contradicts the performance claim the slic
 stays in the README as designed-not-built; the status filter already proves the server-side-narrowing
 point that search would have re-proved.
 
-### Slice 9 — Fault-injection pass — *runs after slice 10*
-**S: S** · **Spec:** `09-fault-injection` · **Cases:** the failure modes not already covered ·
+### Slice 10 — Fault-injection pass
+**S: S** · **Spec:** `10-fault-injection` · **Cases:** the failure modes not already covered ·
 **Validation: T2**
-
-Kept at number 9 so commits, specs and TEST_PLAN ids stay consistent with what shipped; it simply
-executes last of the build slices.
 
 **Renamed from "sweep"** to keep it distinct from the production *sweeper* the README describes — a
 scheduled reconciler for counter drift and orphaned rows. This slice is test code only: it ships no
 runtime behaviour.
 
-*Why it moved:* it is a verification slice, so nothing depends on it, and running it after slice 10 lets
-it cover slice 10's pagination surfaces in the same pass rather than needing a second one. Slice 10 is
-also the heaviest slice and the likeliest to overrun — putting this after it is a deliberate choice about
-what gets sacrificed if time runs out.
+*Why it sits here* rather than before the scale slice, where it was originally planned: it is a
+verification slice, so nothing depends on it, and running it after scale lets it cover the pagination
+surfaces in the same pass rather than needing a second one. Scale is also the heaviest remaining slice and
+the likeliest to overrun — putting this after it is a deliberate choice about what gets sacrificed if time
+runs out.
 
 *What is left of it,* given slices 5–7 and the slice 7.5 review fixes already cover B5, C9, E4 and E5, and
-D5 ships with slice 8:
+D5, E9 and E10 shipped with slice 8:
 
 - 500 on each verb, including the ones no spec has failed yet
 - recovery after a failed **mutation** (E5 covers list recovery only)
 - slow responses as a UI state rather than an apparent freeze
 
-The two `client.ts` branches nothing exercises — `route.abort()` (network failure → `ApiError(0)`, which
-drives the Retry button) and a non-JSON body (a proxy error page) — are **pulled forward into slice 8**.
-Every network call in the app goes through that file; its error branches should not stay untested until
-the final hours.
+The two `client.ts` branches nothing exercised — `route.abort()` (network failure → `ApiError(0)`, which
+drives the Retry button) and a non-JSON body (a proxy error page) — were **pulled forward into slice 8**
+as cases E9 and E10. Every network call in the app goes through that file; its error branches should not
+stay untested until the final hours.
 
 ### Slice 11 — Delivery
 **S: M** · **Spec:** full suite · **Validation: T3 ×2** (warm, then fully pruned)
@@ -280,11 +279,13 @@ README: setup, architecture, **performance writeup**, **prompt-engineering write
 - Slices 0–4 give a complete, demonstrable backend before any UI exists. If time runs short the fallback is
   a smaller UI, never a broken `make test`.
 - Slice 7 is the prompt's explicitly required E2E test. It ships mid-build, not at the end.
-- Slices 9 and 10 are where the "error handling" and "performance" criteria are actually won — not optional
-  polish. Execution order is **8 → 10 → 9 → 11**: slice 9 verifies rather than builds, so running it last
-  lets it cover slice 10's surfaces too, and makes it the deliberate casualty if time runs out. The two
-  `client.ts` failure branches were pulled forward into slice 8 so the most-depended-on module is not the
-  thing left untested.
+- Slices 9 and 10 are where the "performance" and "error handling" criteria are actually won — not optional
+  polish. They were originally planned the other way round; scale now comes first because the
+  fault-injection pass verifies rather than builds, so running it last lets it cover the pagination
+  surfaces too, and makes it the deliberate casualty if time runs out. The two `client.ts` failure branches
+  were pulled forward into slice 8 so the most-depended-on module is not the thing left untested.
+  **Numbering follows execution order** — a plan whose numbers disagree with the order it runs in is a plan
+  someone will misread.
 
 ## Test isolation
 

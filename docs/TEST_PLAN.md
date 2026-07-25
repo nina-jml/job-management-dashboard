@@ -24,14 +24,14 @@ Slice detail lives in [PLAN.md](./PLAN.md).
 | 5 | UI: list, badges, typed client, `ErrorBanner`, loading/empty states | `05-job-list-ui` | E1, E3, E6 | E4, E5 | T2 | ✅ done |
 | 6 | UI: create form + client-side validation | `06-create-job-ui` | B1, B6 | B2, B3, B4, B5 | T2 | ✅ done |
 | 7 | ⭐ UI: status update — **the prompt's required critical flow** | `07-update-status-ui` | C1, C2, C12, C15 | C9 | **T3** | ✅ done |
-| 8 | UI: delete (in-app confirm, never `window.confirm`), plus the two `client.ts` failure branches | `08-delete-job-ui` | D1, D6 | D5, E9, E10 | T2 | pending |
-| 10 | Scale: load-more, status filter, 250k seeded | `10-pagination-scale` | F1–F3, F6–F9 | F5 | T2 | pending |
-| 9 | Fault-injection pass: 500 per verb, slow responses, mutation recovery — **runs after 10** | `09-fault-injection` | — ‡ | the modes not already covered | T2 | pending |
+| 8 | UI: delete (in-app confirm, never `window.confirm`), plus the two `client.ts` failure branches | `08-delete-job-ui` | D1, D6 | D5, E9, E10 | T2 | ✅ done |
+| 9 | Scale: load-more, status filter, 250k seeded | `09-pagination-scale` | F1–F3, F6–F9 | F5 | T2 | pending |
+| 10 | Fault-injection pass: 500 per verb, slow responses, mutation recovery | `10-fault-injection` | — ‡ | the modes not already covered | T2 | pending |
 | 11 | README, performance + prompt-engineering writeups, final tidy | full suite | A1–A4 | — | **T3 ×2** | pending |
 
-‡ Slice 9 is negative by construction — its one positive assertion is recovery (E5: the error clears and
+‡ Slice 10 is negative by construction — its one positive assertion is recovery (E5: the error clears and
 a retry succeeds once the fault is removed). Slice 5 built the error-handling machinery (`ApiError`,
-`ErrorBanner`, query error states) and covers E4/E5 directly; slice 9 re-exercises them systematically
+`ErrorBanner`, query error states) and covers E4/E5 directly; slice 10 re-exercises them systematically
 alongside the verbs it injects into, so both rows legitimately list them.
 
 Slices 0–4 deliver a complete, demonstrable backend before any UI exists; slice 1.5 is the single gate
@@ -42,9 +42,9 @@ broken `make test`.
 E2E specs and 43 backend unit tests passing; T3 cold gate green from pruned Docker at slice 7, suite
 re-runnable without `make clean`, and all three images build on `linux/amd64`.
 
-Covered: A1–A4, B1–B4, B6, B7, C1–C8, C10, C11, C13–C17, D1–D4 (backend), plus E1, E3–E6, B5, C9, C12
-and F3/F3a–F3c from the UI slices. Outstanding: D5, D6 (slice 8), the systematic fault sweep (slice 9),
-and F1, F2, F4–F10 (slice 10).
+Covered: A1–A4, B1–B4, B6, B7, C1–C8, C10, C11, C13–C17, D1–D4 (backend), plus E1, E3–E10, B5, C9, C12,
+D5, D6 and F3/F3a–F3c from the UI slices. Outstanding: F1, F2, F5–F9 (slice 9) and the fault-injection
+pass (slice 10). F4 and F10 are struck — search is out of scope.
 
 ---
 
@@ -58,7 +58,7 @@ and no divergence between "the tests I run" and "the tests the evaluator runs".
 runs under `make test-backend`, deliberately outside the `make test` gate (see OPEN_QUESTIONS Q6).
 
 **Error handling is tested throughout, not at the end.** Handling is built into each slice's definition of
-done; the fault-injection sweep (slice 9) then systematically proves it holds. Negative cases appear in
+done; the fault-injection pass (slice 10) then systematically proves it holds. Negative cases appear in
 every functional group below, not clustered in one.
 
 **Isolation.** E2E runs against a real Postgres, so no spec may assume an empty database. Every spec
@@ -184,7 +184,7 @@ constraint (see SPEC.md §2).
 | E9 | − | Backend unreachable (`route.abort()`) | "Couldn't reach the server" + **Retry offered** | the `fetch` rejection branch in `client.ts`, which maps a network failure to `ApiError(status 0)` — the value `isRetryable` reads to decide whether Retry appears at all. Distinct from E5, which is an HTTP error the server did answer |
 | E10 | − | Response body is not JSON (proxy error page, truncated body) | a readable message, no parser error leaked | the other untested `client.ts` branch. A 502 from nginx is HTML, and `JSON.parse` throwing there must not surface as `Unexpected token '<'` |
 
-### F · Pagination & scale — `10-pagination-scale`
+### F · Pagination & scale — `09-pagination-scale`
 
 | ID | ± | Action | Expected behaviour | Validation |
 |---|---|---|---|---|

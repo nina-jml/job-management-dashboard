@@ -73,9 +73,9 @@ with the spec that proves it; full matrix in [`docs/TEST_PLAN.md`](docs/TEST_PLA
 | 5 | UI: job list, badges, loading/empty/error, status filter | `05-job-list-ui` | ✅ |
 | 6 | UI: create form + validation | `06-create-job-ui` | ✅ |
 | 7 | ⭐ UI: status update — the critical flow | `07-update-status-ui` | ✅ |
-| 8 | UI: delete | `08-delete-job-ui` | ⏳ |
-| 9 | Fault-injection sweep | `09-fault-injection` | ⏳ |
-| 10 | Scale: pagination and filter at 250k rows | `10-pagination-scale` | ⏳ |
+| 8 | UI: delete + in-app confirm, and the `client.ts` failure branches | `08-delete-job-ui` | ✅ |
+| 9 | Scale: pagination and filter at 250k rows | `09-pagination-scale` | ⏳ |
+| 10 | Fault-injection pass | `10-fault-injection` | ⏳ |
 | 11 | README, writeups, final cold gate | full suite | ⏳ |
 
 Currently green: **96 E2E specs, 43 backend unit tests.**
@@ -325,7 +325,7 @@ feature rather than in a single sweep at the end: the create form's 500 lives in
 rollback and its 404 case in `07`, the list's error banner and recovery in `05`. Faults are injected
 with Playwright's `page.route()` — no fault-injection library, no test-only code path in the app.
 
-A final **fault-injection pass** (`09-fault-injection`) runs after the scale slice rather than before
+A final **fault-injection pass** (`10-fault-injection`) runs after the scale slice rather than before
 it, so it covers the pagination surfaces in the same pass. It is verification only and ships no
 runtime code — worth saying explicitly, because the *sweeper* described under
 [counts by status](#counts-by-status--designed-deliberately-not-built) is a different thing entirely: a
