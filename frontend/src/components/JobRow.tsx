@@ -44,6 +44,7 @@ export function JobRow({
         type="button"
         className="ghost"
         aria-expanded={expanded}
+        aria-label={expanded ? "Hide status history" : "Show status history"}
         onClick={onToggleHistory}
       >
         {expanded ? "▾" : "▸"} History

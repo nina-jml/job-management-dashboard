@@ -76,12 +76,12 @@ test.describe("job list", () => {
   });
 
   test("expands a job's status history (E6)", async ({ page, request }) => {
-    const name = `${uniquePrefix("e6")}History Job`;
+    const name = `${uniquePrefix("e6")}Timeline Fixture`;
     const job = (await (await request.post("/api/jobs/", { data: { name } })).json()) as Job;
     await request.patch(`/api/jobs/${job.id}/`, { data: { status: "RUNNING" } });
 
     await page.goto("/");
-    await row(page, job.id).getByRole("button", { name: /History/ }).click();
+    await row(page, job.id).getByRole("button", { name: /status history/i }).click();
 
     const timeline = page.locator(".history");
     await expect(timeline).toBeVisible();
@@ -92,11 +92,11 @@ test.describe("job list", () => {
   });
 
   test("collapses the history again", async ({ page, request }) => {
-    const name = `${uniquePrefix("e6b")}Toggle Job`;
+    const name = `${uniquePrefix("e6b")}Toggle Fixture`;
     const job = (await (await request.post("/api/jobs/", { data: { name } })).json()) as Job;
 
     await page.goto("/");
-    const toggle = row(page, job.id).getByRole("button", { name: /History/ });
+    const toggle = row(page, job.id).getByRole("button", { name: /status history/i });
 
     await toggle.click();
     await expect(page.locator(".history")).toBeVisible();

@@ -21,9 +21,9 @@ Slice detail lives in [PLAN.md](./PLAN.md).
 | 2 | `POST /api/jobs/` + automatic PENDING, atomic, name validation | `02-create-job-api` | B1, B6, B7 | B2, B3, B4 | T2 | ✅ done |
 | 3 | `PATCH` appends event, projection guard, `select_for_update`, transition policy | `03-update-job-api` | C1, C5, C6, C10, C11, C14–C16 | C3, C4, C7, C8, C13, C17 | T2 | ✅ done |
 | 4 | `DELETE` + cascade, `GET /api/jobs/<id>/statuses/` | `04-delete-job-api` | D1, D2, D3 | D4 | **T3** | ✅ done |
-| 5 | UI: list, badges, typed client, `ErrorBanner`, loading/empty states | `05-job-list-ui` | E1, E3, E6 | — † | T2 | pending |
-| 6 | UI: create form + client-side validation | `06-create-job-ui` | B1 | B2, B3 | T2 | pending |
-| 7 | ⭐ UI: status update — **the prompt's required critical flow** | `07-update-status-ui` | C1, C2, C12 | C9 | **T3** | pending |
+| 5 | UI: list, badges, typed client, `ErrorBanner`, loading/empty states | `05-job-list-ui` | E1, E3, E6 | E4, E5 | T2 | ✅ done |
+| 6 | UI: create form + client-side validation | `06-create-job-ui` | B1, B6 | B2, B3, B4, B5 | T2 | ✅ done |
+| 7 | ⭐ UI: status update — **the prompt's required critical flow** | `07-update-status-ui` | C1, C2, C12, C15 | C9 | **T3** | ✅ done |
 | 8 | UI: delete (in-app confirm, never `window.confirm`) | `08-delete-job-ui` | D1, D6 | D5 | T2 | pending |
 | 9 | Fault-injection sweep: 500 per verb, abort, slow, rollback, recovery | `09-fault-injection` | — ‡ | B5, C9, D5, E4, E5 | T2 | pending |
 | 10 | Scale: load-more, status filter, debounced search, 250k seeded | `10-pagination-scale` | F1–F4, F6–F10 | F5 | T2 | pending |
@@ -37,7 +37,7 @@ Slices 0–4 deliver a complete, demonstrable backend before any UI exists; slic
 where both the design and this plan are signed off, reviewed while 2–4 continue. If time runs short the fallback is a smaller UI, never a
 broken `make test`.
 
-**Coverage as of slice 4 (backend complete, plus the CANCELLED state):** 57 E2E specs and 43 backend
+**Coverage as of slice 7 (backend + the required critical flow):** 87 E2E specs and 43 backend
 unit tests passing; T3 cold
 gate green from pruned Docker, suite re-runnable without `make clean`, and all three images build on
 `linux/amd64`. Cases A1–A4, B1–B4, B6, B7, C1–C8, C10, C11, C13–C17, D1–D4 covered; the rest are UI-facing.

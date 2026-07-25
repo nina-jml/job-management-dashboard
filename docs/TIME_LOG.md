@@ -14,7 +14,8 @@ Do not edit by hand — edit the ledger instead.
 | 2026-07-25 | 18:48 | 19:00 | 0h 11m | CANCELLED state — CANCELLED state — 57 e2e, 43 unit green |
 | 2026-07-25 | 19:37 | 20:02 | 0h 25m | review fixes + db port — slice 5 — job list UI; 67 e2e, 43 unit green |
 | 2026-07-25 | 20:02 | 20:11 | 0h 08m | slice 6 — create form — slice 6 — create form; 77 e2e green |
+| 2026-07-25 | 20:11 | 20:50 | 0h 39m | slice 7 — status update — slice 7 — status update; T3 green, 87 e2e + 43 unit |
 
-**Total logged: 1h 53m**
+**Total logged: 2h 33m**
 
 This total is the figure reported in `README.md` as time spent on the assignment.

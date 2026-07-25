@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 import { useJobs } from "./hooks/useJobs";
-import { useCreateJob } from "./hooks/useJobMutations";
+import { useCreateJob, useSetStatus } from "./hooks/useJobMutations";
 import { JobList } from "./components/JobList";
 import { CreateJobForm } from "./components/CreateJobForm";
 import { ErrorBanner } from "./components/ErrorBanner";
@@ -20,9 +20,13 @@ export function App() {
     useJobs(filters);
 
   const createJob = useCreateJob();
+  const statusMutation = useSetStatus();
 
   const jobs = data?.pages.flatMap((page) => page.results) ?? [];
   const isFiltered = status !== "ALL";
+
+  // The row whose status change is still in flight, for the "saving…" hint.
+  const savingJobId = statusMutation.isPending ? (statusMutation.variables?.id ?? null) : null;
 
   // A field-level rejection belongs beside the input, not in the page banner.
   const createBannerError =
@@ -67,6 +71,9 @@ export function App() {
         {createBannerError && (
           <ErrorBanner error={createBannerError} onDismiss={() => createJob.reset()} />
         )}
+        {statusMutation.error && (
+          <ErrorBanner error={statusMutation.error} onDismiss={() => statusMutation.reset()} />
+        )}
 
         <div className="row-head">
           <span>Job</span>
@@ -76,7 +83,22 @@ export function App() {
           <span className="col-actions">Actions</span>
         </div>
 
-        <JobList jobs={jobs} isLoading={isPending} isFiltered={isFiltered} />
+        <JobList
+          jobs={jobs}
+          isLoading={isPending}
+          isFiltered={isFiltered}
+          savingJobId={savingJobId}
+          onStatusChange={(job, status) => {
+            statusMutation.reset();
+            statusMutation.mutate({ id: job.id, status });
+          }}
+          onRetry={(job) => {
+            // Re-run is the same PATCH; the server decides whether PENDING is
+            // reachable from where the job is (OPEN_QUESTIONS Q7, Q10).
+            statusMutation.reset();
+            statusMutation.mutate({ id: job.id, status: "PENDING" });
+          }}
+        />
 
         <div className="foot">
           <span className="count">
