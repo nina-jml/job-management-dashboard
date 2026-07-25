@@ -337,7 +337,7 @@ read replicas, caching layers, cursor-based sync, partitioning `JobStatus` by ti
 
 Vite + React + TypeScript. Server state via TanStack Query (caching, invalidation, and error/loading states
 are the bulk of what this app does — hand-rolling that is more code, not less). Styling: CSS Modules or
-Tailwind, decided at slice 5.
+Tailwind, decided at slice 6 against the approved mockup.
 
 Components stay small and dumb: `JobList` → `JobRow` → `StatusBadge` / `StatusSelect` / `DeleteButton`;
 `CreateJobForm`; `ErrorBanner`. All API access goes through one typed `api/jobs.ts` client so error handling

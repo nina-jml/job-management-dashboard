@@ -1,7 +1,8 @@
 # Test Plan
 
-**Status: awaiting sign-off.** Slice 0 (the containerized test pipeline) ships first so this plan is
-reviewed against a working harness rather than in the abstract. Feature work starts after sign-off.
+**Status: awaiting sign-off at slice 5**, alongside the UI mockup. The containerized harness (slice 0), the
+backend (slices 1–4) and a clickable mockup all land first, so this plan is reviewed against working
+software rather than in the abstract. UI implementation — slices 6–12 — starts after sign-off.
 
 Related: [SPEC.md](./SPEC.md) · [PLAN.md](./PLAN.md) · [OPEN_QUESTIONS.md](./OPEN_QUESTIONS.md)
 
@@ -16,25 +17,25 @@ Slice detail lives in [PLAN.md](./PLAN.md).
 |---|---|---|---|---|---|---|
 | 0 | Walking skeleton: compose, Dockerfiles, Makefile, `/api/health/`, React shell | `00-smoke` | A1, A2, A4 | — | T3 | ✅ done |
 | 1 | Models, indexes, cursor-paginated `GET /api/jobs/`, error handler, seed command | `01-jobs-list-api` | E1, E2 | E7, E8 | T2 | ✅ done |
-| — | **Test plan sign-off** | — | — | — | — | ⏳ **awaiting review** |
 | 2 | `POST /api/jobs/` + automatic PENDING, atomic, name validation | `02-create-job-api` | B1, B6, B7 | B2, B3, B4 | T2 | pending |
 | 3 | `PATCH` appends event, projection guard, `select_for_update`, transition policy | `03-update-job-api` | C1, C3, C4, C8, C9, C10 | C5, C6 | T2 | pending |
 | 4 | `DELETE` + cascade, `GET /api/jobs/<id>/statuses/` | `04-delete-job-api` | D1, D2, D3 | D4 | **T3** | pending |
-| 4.5 | 🔍 **UI mockup & design sign-off** — every UI state on one static page, no backend | — | — | — | review gate | pending |
-| 5 | UI: list, badges, typed client, `ErrorBanner`, loading/empty states | `05-job-list-ui` | E1, E3, E6 | — † | T2 | pending |
-| 6 | UI: create form + client-side validation | `06-create-job-ui` | B1 | B2, B3 | T2 | pending |
-| 7 | ⭐ UI: status update — **the prompt's required critical flow** | `07-update-status-ui` | C1, C2 | C7 | **T3** | pending |
-| 8 | UI: delete (in-app confirm, never `window.confirm`) | `08-delete-job-ui` | D1, D6 | D5 | T2 | pending |
-| 9 | Fault-injection sweep: 500 per verb, abort, slow, rollback, recovery | `09-fault-injection` | — ‡ | B5, C7, D5, E4, E5 | T2 | pending |
-| 10 | Scale: load-more, status filter, debounced search, 250k seeded | `10-pagination-scale` | F1–F4, F6–F9 | F5 | T2 | pending |
-| 11 | README, performance + prompt-engineering writeups, final tidy | full suite | A1–A4 | — | **T3 ×2** | pending |
+| **5** | 🔍 **UI mockup — design & test-plan sign-off.** Every UI state on one page, no backend | — | — | — | review gate | ✅ built · ⏳ **awaiting sign-off** |
+| 6 | UI: list, badges, typed client, `ErrorBanner`, loading/empty states | `06-job-list-ui` | E1, E3, E6 | — † | T2 | pending |
+| 7 | UI: create form + client-side validation | `07-create-job-ui` | B1 | B2, B3 | T2 | pending |
+| 8 | ⭐ UI: status update — **the prompt's required critical flow** | `08-update-status-ui` | C1, C2 | C7 | **T3** | pending |
+| 9 | UI: delete (in-app confirm, never `window.confirm`) | `09-delete-job-ui` | D1, D6 | D5 | T2 | pending |
+| 10 | Fault-injection sweep: 500 per verb, abort, slow, rollback, recovery | `10-fault-injection` | — ‡ | B5, C7, D5, E4, E5 | T2 | pending |
+| 11 | Scale: load-more, status filter, debounced search, 250k seeded | `11-pagination-scale` | F1–F4, F6–F9 | F5 | T2 | pending |
+| 12 | README, performance + prompt-engineering writeups, final tidy | full suite | A1–A4 | — | **T3 ×2** | pending |
 
-† Slice 5 builds the error-handling machinery (`ApiError`, `ErrorBanner`, query error states); the failure
-paths it enables are exercised systematically in slice 9. ‡ Slice 9 is negative by construction — its one
+† Slice 6 builds the error-handling machinery (`ApiError`, `ErrorBanner`, query error states); the failure
+paths it enables are exercised systematically in slice 10. ‡ Slice 10 is negative by construction — its one
 positive assertion is recovery (E5: the error clears and a retry succeeds once the fault is removed).
 
-Slices 0–4 deliver a complete, demonstrable backend before any UI exists — if time runs short the fallback
-is a smaller UI, never a broken `make test`.
+Slices 0–4 deliver a complete, demonstrable backend before any UI exists; slice 5 is the single gate where
+both the design and this plan are signed off. If time runs short the fallback is a smaller UI, never a
+broken `make test`.
 
 **Coverage as of slice 1:** 12 E2E specs and 14 backend unit tests passing; infrastructure gate A1–A4 green.
 
@@ -50,7 +51,7 @@ and no divergence between "the tests I run" and "the tests the evaluator runs".
 runs under `make test-backend`, deliberately outside the `make test` gate (see OPEN_QUESTIONS Q6).
 
 **Error handling is tested throughout, not at the end.** Handling is built into each slice's definition of
-done; the fault-injection sweep (slice 9) then systematically proves it holds. Negative cases appear in
+done; the fault-injection sweep (slice 10) then systematically proves it holds. Negative cases appear in
 every functional group below, not clustered in one.
 
 **Isolation.** E2E runs against a real Postgres, so no spec may assume an empty database. Every spec
@@ -65,7 +66,7 @@ up after itself. The suite must pass twice in a row without `make clean` (case A
 |---|---|---|---|
 | **T1 — lightweight** | `make test-spec SPEC=03-update-job-api` — one spec against the already-running stack, no rebuild. Plus `make test-backend` during backend slices. | seconds | after every meaningful change, inside a slice |
 | **T2 — suite** | `make test` — rebuild + full Playwright suite | ~1–2 min | at the close of **every** slice; catches cross-slice regressions |
-| **T3 — cold gate** | `make clean && make build && make test` from pruned Docker, plus a `--platform linux/amd64` build | several min | slices **0, 4, 7, 11**, and any slice touching Docker, compose, the Makefile, or dependencies |
+| **T3 — cold gate** | `make clean && make build && make test` from pruned Docker, plus a `--platform linux/amd64` build | several min | slices **0, 4, 8, 12**, and any slice touching Docker, compose, the Makefile, or dependencies |
 
 T1→T2 is a **scope** axis: one spec versus the whole suite. T2→T3 is **not** — they run identical
 assertions. What changes is the starting state, so T3 validates the *build and provision path* rather than
@@ -91,7 +92,7 @@ it is the evaluation not starting.
 | A3 | + | Re-run suite without `clean` | passes again | isolation holds; no leftover-state dependency |
 | A4 | + | Build `--platform linux/amd64` | succeeds | prompt targets "modern Linux or Mac" |
 
-### B · Create job — `02-create-job-api`, `06-create-job-ui`
+### B · Create job — `02-create-job-api`, `07-create-job-ui`
 
 | ID | ± | Action | Expected behaviour | Validation |
 |---|---|---|---|---|
@@ -103,7 +104,7 @@ it is the evaluation not starting.
 | B6 | + | Unicode / emoji / quotes / `<script>` in name | persists verbatim | renders escaped — no injection, no mangling |
 | B7 | + | Two jobs, identical names | both created | independently addressable; no uniqueness constraint |
 
-### C · Update status — `03-update-job-api`, `07-update-status-ui`
+### C · Update status — `03-update-job-api`, `08-update-status-ui`
 
 | ID | ± | Action | Expected behaviour | Validation |
 |---|---|---|---|---|
@@ -124,7 +125,7 @@ because they are *meant* to diverge: any save moves `updated_at`, but only a sta
 `current_status_at`. Guarding on `updated_at` would let a rename make a later legitimate status event look
 stale and be silently dropped.
 
-### D · Delete — `04-delete-job-api`, `08-delete-job-ui`
+### D · Delete — `04-delete-job-api`, `09-delete-job-ui`
 
 | ID | ± | Action | Expected behaviour | Validation |
 |---|---|---|---|---|
@@ -142,7 +143,7 @@ that no longer resolves, which needs direct database access; hence D3 as a backe
 cascade is enforced by Django's ORM collector, **not** by an `ON DELETE CASCADE` clause on the Postgres
 constraint (see SPEC.md §2).
 
-### E · List & read — `01-jobs-list-api`, `05-job-list-ui`
+### E · List & read — `01-jobs-list-api`, `06-job-list-ui`
 
 | ID | ± | Action | Expected behaviour | Validation |
 |---|---|---|---|---|
@@ -155,7 +156,7 @@ constraint (see SPEC.md §2).
 | E7 | − | Unknown job id | 404 | body uses the standard `{detail, errors}` shape |
 | E8 | − | `page_size` above the cap | clamped to 100 | a client cannot ask for the whole table |
 
-### F · Pagination & scale — `10-pagination-scale`
+### F · Pagination & scale — `11-pagination-scale`
 
 | ID | ± | Action | Expected behaviour | Validation |
 |---|---|---|---|---|
