@@ -138,6 +138,25 @@ It also reverses an earlier decision. Under the permissive model, `JobStatus` wa
 no observers — only deliberate transitions — so a duplicate entry is timeline noise rather than a data
 point. TEST_PLAN case C6.
 
+### Q9 · Sequential integer ids, or UUIDs?
+
+**Decision: sequential `BigAutoField`.** Readability wins here, and it is an operational argument rather
+than an aesthetic one: "job 3284917 is stuck" is a usable thing to say in a support ticket, a log line or
+across a desk. `018f2c9a-7b3e-7cd1-9f42-6a1b8e5d0c37` is not.
+
+Capacity was never the question — `BigAutoField` reaches 9.2 × 10¹⁸, which is not the binding constraint at
+any plausible scale. Sequential ids are also *better* for this design: monotonic inserts append to the
+right-hand edge of the btree instead of scattering, and `id` is the tiebreaker that makes the list ordering
+total (SPEC §1).
+
+**The trade-off, stated plainly.** Sequential ids are enumerable. With no auth (assumption A1), anyone can
+walk `/api/jobs/1, /2, /3`, and the magnitude of an id leaks roughly how many jobs the platform has ever
+run — a real business-intelligence leak for a multi-tenant product.
+
+That matters once tenancy and auth exist, not before. If it ever does, the answer is **UUIDv7** rather than
+UUIDv4: v7 is time-ordered, so it stays non-enumerable *without* destroying the insert locality and index
+size that v4 costs. Noted in the README as the hardening step.
+
 ---
 
 ## 2. Assumed without asking — documented in the README, not built

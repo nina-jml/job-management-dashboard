@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
 from .models import Job, JobStatus
+from .services import create_job
 
 
 class JobStatusSerializer(serializers.ModelSerializer):
@@ -42,3 +43,9 @@ class JobSerializer(serializers.ModelSerializer):
         if not name:
             raise serializers.ValidationError("This field may not be blank.")
         return name
+
+    def create(self, validated_data: dict) -> Job:
+        # Routed through the service so the job and its initial PENDING status
+        # are written in one transaction. A job must never exist with an empty
+        # log, or `current_status` would be a projection of nothing.
+        return create_job(name=validated_data["name"])

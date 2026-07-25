@@ -1,6 +1,6 @@
 from django.db import connection
 from django.http import JsonResponse
-from rest_framework import viewsets
+from rest_framework import mixins, viewsets
 
 from .models import Job
 from .serializers import JobSerializer
@@ -26,12 +26,17 @@ def health(request):
     return JsonResponse({"status": "ok", "database": "ok"})
 
 
-class JobViewSet(viewsets.ReadOnlyModelViewSet):
-    """Read access to jobs.
+class JobViewSet(
+    mixins.ListModelMixin,
+    mixins.RetrieveModelMixin,
+    mixins.CreateModelMixin,
+    viewsets.GenericViewSet,
+):
+    """Jobs: list, retrieve, create.
 
-    Write endpoints (POST/PATCH/DELETE) arrive in slices 2–4 with their specs;
-    keeping them out until then means every slice ships tested rather than
-    merely present.
+    Composed from explicit mixins rather than `ModelViewSet` so each verb
+    arrives with the slice that tests it — update in slice 3, destroy in
+    slice 4. An untested endpoint is never reachable.
     """
 
     queryset = Job.objects.all()

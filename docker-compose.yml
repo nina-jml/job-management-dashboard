@@ -71,6 +71,11 @@ services:
       frontend:
         condition: service_healthy
     volumes:
+      # Specs are mounted, not just baked in at build time, so adding or
+      # editing one does not require rebuilding the image — that is what keeps
+      # `make test-spec` a seconds-long check (TEST_PLAN tier T1). The image
+      # still contains them, so the mount only ever shadows identical content.
+      - ./e2e/tests:/e2e/tests
       # Reports land on the host so failures are inspectable after the
       # container exits.
       - ./e2e/playwright-report:/e2e/playwright-report

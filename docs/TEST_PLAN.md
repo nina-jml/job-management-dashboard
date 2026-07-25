@@ -1,9 +1,8 @@
 # Test Plan
 
-**Status: awaiting sign-off at slice 1.5**, alongside the UI mockup. The containerized harness (slice 0),
-the models and list endpoint (slice 1) and a clickable mockup land first, so this plan is reviewed against
-working software rather than in the abstract. It blocks UI implementation (slices 5–11); the remaining
-backend slices 2–4 proceed in parallel.
+**Status: ✅ signed off 2026-07-25** by Nina, together with the UI mockup and design. Reviewed against a
+working harness, the models and list endpoint, and a clickable mockup rather than in the abstract.
+Slices 2–11 build against this plan.
 
 Related: [SPEC.md](./SPEC.md) · [PLAN.md](./PLAN.md) · [OPEN_QUESTIONS.md](./OPEN_QUESTIONS.md)
 
@@ -18,7 +17,7 @@ Slice detail lives in [PLAN.md](./PLAN.md).
 |---|---|---|---|---|---|---|
 | 0 | Walking skeleton: compose, Dockerfiles, Makefile, `/api/health/`, React shell | `00-smoke` | A1, A2, A4 | — | T3 | ✅ done |
 | 1 | Models, indexes, cursor-paginated `GET /api/jobs/`, error handler, seed command | `01-jobs-list-api` | E1, E2 | E7, E8 | T2 | ✅ done |
-| **1.5** | 🔍 **UI mockup — design & test-plan sign-off.** Every UI state on one page, no backend | — | — | — | review gate | ✅ built · ⏳ **awaiting sign-off** |
+| **1.5** | 🔍 **UI mockup — design & test-plan sign-off.** Every UI state on one page, no backend | — | — | — | review gate | ✅ **signed off** |
 | 2 | `POST /api/jobs/` + automatic PENDING, atomic, name validation | `02-create-job-api` | B1, B6, B7 | B2, B3, B4 | T2 | pending |
 | 3 | `PATCH` appends event, projection guard, `select_for_update`, transition policy | `03-update-job-api` | C1, C5, C6, C10, C11 | C3, C4, C7, C8, C13 | T2 | pending |
 | 4 | `DELETE` + cascade, `GET /api/jobs/<id>/statuses/` | `04-delete-job-api` | D1, D2, D3 | D4 | **T3** | pending |
@@ -247,5 +246,5 @@ Stated rather than hidden — each is a deliberate scope call, not an oversight.
 |---|---|
 | Author | Claude (agent) |
 | Reviewer | Nina |
-| Date | _pending_ |
-| Decision | ☐ approved ☐ approved with changes ☐ revise |
+| Date | 2026-07-25 |
+| Decision | ☑ **approved** — test plan, UI mockup and design all signed off together at slice 1.5 |
