@@ -6,6 +6,11 @@ const FORMATTER = new Intl.DateTimeFormat(undefined, {
   day: "2-digit",
   hour: "2-digit",
   minute: "2-digit",
+  // Seconds matter most in the status history: a job can go PENDING → RUNNING
+  // inside the same minute, and at minute resolution those entries read as
+  // simultaneous — which is exactly the ordering question the log exists to
+  // answer.
+  second: "2-digit",
   hour12: false,
   // Named explicitly: a job dashboard is read by people in several time zones,
   // and "13:50" with no zone is the kind of ambiguity that gets an incident

@@ -227,7 +227,10 @@
      left-aligned so ids, counts and badges form clean vertical edges. Actions
      are the one right-aligned column, so Delete lands in the same place on
      every row regardless of what precedes it. */
-  .row, .row-head {
+  /* `.skel-row` shares the grid but deliberately not the `.row` class: specs
+     locate rows with `.rows .row`, and a skeleton answering to that selector
+     lets an assertion pass against placeholder markup before data has landed. */
+  .row, .row-head, .skel-row {
     display: grid;
     grid-template-columns: minmax(0, 1fr) 7.5rem 6rem 8rem 12.5rem;
     align-items: center;

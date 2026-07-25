@@ -76,6 +76,14 @@ class JobViewSet(
         """
         queryset = super().get_queryset()
 
+        # Only the collection is filtered. `get_object()` reads this same
+        # queryset, so narrowing it on a detail route turns a list filter into
+        # an existence predicate: `GET /api/jobs/5/?status=RUNNING` would 404 a
+        # PENDING job 5 instead of returning it, and `/statuses/?status=bogus`
+        # would 400 about a filter that endpoint does not even have.
+        if self.action != "list":
+            return queryset
+
         # Drop empties so a stray `?status=` is "no filter", not "no results".
         statuses = [s for s in self.request.query_params.getlist("status") if s]
         if statuses:

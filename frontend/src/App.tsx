@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 import { useJobs } from "./hooks/useJobs";
-import { useCreateJob, useSetStatus } from "./hooks/useJobMutations";
+import { statusErrorMessage, useCreateJob, useStatusChange } from "./hooks/useJobMutations";
 import { JobList } from "./components/JobList";
 import { CreateJobForm } from "./components/CreateJobForm";
 import { ErrorBanner } from "./components/ErrorBanner";
@@ -18,7 +18,8 @@ export function App() {
     useJobs(filters);
 
   const createJob = useCreateJob();
-  const statusMutation = useSetStatus();
+  // Per-row state, not one mutation shared by every row — see useStatusChange.
+  const { changeStatus, savingIds, errors: statusErrors, dismissError } = useStatusChange();
 
   const jobs = data?.pages.flatMap((page) => page.results) ?? [];
   const isFiltered = statuses.length > 0;
@@ -33,9 +34,6 @@ export function App() {
         ? current.filter((each) => each !== status)
         : [...current, status],
     );
-
-  // The row whose status change is still in flight, for the "saving…" hint.
-  const savingJobId = statusMutation.isPending ? (statusMutation.variables?.id ?? null) : null;
 
   // A field-level rejection belongs beside the input, not in the page banner.
   const createBannerError =
@@ -93,9 +91,14 @@ export function App() {
         {createBannerError && (
           <ErrorBanner error={createBannerError} onDismiss={() => createJob.reset()} />
         )}
-        {statusMutation.error && (
-          <ErrorBanner error={statusMutation.error} onDismiss={() => statusMutation.reset()} />
-        )}
+        {[...statusErrors].map(([id, failure]) => (
+          <ErrorBanner
+            key={id}
+            error={failure}
+            message={statusErrorMessage(failure)}
+            onDismiss={() => dismissError(id)}
+          />
+        ))}
 
         <div className="row-head">
           <span>Job</span>
@@ -109,22 +112,23 @@ export function App() {
           jobs={jobs}
           isLoading={isPending}
           isFiltered={isFiltered}
-          savingJobId={savingJobId}
-          onStatusChange={(job, status) => {
-            statusMutation.reset();
-            statusMutation.mutate({ id: job.id, status });
-          }}
+          isError={Boolean(error)}
+          savingIds={savingIds}
+          onStatusChange={(job, status) => void changeStatus(job.id, status)}
           onRetry={(job) => {
             // Re-run is the same PATCH; the server decides whether PENDING is
             // reachable from where the job is (OPEN_QUESTIONS Q7, Q10).
-            statusMutation.reset();
-            statusMutation.mutate({ id: job.id, status: "PENDING" });
+            void changeStatus(job.id, "PENDING");
           }}
         />
 
         <div className="foot">
           <span className="count">
-            {jobs.length} loaded{hasNextPage ? "" : " · no more results"}
+            {/* "0 loaded · no more results" after a failed fetch is the same
+                false claim the empty state makes: we do not know what is there. */}
+            {error && jobs.length === 0
+              ? "Couldn't load jobs"
+              : `${jobs.length} loaded${hasNextPage ? "" : " · no more results"}`}
           </span>
           <button
             type="button"

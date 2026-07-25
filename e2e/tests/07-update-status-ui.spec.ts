@@ -118,8 +118,17 @@ test.describe("update job status", () => {
     const job = await makeJob(request, "hist");
     await page.goto("/");
 
+    // The badge moves optimistically, so it is not evidence the server has the
+    // change yet. Waiting on the PATCH response is — otherwise this asserts on
+    // server state that may still be in flight, which is precisely the kind of
+    // pass-warm/fail-cold race the T3 tier exists to catch.
+    const patched = page.waitForResponse(
+      (response) =>
+        response.request().method() === "PATCH" && response.url().includes(`/api/jobs/${job.id}/`),
+    );
     await setStatus(page, job.id, "Running");
     await expect(row(page, job.id).locator(".status")).toHaveText(/Running/);
+    await patched;
 
     const { results } = await history(request, job.id);
     // Append-only: the PENDING entry is still there.
@@ -190,5 +199,114 @@ test.describe("update job status", () => {
     await expect(row(page, job.id).locator(".status")).toHaveText(/Running/);
 
     expect(errors).toEqual([]);
+  });
+
+  test("still updates after a history panel has been opened", async ({ page, request }) => {
+    const job = await makeJob(request, "hist-first");
+
+    await page.goto("/");
+
+    // Expanding caches the history query, whose value is a plain page with no
+    // `pages` array. An optimistic writer scoped to the whole "jobs" key tree
+    // reaches that entry and throws — and a throwing onMutate means the
+    // mutation function never runs, so the PATCH is never sent at all while the
+    // badge still flashes the new status. The suite stayed green because no
+    // spec opened a history panel before changing a status.
+    await row(page, job.id).getByRole("button", { name: /status history/i }).click();
+    await expect(page.locator(".history")).toBeVisible();
+
+    const patched: string[] = [];
+    page.on("request", (req) => {
+      if (req.method() === "PATCH") patched.push(req.url());
+    });
+
+    await setStatus(page, job.id, "Running");
+    await expect(row(page, job.id).locator(".status")).toHaveText(/Running/);
+
+    expect(patched.some((url) => url.includes(`/api/jobs/${job.id}/`))).toBe(true);
+    // Persisted, not merely optimistic.
+    await page.reload();
+    await expect(row(page, job.id).locator(".status")).toHaveText(/Running/);
+  });
+
+  test("the row stays busy until the server's answer lands", async ({ page, request }) => {
+    const job = await makeJob(request, "settling");
+
+    await page.goto("/");
+    await expect(row(page, job.id)).toBeVisible();
+
+    await page.route(`**/api/jobs/${job.id}/`, async (route) => {
+      if (route.request().method() !== "PATCH") return route.continue();
+      await new Promise((resolve) => setTimeout(resolve, 600));
+      await route.continue();
+    });
+
+    await setStatus(page, job.id, "Cancelled");
+
+    // CANCELLED is terminal, but `allowed_transitions` and `can_retry` still
+    // describe PENDING until the refetch lands — they are the server's answer
+    // and are deliberately not guessed. A row that looked settled in that gap
+    // would offer moves the server is about to reject, contradicting C12's
+    // claim that illegal transitions are unreachable rather than just refused.
+    await expect(row(page, job.id).getByRole("button", { name: /Edit status/ })).toBeDisabled();
+
+    // Once reconciled, the row offers what CANCELLED actually permits: a
+    // re-run — it is terminal *and* retryable — and no status editor at all.
+    await expect(row(page, job.id).getByRole("button", { name: /Re-run/ })).toBeVisible();
+    await expect(row(page, job.id).getByRole("button", { name: /Edit status/ })).toHaveCount(0);
+  });
+
+  test("a second change does not swallow the first's error", async ({ page, request }) => {
+    const first = await makeJob(request, "row-first");
+    const second = await makeJob(request, "row-second");
+
+    await page.goto("/");
+    await expect(row(page, first.id)).toBeVisible();
+    await expect(row(page, second.id)).toBeVisible();
+
+    // The first fails, slowly; the second succeeds meanwhile.
+    await page.route(`**/api/jobs/${first.id}/`, async (route) => {
+      if (route.request().method() !== "PATCH") return route.continue();
+      await new Promise((resolve) => setTimeout(resolve, 800));
+      await route.fulfill({
+        status: 500,
+        contentType: "application/json",
+        body: JSON.stringify({ detail: "Internal server error.", errors: {} }),
+      });
+    });
+
+    await setStatus(page, first.id, "Running");
+    await setStatus(page, second.id, "Running");
+
+    await expect(row(page, second.id).locator(".status")).toHaveText(/Running/);
+
+    // One shared mutation observer reports a single aggregate state, so
+    // starting the second change took the first's error with it: its badge
+    // rolled back and nothing said why.
+    await expect(
+      page.getByRole("alert").filter({ hasText: /Internal server error/i }),
+    ).toBeVisible();
+    await expect(row(page, first.id).locator(".status")).toHaveText(/Pending/);
+  });
+
+  test("acting on a job deleted elsewhere does not resurrect it", async ({ page, request }) => {
+    const job = await makeJob(request, "deleted-elsewhere");
+
+    await page.goto("/");
+    await expect(row(page, job.id)).toBeVisible();
+
+    // Gone from under the loaded page: another tab, or `make test` reseeding.
+    // `staleTime` means the browser has no idea yet, so this is a wide window
+    // rather than a narrow race.
+    expect((await request.delete(`/api/jobs/${job.id}/`)).status()).toBe(204);
+
+    await setStatus(page, job.id, "Running");
+
+    // Rolling back to the snapshot would put a row the server says is gone back
+    // on screen — a recovery as wrong as the failure. It disappears instead.
+    await expect(row(page, job.id)).toHaveCount(0);
+    // And the message says what happened, not the ORM's "No Job matches the
+    // given query."
+    await expect(page.getByRole("alert").filter({ hasText: /no longer exists/i })).toBeVisible();
   });
 });

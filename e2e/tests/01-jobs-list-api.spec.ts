@@ -203,6 +203,34 @@ test.describe("GET /api/jobs/?status=", () => {
     expect(body.errors.status!.join(" ")).toContain("BANANA");
   });
 
+  test("does not narrow detail routes", async ({ request }) => {
+    const made = await fixtures(request, "api-detail");
+    const pending = made.PENDING!;
+
+    // get_object() reads the same queryset as the list. If the filter were not
+    // scoped to the collection it would become an existence predicate here, and
+    // a PENDING job asked for under ?status=RUNNING would 404 instead of
+    // returning the job that plainly exists.
+    const detail = await request.get(`/api/jobs/${pending.id}/?status=RUNNING`);
+    expect(detail.status()).toBe(200);
+    expect(((await detail.json()) as Job).id).toBe(pending.id);
+
+    // Same for a PATCH that carries the parameter along.
+    const patched = await request.patch(`/api/jobs/${pending.id}/?status=RUNNING`, {
+      data: { name: `${pending.name} renamed` },
+    });
+    expect(patched.status()).toBe(200);
+  });
+
+  test("the history endpoint ignores a status filter it does not have", async ({ request }) => {
+    const made = await fixtures(request, "api-hist");
+
+    // Validation belongs to the list filter. Rejecting here would 400 about a
+    // filter this endpoint never offered.
+    const response = await request.get(`/api/jobs/${made.PENDING!.id}/statuses/?status=bogus`);
+    expect(response.status()).toBe(200);
+  });
+
   test("one bad value among good ones still fails, and names it", async ({ request }) => {
     const response = await request.get("/api/jobs/?status=RUNNING&status=BANANA");
 

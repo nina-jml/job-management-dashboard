@@ -312,6 +312,22 @@ dependencies resolving from a warm cache. That class of defect passes warm and f
 E2E runs against a real Postgres, so no spec assumes an empty database. Each namespaces its
 fixtures with a run-unique prefix, which is what makes the suite re-runnable without `make clean`.
 
+### Failure paths are tested per slice, not deferred to one pass
+
+Error handling is part of each slice's definition of done, so the specs that prove it ship with the
+feature rather than in a single sweep at the end: the create form's 500 lives in `06`, the optimistic
+rollback and its 404 case in `07`, the list's error banner and recovery in `05`. Faults are injected
+with Playwright's `page.route()` — no fault-injection library, no test-only code path in the app.
+
+A final **fault-injection pass** (`09-fault-injection`) runs after the scale slice rather than before
+it, so it covers search and pagination failures in the same pass. It is verification only and ships no
+runtime code — worth saying explicitly, because the *sweeper* described under
+[counts by status](#counts-by-status--designed-deliberately-not-built) is a different thing entirely: a
+scheduled production reconciler, designed and deliberately not built.
+
+If the pass has to be cut for time, the per-slice failure specs still stand on their own; what is lost
+is the systematic per-verb coverage, not the error handling itself.
+
 ---
 
 ## Design decisions

@@ -217,11 +217,10 @@ reachable. Optimistic update with rollback on failure.
 Row disappears without refresh and stays gone after reload. Any confirm step is an in-app dialog —
 **never `window.confirm`**, which blocks automation and would hang the suite.
 
-### Slice 9 — Fault-injection sweep
-**S: M** · **Spec:** `09-fault-injection` · **Cases:** B5, C9, D5, E4, E5 · **Validation: T2**
-
-`page.route()` fault injection proves the handling built in slices 1–8 holds: 500 on each verb, aborted
-requests, slow responses, optimistic rollback, and recovery once the route is unblocked.
+Also picks up the two `client.ts` error branches nothing currently exercises, pulled forward from slice 9:
+`route.abort()` (network failure → `ApiError(0)`, the thing that decides whether Retry appears) and a
+non-JSON body (a proxy error page). Every network call goes through that file, so its failure paths are
+worth covering before the last slice rather than after.
 
 ### Slice 10 — Scale: pagination, filter, search
 **S: M** · **Spec:** `10-pagination-scale` · **Cases:** F1–F10 · **Validation: T2 + latency measurement**
@@ -230,6 +229,34 @@ Seed a large dataset (`make seed N=250000`), load-more/infinite scroll, server-s
 debounced search. F8/F9 mutate the list *during* a walk — deleting rows behind the cursor is the case
 that breaks offset pagination and that keyset pagination is immune to.
  Virtualize if rendered row count warrants it. F7's measured numbers go in the README.
+
+### Slice 9 — Fault-injection pass — *runs after slice 10*
+**S: S** · **Spec:** `09-fault-injection` · **Cases:** the failure modes not already covered ·
+**Validation: T2**
+
+Kept at number 9 so commits, specs and TEST_PLAN ids stay consistent with what shipped; it simply
+executes last of the build slices.
+
+**Renamed from "sweep"** to keep it distinct from the production *sweeper* the README describes — a
+scheduled reconciler for counter drift and orphaned rows. This slice is test code only: it ships no
+runtime behaviour.
+
+*Why it moved:* it is a verification slice, so nothing depends on it, and running it after slice 10 lets
+it cover search and pagination failures in the same pass rather than needing a second one. Slice 10 is
+also the heaviest slice and the likeliest to overrun — putting this after it is a deliberate choice about
+what gets sacrificed if time runs out.
+
+*What is left of it,* given slices 5–7 and the slice 7.5 review fixes already cover B5, C9, E4 and E5, and
+D5 ships with slice 8:
+
+- 500 on each verb, including the ones no spec has failed yet
+- recovery after a failed **mutation** (E5 covers list recovery only)
+- slow responses as a UI state rather than an apparent freeze
+
+The two `client.ts` branches nothing exercises — `route.abort()` (network failure → `ApiError(0)`, which
+drives the Retry button) and a non-JSON body (a proxy error page) — are **pulled forward into slice 8**.
+Every network call in the app goes through that file; its error branches should not stay untested until
+the final hours.
 
 ### Slice 11 — Delivery
 **S: M** · **Spec:** full suite · **Validation: T3 ×2** (warm, then fully pruned)
@@ -245,7 +272,10 @@ README: setup, architecture, **performance writeup**, **prompt-engineering write
   a smaller UI, never a broken `make test`.
 - Slice 7 is the prompt's explicitly required E2E test. It ships mid-build, not at the end.
 - Slices 9 and 10 are where the "error handling" and "performance" criteria are actually won — not optional
-  polish.
+  polish. Execution order is **8 → 10 → 9 → 11**: slice 9 verifies rather than builds, so running it last
+  lets it cover slice 10's surfaces too, and makes it the deliberate casualty if time runs out. The two
+  `client.ts` failure branches were pulled forward into slice 8 so the most-depended-on module is not the
+  thing left untested.
 
 ## Test isolation
 

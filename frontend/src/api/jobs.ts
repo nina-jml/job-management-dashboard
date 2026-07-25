@@ -39,6 +39,16 @@ export const jobsApi = {
 
   remove: (id: number): Promise<void> => api.delete(`/jobs/${id}/`),
 
-  history: (id: number): Promise<Page<StatusEntry>> =>
-    api.get<Page<StatusEntry>>(`/jobs/${id}/statuses/?page_size=200`),
+  /**
+   * One page of a job's log. `cursor` is an opaque `next` from a previous page.
+   *
+   * Paged rather than fetched whole: a job polled by a scheduler accumulates
+   * events without limit, and the previous single request at the paginator's
+   * cap silently dropped everything past the first 200 — on the one endpoint
+   * whose stated purpose is proving the log is complete.
+   */
+  history: (id: number, cursor?: string): Promise<Page<StatusEntry>> =>
+    api.get<Page<StatusEntry>>(
+      cursor ? cursor.replace(/^.*\/api/, "") : `/jobs/${id}/statuses/?page_size=100`,
+    ),
 };

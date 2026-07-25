@@ -22,7 +22,12 @@ interface Props {
 function validate(name: string): string | null {
   const trimmed = name.trim();
   if (!trimmed) return "Enter a name for the job.";
-  if (trimmed.length > MAX_NAME_LENGTH) {
+  // Counted in code points, not code units. `String.length` counts a surrogate
+  // pair as two, while Django's CharField(max_length=200) and Postgres both
+  // count it as one character — so `.length` would block names the API accepts,
+  // and the B4 spec's own contract means the request is never sent to find out.
+  // Any emoji-bearing name past ~100 characters hits this.
+  if ([...trimmed].length > MAX_NAME_LENGTH) {
     return `Names are limited to ${MAX_NAME_LENGTH} characters.`;
   }
   return null;
@@ -31,8 +36,17 @@ function validate(name: string): string | null {
 export function CreateJobForm({ onCreate, isSubmitting, error }: Props) {
   const [name, setName] = useState("");
   const [clientError, setClientError] = useState<string | null>(null);
+  // The exact value the server rejected. The field error belongs to that value,
+  // not to the form — without this the message outlives the input that earned
+  // it, marking a freshly typed name invalid before it has been submitted. The
+  // banner that would otherwise call `reset()` is deliberately not rendered for
+  // field errors, so nothing else ever clears it.
+  const [rejectedName, setRejectedName] = useState<string | null>(null);
 
-  const serverError = error instanceof ApiError ? error.fieldError("name") : undefined;
+  const serverError =
+    error instanceof ApiError && name.trim() === rejectedName
+      ? error.fieldError("name")
+      : undefined;
   const message = clientError ?? serverError;
 
   async function handleSubmit(event: FormEvent) {
@@ -46,12 +60,15 @@ export function CreateJobForm({ onCreate, isSubmitting, error }: Props) {
     }
 
     setClientError(null);
+    const submitted = name.trim();
     try {
-      await onCreate(name.trim());
+      await onCreate(submitted);
       // Cleared only on success — a failed create must not lose what was typed.
       setName("");
+      setRejectedName(null);
     } catch {
       // Surfaced through `error`; the field keeps its value.
+      setRejectedName(submitted);
     }
   }
 

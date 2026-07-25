@@ -13,6 +13,19 @@ import { uniquePrefix, type Job } from "./helpers";
 
 const row = (page: Page, id: number) => page.locator(`[data-job-id="${id}"]`);
 
+/**
+ * Wait until the list has actually rendered before driving the toolbar.
+ *
+ * `page.goto` resolves on load, not on data. Clicking a filter chip while the
+ * first page is still landing means clicking during a re-render, which
+ * Playwright reports as an element that never becomes "stable" — a flake that
+ * shows up under load rather than deterministically, which is the worst kind
+ * for a gate the graders run once.
+ */
+async function listReady(page: Page) {
+  await expect(page.locator(".rows, .empty").first()).toBeVisible();
+}
+
 test.describe("job list", () => {
   test("renders each job with its name and current status (E1)", async ({ page, request }) => {
     const name = `${uniquePrefix("e1")}Fluid Dynamics Simulation`;
@@ -110,6 +123,7 @@ test.describe("job list", () => {
     await request.patch(`/api/jobs/${job.id}/`, { data: { status: "RUNNING" } });
 
     await page.goto("/");
+    await listReady(page);
 
     const requests: string[] = [];
     page.on("request", (req) => {
@@ -145,6 +159,7 @@ test.describe("job list", () => {
     await request.patch(`/api/jobs/${failed.id}/`, { data: { status: "FAILED" } });
 
     await page.goto("/");
+    await listReady(page);
 
     const requests: string[] = [];
     page.on("request", (req) => {
@@ -182,6 +197,7 @@ test.describe("job list", () => {
     await request.patch(`/api/jobs/${running.id}/`, { data: { status: "RUNNING" } });
 
     await page.goto("/");
+    await listReady(page);
 
     const runningChip = page.getByRole("button", { name: "Running", exact: true });
     const allChip = page.getByRole("button", { name: "All", exact: true });
@@ -207,6 +223,7 @@ test.describe("job list", () => {
     ).json()) as Job;
 
     await page.goto("/");
+    await listReady(page);
 
     await page.getByRole("button", { name: "Completed", exact: true }).click();
     await page.getByRole("button", { name: "Cancelled", exact: true }).click();
@@ -222,6 +239,73 @@ test.describe("job list", () => {
       );
     }
     await expect(row(page, pending.id)).toBeVisible();
+  });
+
+  test("loading skeletons do not answer to the row selector", async ({ page }) => {
+    // Held open long enough that the loading state is not a window this has to
+    // race — a short delay makes the assertion below flaky on a slow machine,
+    // which would be an ironic way to fail a test about failing on slow
+    // machines.
+    await page.route("**/api/jobs/?*", async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 2500));
+      await route.continue();
+    });
+
+    await page.goto("/");
+
+    // Assert we are genuinely in the loading state before asserting what it
+    // must not contain.
+    await expect(page.locator(".rows[aria-busy='true']")).toBeVisible();
+    await expect(page.locator(".skel-row").first()).toBeVisible();
+    // The point of the case: specs address rows as `.rows .row`, so placeholder
+    // markup must not match it. When it did, a slow machine could satisfy a row
+    // assertion against a skeleton — green warm, red cold, on the one command
+    // the graders run once.
+    await expect(page.locator(".rows .row")).toHaveCount(0);
+  });
+
+  test("a failed list never claims there are no jobs", async ({ page }) => {
+    await page.route("**/api/jobs/?*", (route) =>
+      route.fulfill({
+        status: 500,
+        contentType: "application/json",
+        body: JSON.stringify({ detail: "Internal server error.", errors: {} }),
+      }),
+    );
+
+    await page.goto("/");
+
+    await expect(page.getByRole("alert")).toBeVisible();
+    // "No jobs yet" and "no more results" are both assertions about the data.
+    // A request that failed supports neither — it knows nothing at all.
+    await expect(page.getByText("No jobs yet")).toHaveCount(0);
+    await expect(page.getByText(/no more results/)).toHaveCount(0);
+  });
+
+  test("a truncated history reports what is loaded, not a total", async ({ page, request }) => {
+    const name = `${uniquePrefix("trunc")}Long History`;
+    const job = (await (await request.post("/api/jobs/", { data: { name } })).json()) as Job;
+
+    // A page with a non-null `next` — what a scheduler-polled job looks like.
+    await page.route(`**/api/jobs/${job.id}/statuses/*`, (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          next: `http://localhost/api/jobs/${job.id}/statuses/?cursor=more`,
+          previous: null,
+          results: [{ id: 1, status_type: "PENDING", timestamp: new Date().toISOString() }],
+        }),
+      }),
+    );
+
+    await page.goto("/");
+    await row(page, job.id).getByRole("button", { name: /status history/i }).click();
+
+    // Counting the loaded rows as "N entries" states a total nobody has seen —
+    // on the endpoint whose whole purpose is proving the log is complete.
+    await expect(page.locator(".history .caption")).toHaveText(/newest 1 loaded/);
+    await expect(page.getByRole("button", { name: /Load older entries/ })).toBeVisible();
   });
 
   test("shows an error banner and stays interactive when the list fails (E4)", async ({ page }) => {

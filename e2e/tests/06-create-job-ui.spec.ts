@@ -161,9 +161,57 @@ test.describe("create job", () => {
     await nameField(page).fill(name);
     await submit(page).click();
 
-    const row = page.locator(".row").filter({ hasText: "«flow»" });
+    // Scoped to the run-unique name, not to "«flow»": that substring is shared
+    // by every previous run's fixture, so the loose locator matches several
+    // rows the moment the suite runs twice without `make clean` — the isolation
+    // property case A3 is meant to guarantee.
+    const row = page.locator(".row").filter({ hasText: name });
     await expect(row).toBeVisible();
     // Rendered as text: the markup is visible, not executed or stripped.
     await expect(row.locator("b").first()).toHaveText(name);
+  });
+
+  test("accepts a name the server counts as under the limit", async ({ page }) => {
+    // 120 astral-plane characters: 120 to Python and Postgres, 240 to
+    // String.length, which counts each surrogate pair twice. A code-unit check
+    // rejects this client-side — and per B4's own contract fires no request —
+    // so the user cannot create a name the API would have taken with a 201.
+    const name = `${uniquePrefix("astral")}${"🔥".repeat(120)}`;
+    expect([...name].length).toBeLessThan(200);
+    expect(name.length).toBeGreaterThan(200);
+
+    await page.goto("/");
+    await nameField(page).fill(name);
+    await submit(page).click();
+
+    await expect(page.locator(".row").filter({ hasText: name })).toBeVisible();
+  });
+
+  test("a server field error clears once the name is edited", async ({ page }) => {
+    await page.route("**/api/jobs/", async (route) => {
+      if (route.request().method() !== "POST") return route.continue();
+      await route.fulfill({
+        status: 400,
+        contentType: "application/json",
+        body: JSON.stringify({
+          detail: "Invalid input.",
+          errors: { name: ["That name is already taken."] },
+        }),
+      });
+    });
+
+    await page.goto("/");
+    await nameField(page).fill("Rejected Name");
+    await submit(page).click();
+
+    await expect(page.getByText("That name is already taken.")).toBeVisible();
+
+    // Nothing else can clear it: the page banner — and its Dismiss button, the
+    // only caller of reset() — is deliberately not rendered for field errors.
+    // So the message has to belong to the value that earned it, or it outlives
+    // the input and marks a freshly typed name invalid before submission.
+    await nameField(page).fill("A Different Name");
+    await expect(page.getByText("That name is already taken.")).toHaveCount(0);
+    await expect(nameField(page)).toHaveAttribute("aria-invalid", "false");
   });
 });

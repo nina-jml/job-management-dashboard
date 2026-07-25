@@ -9,7 +9,8 @@ import { formatTimestamp } from "../lib/format";
  * an N+1 against an endpoint nobody asked for.
  */
 export function StatusTimeline({ jobId }: { jobId: number }) {
-  const { data: entries, isPending, error } = useJobHistory(jobId, true);
+  const { data: entries, isPending, error, hasNextPage, fetchNextPage, isFetchingNextPage } =
+    useJobHistory(jobId, true);
 
   if (isPending) {
     return (
@@ -30,7 +31,14 @@ export function StatusTimeline({ jobId }: { jobId: number }) {
   return (
     <div className="history">
       <p className="caption">
-        Status history · {entries.length} {entries.length === 1 ? "entry" : "entries"} · newest first
+        {/*
+          With more to fetch, `entries.length` is how many are loaded, not how
+          many exist — saying "N entries" there would state a total we have not
+          seen. The wording only claims a total once the walk is exhausted.
+        */}
+        {hasNextPage
+          ? `Status history · newest ${entries.length} loaded · newest first`
+          : `Status history · ${entries.length} ${entries.length === 1 ? "entry" : "entries"} · newest first`}
       </p>
       <ol>
         {entries.map((entry) => (
@@ -40,6 +48,16 @@ export function StatusTimeline({ jobId }: { jobId: number }) {
           </li>
         ))}
       </ol>
+      {hasNextPage && (
+        <button
+          type="button"
+          className="ghost"
+          disabled={isFetchingNextPage}
+          onClick={() => void fetchNextPage()}
+        >
+          {isFetchingNextPage ? "Loading…" : "Load older entries"}
+        </button>
+      )}
     </div>
   );
 }
