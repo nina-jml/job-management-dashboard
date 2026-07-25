@@ -14,26 +14,40 @@ Related: [SPEC.md](./SPEC.md) · [TEST_PLAN.md](./TEST_PLAN.md) · [OPEN_QUESTIO
 
 ```mermaid
 flowchart LR
-    subgraph host["docker compose"]
+    user(["<b>Browser</b><br/>localhost:8080"])
+
+    subgraph runtime["docker compose — the running application (make up)"]
         direction LR
-        fe["<b>frontend</b><br/>nginx:alpine<br/>static Vite build<br/>+ /api reverse proxy<br/>:8080"]
-        be["<b>backend</b><br/>gunicorn + Django<br/>DRF ViewSet<br/>:8000"]
+        fe["<b>frontend</b><br/>nginx:alpine<br/>serves the Vite build<br/>+ reverse-proxies /api<br/>:80"]
+        be["<b>backend</b><br/>gunicorn + Django + DRF<br/>:8000"]
         db[("<b>db</b><br/>postgres:16-alpine<br/>:5432")]
-        e2e["<b>e2e</b><br/>node:22-bookworm<br/>+ chromium<br/><i>run-once profile</i>"]
     end
-    user(["Browser"]) -->|":8080"| fe
+
+    subgraph testing["compose profile 'test' — started only by make test, then exits"]
+        e2e["<b>e2e — Playwright runner</b><br/>node:22-bookworm + Chromium<br/>runs e2e/tests/*.spec.ts"]
+    end
+
+    user --> fe
     fe -->|"/api/* proxy"| be
     be -->|"psycopg"| db
-    e2e -.->|"UI specs"| fe
-    e2e -.->|"API specs<br/>(request fixture)"| fe
+
+    e2e -.->|"<b>UI specs</b><br/>drive Chromium against<br/>the real app"| fe
+    e2e -.->|"<b>API specs</b><br/>request fixture, same origin"| fe
 
     classDef svc fill:#1e293b,stroke:#475569,color:#e2e8f0
-    class fe,be,db,e2e svc
+    classDef test fill:#1e1b4b,stroke:#6366f1,color:#e2e8f0
+    class fe,be,db svc
+    class e2e test
 ```
 
-nginx proxying `/api` means the browser and Playwright both see a **single origin** — no CORS config, and
-no API base URL baked in at build time. The e2e container drives everything through that same origin, so
-the tests exercise the real proxy path rather than a shortcut around it.
+**`e2e` is the Playwright test container** — the E2E suite packaged as a service, behind a `test` profile
+so `make up` never starts it. `make test` builds it, runs it once against the live stack, and it exits with
+the suite's status code; that is what keeps `make test` self-contained on a machine with only make, docker
+and bash.
+
+It drives the app through the same nginx origin the browser uses — API specs included — so the tests
+exercise the real request path, proxy and all. That single origin is also why there is no CORS config
+anywhere and no API base URL baked in at build time.
 
 The status write is the one piece of non-obvious logic, so it gets its own diagram:
 

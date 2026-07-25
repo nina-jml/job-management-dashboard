@@ -10,27 +10,45 @@ Related: [PLAN.md](./PLAN.md) · [TEST_PLAN.md](./TEST_PLAN.md)
 
 ```mermaid
 flowchart LR
-    subgraph host["docker compose"]
+    user(["<b>Browser</b><br/>localhost:8080"])
+
+    subgraph runtime["docker compose — the running application (make up)"]
         direction LR
-        fe["<b>frontend</b><br/>nginx:alpine<br/>static Vite build<br/>+ /api reverse proxy<br/>:80"]
-        be["<b>backend</b><br/>gunicorn + Django<br/>DRF ViewSet<br/>:8000"]
+        fe["<b>frontend</b><br/>nginx:alpine<br/>serves the Vite build<br/>+ reverse-proxies /api<br/>:80"]
+        be["<b>backend</b><br/>gunicorn + Django + DRF<br/>:8000"]
         db[("<b>db</b><br/>postgres:16-alpine<br/>:5432")]
-        e2e["<b>e2e</b><br/>node:22-bookworm<br/>+ chromium<br/><i>run-once profile</i>"]
     end
-    user(["Browser<br/>localhost:8080"]) --> fe
+
+    subgraph testing["compose profile 'test' — started only by make test, then exits"]
+        e2e["<b>e2e — Playwright runner</b><br/>node:22-bookworm + Chromium<br/>runs e2e/tests/*.spec.ts"]
+    end
+
+    user --> fe
     fe -->|"/api/* proxy"| be
     be -->|"psycopg"| db
-    e2e -.->|"UI specs"| fe
-    e2e -.->|"API specs<br/>(request fixture)"| fe
+
+    e2e -.->|"<b>UI specs</b><br/>drive Chromium against<br/>the real app"| fe
+    e2e -.->|"<b>API specs</b><br/>request fixture, same origin"| fe
 
     classDef svc fill:#1e293b,stroke:#475569,color:#e2e8f0
-    class fe,be,db,e2e svc
+    classDef test fill:#1e1b4b,stroke:#6366f1,color:#e2e8f0
+    class fe,be,db svc
+    class e2e test
 ```
 
-nginx proxying `/api` gives the browser and Playwright a **single origin** — no CORS configuration, and no
-API base URL baked in at build time, so the same image runs anywhere. The e2e container drives everything
-through that same origin, meaning the tests exercise the real request path rather than a shortcut around
-it.
+**`e2e` is the Playwright test container** — the E2E suite itself, packaged as a service so it runs on the
+compose network with no host dependencies beyond Docker. It sits behind a `test` profile, so `make up`
+never starts it; `make test` builds it, runs it once against the live stack, and it exits with the suite's
+status code. That is what makes `make test` self-contained on a machine that has only make, docker, and
+bash.
+
+It drives the app through **the same nginx origin the browser uses** — including the API specs, which go
+through the `/api` proxy rather than talking to Django directly. The tests therefore exercise the real
+request path, proxy included, instead of a shortcut around it.
+
+nginx proxying `/api` is also what gives the browser and Playwright a **single origin**: no CORS
+configuration anywhere, and no API base URL baked in at build time, so the same image runs in any
+environment.
 
 ### Data model
 
