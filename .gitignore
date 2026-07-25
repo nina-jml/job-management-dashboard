@@ -1,0 +1,22 @@
+# Time tracker transient state (the ledger docs/time_log.tsv IS committed)
+docs/.timelog.active
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+backend/staticfiles/
+
+# Node
+node_modules/
+frontend/dist/
+
+# Playwright
+e2e/playwright-report/
+e2e/test-results/
+
+# Local env
+.env
+
+# OS
+.DS_Store
