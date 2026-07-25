@@ -6,3 +6,4 @@ start_epoch	end_epoch	start_iso	end_iso	label
 1784998907	1785000237	2026-07-25T17:01:47Z	2026-07-25T17:23:57Z	slice 4 — DELETE + cascade + history — slice 4 — DELETE + cascade + history; T3 cold gate green
 1785005293	1785005299	2026-07-25T18:48:13Z	2026-07-25T18:48:19Z	CANCELLED state — paused — CANCELLED under discussion
 1785005318	1785006018	2026-07-25T18:48:38Z	2026-07-25T19:00:18Z	CANCELLED state — CANCELLED state — 57 e2e, 43 unit green
+1785008222	1785009730	2026-07-25T19:37:02Z	2026-07-25T20:02:10Z	review fixes + db port — slice 5 — job list UI; 67 e2e, 43 unit green

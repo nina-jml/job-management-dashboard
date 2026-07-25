@@ -12,7 +12,8 @@ Do not edit by hand — edit the ledger instead.
 | 2026-07-25 | 17:01 | 17:23 | 0h 22m | slice 4 — DELETE + cascade + history — slice 4 — DELETE + cascade + history; T3 cold gate green |
 | 2026-07-25 | 18:48 | 18:48 | 0h 00m | CANCELLED state — paused — CANCELLED under discussion |
 | 2026-07-25 | 18:48 | 19:00 | 0h 11m | CANCELLED state — CANCELLED state — 57 e2e, 43 unit green |
+| 2026-07-25 | 19:37 | 20:02 | 0h 25m | review fixes + db port — slice 5 — job list UI; 67 e2e, 43 unit green |
 
-**Total logged: 1h 19m**
+**Total logged: 1h 44m**
 
 This total is the figure reported in `README.md` as time spent on the assignment.

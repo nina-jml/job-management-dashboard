@@ -2,8 +2,9 @@ from django.db import connection
 from django.http import JsonResponse
 from rest_framework import mixins, viewsets
 from rest_framework.decorators import action
+from rest_framework.exceptions import ValidationError
 
-from .models import Job
+from .models import Job, StatusType
 from .pagination import JobStatusCursorPagination
 from .serializers import JobSerializer, JobStatusSerializer
 
@@ -51,6 +52,30 @@ class JobViewSet(
     queryset = Job.objects.all()
     serializer_class = JobSerializer
     http_method_names = ["get", "post", "patch", "delete", "head", "options"]
+
+    def get_queryset(self):
+        """Apply `?status=` server-side, across the whole table.
+
+        Filtering the loaded page in the browser would be a wrong answer
+        delivered quickly: at the scale this design targets, the matching rows
+        are usually not the ones already fetched (SPEC §2).
+
+        This is the query the `current_status` projection exists to serve — it
+        is an indexed column read, not a per-row subquery over the status log.
+        """
+        queryset = super().get_queryset()
+
+        status = self.request.query_params.get("status")
+        if status:
+            if status not in StatusType.values:
+                # Silently returning nothing would look like "no jobs match"
+                # rather than "that isn't a status".
+                raise ValidationError(
+                    {"status": [f"'{status}' is not a valid status."]}
+                )
+            queryset = queryset.filter(current_status=status)
+
+        return queryset
 
     @action(detail=True, methods=["get"], url_path="statuses")
     def statuses(self, request, pk=None):

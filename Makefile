@@ -36,7 +36,10 @@ test: ## Run the Playwright E2E suite (builds and starts the stack first)
 
 test-spec: ## Run one spec against the running stack, e.g. make test-spec SPEC=01-jobs-list-api
 	@test -n "$(SPEC)" || { echo "usage: make test-spec SPEC=<spec-name>"; exit 2; }
-	$(COMPOSE) run --rm e2e npx playwright test $(SPEC)
+	# Uses the dev overlay so running a spec does not reconcile the stack back to
+	# the base config and drop the host ports `make up` published. `make test`
+	# uses the base config on purpose and will drop them — run `make up` after.
+	$(COMPOSE_DEV) run --rm e2e npx playwright test $(SPEC)
 
 test-backend: ## Run backend unit tests (pytest-django), outside the make test gate
 	$(COMPOSE) up -d --wait db
