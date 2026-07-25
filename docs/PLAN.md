@@ -175,7 +175,7 @@ States it must show:
 | Status control | dropdown closed, dropdown open, update in flight (optimistic), rolled back after failure |
 | History | timeline collapsed, expanded |
 | Delete | button, in-app confirm dialog (never `window.confirm`), row-restored-after-failure |
-| Scale controls | status filter, search box, "load more" affordance, end-of-list |
+| Scale controls | status filter, "load more" affordance, end-of-list |
 
 *Why the gate exists:* a layout or interaction problem caught on a static page costs minutes. The same
 problem caught after slices 5–8 are wired through TanStack Query means unpicking components, tests and
@@ -222,13 +222,22 @@ Also picks up the two `client.ts` error branches nothing currently exercises, pu
 non-JSON body (a proxy error page). Every network call goes through that file, so its failure paths are
 worth covering before the last slice rather than after.
 
-### Slice 10 — Scale: pagination, filter, search
-**S: M** · **Spec:** `10-pagination-scale` · **Cases:** F1–F10 · **Validation: T2 + latency measurement**
+### Slice 10 — Scale: pagination and filter
+**S: M** · **Spec:** `10-pagination-scale` · **Cases:** F1–F3, F5–F9 · **Validation: T2 + latency
+measurement**
 
-Seed a large dataset (`make seed N=250000`), load-more/infinite scroll, server-side status filter,
-debounced search. F8/F9 mutate the list *during* a walk — deleting rows behind the cursor is the case
-that breaks offset pagination and that keyset pagination is immune to.
+Seed a large dataset (`make seed N=250000`), load-more/infinite scroll, and the server-side status filter
+that already shipped in slice 5. F8/F9 mutate the list *during* a walk — deleting rows behind the cursor
+is the case that breaks offset pagination and that keyset pagination is immune to.
  Virtualize if rendered row count warrants it. F7's measured numbers go in the README.
+
+**Search is out of scope** (cases F4 and F10 dropped). The assignment never asks for it, and building it
+properly is not a text box: it needs a `pg_trgm` extension migration and a GIN index, because
+`name ILIKE '%…%'` has a leading wildcard and cannot use a btree — the exact query shape that falls over
+at the scale this slice exists to demonstrate. Doing it badly would be worse than not doing it, since an
+unindexed substring scan at 250k rows contradicts the performance claim the slice is making. The analysis
+stays in the README as designed-not-built; the status filter already proves the server-side-narrowing
+point that search would have re-proved.
 
 ### Slice 9 — Fault-injection pass — *runs after slice 10*
 **S: S** · **Spec:** `09-fault-injection` · **Cases:** the failure modes not already covered ·
@@ -242,7 +251,7 @@ scheduled reconciler for counter drift and orphaned rows. This slice is test cod
 runtime behaviour.
 
 *Why it moved:* it is a verification slice, so nothing depends on it, and running it after slice 10 lets
-it cover search and pagination failures in the same pass rather than needing a second one. Slice 10 is
+it cover slice 10's pagination surfaces in the same pass rather than needing a second one. Slice 10 is
 also the heaviest slice and the likeliest to overrun — putting this after it is a deliberate choice about
 what gets sacrificed if time runs out.
 

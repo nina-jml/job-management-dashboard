@@ -25,7 +25,7 @@ Slice detail lives in [PLAN.md](./PLAN.md).
 | 6 | UI: create form + client-side validation | `06-create-job-ui` | B1, B6 | B2, B3, B4, B5 | T2 | ✅ done |
 | 7 | ⭐ UI: status update — **the prompt's required critical flow** | `07-update-status-ui` | C1, C2, C12, C15 | C9 | **T3** | ✅ done |
 | 8 | UI: delete (in-app confirm, never `window.confirm`), plus the two `client.ts` failure branches | `08-delete-job-ui` | D1, D6 | D5, E9, E10 | T2 | pending |
-| 10 | Scale: load-more, status filter, debounced search, 250k seeded | `10-pagination-scale` | F1–F4, F6–F10 | F5 | T2 | pending |
+| 10 | Scale: load-more, status filter, 250k seeded | `10-pagination-scale` | F1–F3, F6–F9 | F5 | T2 | pending |
 | 9 | Fault-injection pass: 500 per verb, slow responses, mutation recovery — **runs after 10** | `09-fault-injection` | — ‡ | the modes not already covered | T2 | pending |
 | 11 | README, performance + prompt-engineering writeups, final tidy | full suite | A1–A4 | — | **T3 ×2** | pending |
 
@@ -194,8 +194,8 @@ constraint (see SPEC.md §2).
 | F3a | + | Select a second status | list widens to the union | `?status=A&status=B`; a job in neither state stays excluded, so this is a union and not a widening to everything |
 | F3b | + | Deselect a selected status | that status drops out of the filter | the chip releases; deselecting the last one returns to unfiltered without touching "All" |
 | F3c | − | Unknown status value | 400 in the standard error shape | naming the bad value — returning an empty list would read as "no jobs match" rather than "that isn't a status" |
-| F10 | + | Search a term whose only match is far outside the first page | the match is returned | **the assertion that proves search is whole-table, not page-local.** Seed 250k, search a name known to live ~page 400, expect one result. A client-side filter returns nothing here |
-| F4 | + | Type a search burst | debounced | requests ≪ keystrokes |
+| ~~F4~~ | | ~~Type a search burst — debounced~~ | **dropped: search is out of scope** | the whole-table-narrowing property F10 would have proved is already proved by F3a, which asserts a filtered row set the loaded page could not have produced |
+| ~~F10~~ | | ~~Search a term whose only match is far outside the first page~~ | **dropped: search is out of scope** | building it honestly needs a `pg_trgm` migration and a GIN index — `ILIKE '%…%'` has a leading wildcard and cannot use a btree. An unindexed substring scan at 250k rows would contradict the performance claim this group exists to make |
 | F5 | − | Tampered / invalid cursor | 400 | graceful UI error, no crash |
 | F6 | + | Job created mid-pagination | walk stays consistent | no dupes/skips from the shifting head |
 | F7 | + | 250k rows seeded | page latency ≈ flat vs 100 rows | measured; the number goes in the README |

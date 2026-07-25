@@ -75,7 +75,7 @@ with the spec that proves it; full matrix in [`docs/TEST_PLAN.md`](docs/TEST_PLA
 | 7 | ⭐ UI: status update — the critical flow | `07-update-status-ui` | ✅ |
 | 8 | UI: delete | `08-delete-job-ui` | ⏳ |
 | 9 | Fault-injection sweep | `09-fault-injection` | ⏳ |
-| 10 | Scale: pagination, filter, search at 250k rows | `10-pagination-scale` | ⏳ |
+| 10 | Scale: pagination and filter at 250k rows | `10-pagination-scale` | ⏳ |
 | 11 | README, writeups, final cold gate | full suite | ⏳ |
 
 Currently green: **96 E2E specs, 43 backend unit tests.**
@@ -168,7 +168,7 @@ history worth auditing.
 
 | | |
 |---|---|
-| `GET /api/jobs/` | List, newest first, cursor-paginated. `?status=` (repeatable, OR-ed) and `?search=` are applied server-side across the whole table |
+| `GET /api/jobs/` | List, newest first, cursor-paginated. `?status=` (repeatable, OR-ed) is applied server-side across the whole table |
 | `POST /api/jobs/` | Create. The job and its initial `PENDING` status are written in one transaction |
 | `GET /api/jobs/<id>/` | Retrieve |
 | `PATCH /api/jobs/<id>/` | Rename and/or change status. `status` is a write-only instruction to append to the log |
@@ -204,7 +204,7 @@ and cursor pagination avoids both:
   for a number nobody reads. Cursor pagination has none.
 
 The trade-off, stated plainly: no "jump to page 47". For a feed-shaped dashboard that is the
-right trade — filter and search are how users actually narrow a large list.
+right trade — nobody navigates a large list by page number; they narrow it.
 
 **Composite indexes covering the exact `ORDER BY` and `WHERE`:**
 
@@ -217,14 +217,20 @@ right trade — filter and search are how users actually narrow a large list.
 `id` is the tiebreaker everywhere so the ordering is **total**. Without it, two rows sharing a
 timestamp can be skipped or repeated across page boundaries.
 
-**Filter and search run server-side, across the whole table** — never over the loaded page.
-Filtering client-side would mean searching "combustor" returns nothing when the match sits on
-page 400, and the user concludes the job does not exist: a wrong answer delivered quickly.
+**The status filter runs server-side, across the whole table** — never over the loaded page. Narrowing
+client-side would mean a job that matches on page 400 simply does not appear and the user concludes it
+does not exist: a wrong answer delivered quickly. The filter is repeatable and OR-ed
+(`?status=RUNNING&status=FAILED`), and `IN` over the leading column of the composite index stays a set
+of range seeks, so selecting four statuses costs about what selecting one does.
 
-That has an index cost worth naming. `name ILIKE '%combustor%'` **cannot use a btree index** — a
-leading wildcard forces a sequential scan, exactly the query shape that falls over at scale. The
-fix is a trigram index (`pg_trgm`, which ships with the `postgres:16` image, so it is a migration
-rather than a deployment prerequisite).
+**Search by name: designed, deliberately not built.** It was scoped out — the assignment does not ask
+for it, and it is not a text box. `name ILIKE '%combustor%'` **cannot use a btree index**: a leading
+wildcard forces a sequential scan, which is precisely the query shape that falls over at the scale this
+section is about. Doing it honestly means a `pg_trgm` extension migration and a GIN trigram index
+(`pg_trgm` ships with the `postgres:16` image, so it is a migration rather than a deployment
+prerequisite) — and even then, a highly unselective term still has to sort a large candidate set, so
+trigram makes substring search viable rather than free. An unindexed version would have contradicted the
+performance claim it was meant to support, so the analysis is here and the feature is not.
 
 **No N+1.** `current_status` is a column, so listing jobs touches one table. History is fetched
 only when a row is expanded.
@@ -320,7 +326,7 @@ rollback and its 404 case in `07`, the list's error banner and recovery in `05`.
 with Playwright's `page.route()` — no fault-injection library, no test-only code path in the app.
 
 A final **fault-injection pass** (`09-fault-injection`) runs after the scale slice rather than before
-it, so it covers search and pagination failures in the same pass. It is verification only and ships no
+it, so it covers the pagination surfaces in the same pass. It is verification only and ships no
 runtime code — worth saying explicitly, because the *sweeper* described under
 [counts by status](#counts-by-status--designed-deliberately-not-built) is a different thing entirely: a
 scheduled production reconciler, designed and deliberately not built.

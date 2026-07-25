@@ -185,30 +185,16 @@ an identical timestamp must still have a stable order or keyset pagination can s
 Django REST Framework, `ModelViewSet`-shaped, JSON only.
 
 ### `GET /api/jobs/`
-List jobs, newest first, **cursor-paginated**. `status` and `search` are both applied **server-side, across
-the whole table** — never to the loaded page.
+List jobs, newest first, **cursor-paginated**. `status` is applied **server-side, across the whole table**
+— never to the loaded page.
 
-That distinction is the difference between a working feature and a misleading one. Filtering a loaded page
-client-side means searching "combustor" returns nothing when the match sits on page 400, and the user
-concludes the job doesn't exist. At the scale this design targets, client-side filtering is not a cheaper
-version of search — it is a wrong answer delivered quickly.
-
-The cost is an index question. `name ILIKE '%combustor%'` **cannot use a btree index** — a leading wildcard
-makes it a sequential scan, which is exactly the query shape that falls over on a multi-million-row table.
-The fix is a trigram index:
-
-```sql
-CREATE EXTENSION IF NOT EXISTS pg_trgm;
-CREATE INDEX job_name_trgm_idx ON jobs_job USING gin (name gin_trgm_ops);
-```
-
-`pg_trgm` ships with the official `postgres:16` image, so this is a migration (`CreateExtension` +
-`AddIndex`), not a deployment prerequisite. Stated honestly: a *highly unselective* search still has to sort
-a large candidate set, so trigram makes substring search viable rather than free. Search results stay
-cursor-paginated, so the result set is never materialized in full.
+That distinction is the difference between a working feature and a misleading one. Narrowing a loaded page
+client-side means a job that matches on page 400 simply does not appear, and the user concludes it does not
+exist. At the scale this design targets, client-side narrowing is not a cheaper version of the feature — it
+is a wrong answer delivered quickly.
 
 ```
-GET /api/jobs/?status=RUNNING&status=FAILED&search=fluid&cursor=<opaque>&page_size=25
+GET /api/jobs/?status=RUNNING&status=FAILED&cursor=<opaque>&page_size=25
 ```
 
 `status` repeats to select several at once, and the values are OR-ed. Repetition rather than a
@@ -217,6 +203,23 @@ default, so neither end needs a parsing rule. Omitting the parameter means unfil
 "all" sentinel for the two sides to keep in agreement. An unrecognized value is a 400 naming it,
 never a silently empty result. `IN` over the leading column of `(current_status, created_at, id)`
 stays a set of index range seeks, so selecting four statuses costs about what selecting one does.
+
+**Search by name is designed and deliberately not built** (see PLAN.md slice 10). It is not a text box:
+`name ILIKE '%combustor%'` **cannot use a btree index** — a leading wildcard forces a sequential scan,
+exactly the query shape that falls over on a multi-million-row table. Doing it honestly needs a trigram
+index:
+
+```sql
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+CREATE INDEX job_name_trgm_idx ON jobs_job USING gin (name gin_trgm_ops);
+```
+
+`pg_trgm` ships with the official `postgres:16` image, so it is a migration (`CreateExtension` +
+`AddIndex`) rather than a deployment prerequisite — and stated honestly, a *highly unselective* term still
+has to sort a large candidate set, so trigram makes substring search viable rather than free. It was cut
+because the assignment does not ask for it and an unindexed version would contradict the very performance
+claim the scale slice exists to make. The status filter already demonstrates the server-side-narrowing
+property.
 
 ```json
 {
@@ -353,13 +356,13 @@ delete indexed on `job_id`. No `N+1` — the projection column means listing job
   it should be an approximation (`pg_class.reltuples`) on a separate, cached endpoint — not on the hot path.
 
 The trade-off, stated honestly: cursor pagination gives up "jump to page 47". For a feed-shaped dashboard
-that's the right trade; filter and search are how users actually narrow a million rows, so those get built
-instead.
+that's the right trade — nobody navigates a million rows by page number; they narrow. The status filter is
+what got built for that, server-side across the whole table.
 
 **Frontend.** Fetch one page at a time (default 25) with "load more"/infinite scroll. If the rendered list
 can grow past a few hundred rows in one session, virtualize it so DOM node count stays bounded regardless
-of how many rows have been loaded. Server-side filter + debounced search so narrowing never pulls the full
-set client-side. Optimistic updates on status change so the UI doesn't wait on a round trip.
+of how many rows have been loaded. A server-side status filter so narrowing never pulls the full set
+client-side. Optimistic updates on status change so the UI doesn't wait on a round trip.
 
 Scoping note: I'll *implement* the pagination/index/query work (it's cheap and it's the part that's real),
 and I'll *describe* the things that are genuinely out of scope for a few-hour build in the README —
