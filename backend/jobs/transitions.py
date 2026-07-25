@@ -62,10 +62,12 @@ def check(current: str, target: str) -> None:
     """
     if target not in ALLOWED[current]:
         if is_terminal(current):
+            # Derived, not hardcoded to COMPLETED: the next terminal
+            # non-retryable state must not inherit copy about a completed job.
             hint = (
                 " Re-run it to start again."
                 if can_retry(current)
-                else " A completed job cannot be changed; create a new job instead."
+                else f" A {current.lower()} job cannot be changed; create a new job instead."
             )
             raise TransitionError(f"{current} is a terminal state.{hint}")
         legal = ", ".join(sorted(ALLOWED[current]))

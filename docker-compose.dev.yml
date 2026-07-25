@@ -1,0 +1,29 @@
+# Host ports, for looking at things by hand.
+#
+# Overlaid by `make up`, and deliberately not by `make test`: the gate must not
+# be able to fail because a port is already taken on someone else's machine.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+#
+# Everything binds to 127.0.0.1 only — none of this should be reachable off the
+# machine it runs on.
+
+services:
+  backend:
+    ports:
+      # Direct API access, bypassing the nginx proxy. Handy for curl; the app
+      # itself always goes through :8080.
+      - "127.0.0.1:${BACKEND_PORT:-8000}:8000"
+
+  frontend:
+    ports:
+      - "127.0.0.1:${FRONTEND_PORT:-8080}:80"
+
+  db:
+    ports:
+      # Postgres, for a GUI client (TablePlus, DBeaver, psql) to poke at.
+      #
+      # 55432 rather than 5432: a developer machine very often already has a
+      # local Postgres on the default port, and this should not collide with it.
+      # Override with POSTGRES_HOST_PORT if 55432 is taken too.
+      - "127.0.0.1:${POSTGRES_HOST_PORT:-55432}:5432"

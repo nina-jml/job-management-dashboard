@@ -1,5 +1,10 @@
 COMPOSE := docker compose
+# `make up` overlays host ports; `make test` deliberately does not, so the gate
+# cannot fail on a port that is already in use elsewhere.
+COMPOSE_DEV := docker compose -f docker-compose.yml -f docker-compose.dev.yml
 APP_SERVICES := db backend frontend
+
+POSTGRES_HOST_PORT ?= 55432
 
 # Baseline data for the E2E run. Fixed seed so the suite is deterministic;
 # --clear so a re-run starts from the same state (TEST_PLAN case F3).
@@ -7,7 +12,7 @@ SEED_COUNT ?= 30
 SEED_ARGS  ?= --count $(SEED_COUNT) --clear --seed 42
 
 .DEFAULT_GOAL := help
-.PHONY: help build up stop down clean test test-spec test-backend test-all seed logs ps shell time
+.PHONY: help build up stop down clean test test-spec test-backend test-all seed logs ps shell db-url psql time
 
 help: ## Show available commands
 	@grep -hE '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -17,10 +22,11 @@ build: ## Build all Docker images
 	$(COMPOSE) build
 
 up: ## Start the stack and wait until it is healthy (app on http://localhost:8080)
-	$(COMPOSE) up -d --build --wait $(APP_SERVICES)
+	$(COMPOSE_DEV) up -d --build --wait $(APP_SERVICES)
 	@echo ""
 	@echo "  ▸ app  http://localhost:8080"
 	@echo "  ▸ api  http://localhost:8000/api/health/"
+	@$(MAKE) --no-print-directory db-url
 
 test: ## Run the Playwright E2E suite (builds and starts the stack first)
 	$(COMPOSE) up -d --build --wait $(APP_SERVICES)
@@ -53,6 +59,12 @@ clean: ## Remove containers, networks, volumes and locally built images
 	$(COMPOSE) down --volumes --remove-orphans --rmi local
 	@rm -rf e2e/playwright-report e2e/test-results
 	@echo "▸ clean slate"
+
+db-url: ## Print the Postgres connection string for a GUI client
+	@echo "  ▸ db   postgresql://$${POSTGRES_USER:-jobs}:$${POSTGRES_PASSWORD:-jobs}@127.0.0.1:$(POSTGRES_HOST_PORT)/$${POSTGRES_DB:-jobs}"
+
+psql: ## Open a psql shell against the running database
+	$(COMPOSE) exec db psql -U $${POSTGRES_USER:-jobs} -d $${POSTGRES_DB:-jobs}
 
 logs: ## Tail logs from all services
 	$(COMPOSE) logs -f

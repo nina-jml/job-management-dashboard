@@ -711,7 +711,9 @@
           <div class="dialog" style="box-shadow:none;">
             <h3>Delete this job?</h3>
             <div class="job-ref">#3284912 · Crash Pulse — Frontal Offset 40%</div>
-            <p>Its four status entries will be deleted too. This can't be undone.</p>
+            <p>Its four status entries will be deleted too, including the record of how
+              long it ran. This can't be undone — to stop a job but keep its history, cancel
+              it instead.</p>
             <div class="row-actions">
               <button>Cancel</button>
               <button class="danger">Delete job</button>
@@ -744,10 +746,10 @@
             <tbody>
               <tr><td><span class="status" data-status="PENDING">Pending</span></td>
                   <td>Accepted, not yet started. Every job's first status.</td>
-                  <td>Running · Failed</td></tr>
+                  <td>Running · Failed · Cancelled</td></tr>
               <tr><td><span class="status" data-status="RUNNING">Running</span></td>
                   <td>Executing now. Carries a live pulse dot.</td>
-                  <td>Completed · Failed</td></tr>
+                  <td>Completed · Failed · Cancelled</td></tr>
               <tr><td><span class="status" data-status="COMPLETED">Completed</span></td>
                   <td>Finished successfully. Terminal — no further changes.</td>
                   <td>— (delete only)</td></tr>
@@ -793,9 +795,10 @@
                   <option selected>Running</option>
                   <option>Completed</option>
                   <option>Failed</option>
+                  <option>Cancelled</option>
                 </select>
               </span>
-              <span class="actions"><button class="ghost">Cancel</button><button class="danger">Delete</button></span>
+              <span class="actions"><button class="ghost" aria-label="Stop editing status" title="Stop editing — leave the status unchanged">✕</button><button class="danger">Delete</button></span>
             </div>
             <div class="row">
               <span class="name"><b>LES Combustor Validation</b>
@@ -1078,9 +1081,13 @@
     var actions = el("div", "actions");
 
     if (editing) {
-      var cancel = el("button", "ghost", "Cancel");
-      cancel.addEventListener("click", function () { editingId = null; render(); });
-      actions.appendChild(cancel);
+      // Deliberately not labelled "Cancel": the select beside it now contains
+      // "Cancelled", and a harmless action must not look like a destructive one.
+      var exit = el("button", "ghost", "✕");
+      exit.title = "Stop editing — leave the status unchanged";
+      exit.setAttribute("aria-label", "Stop editing status");
+      exit.addEventListener("click", function () { editingId = null; render(); });
+      actions.appendChild(exit);
     } else if (canRetry(job.status)) {
       // Failed jobs get a re-run rather than a status edit.
       var retry = el("button", null, "↻ Re-run");
@@ -1195,7 +1202,7 @@
       ["Aeroacoustic Far-Field Propagation", ["PENDING", "RUNNING", "COMPLETED"]],
       ["Turbine Disc Creep — 1200 h",        ["PENDING", "RUNNING"]],
       ["Multiphase Separator CFD",           ["PENDING", "RUNNING", "FAILED"]],
-      ["Ice Accretion — Wing Leading Edge",  ["PENDING", "RUNNING", "CANCELLED"]]
+      ["Hypersonic Inlet Start-Up",          ["PENDING", "RUNNING", "CANCELLED"]]
     ];
     extra.forEach(function (row, i) {
       var lifecycle = row[1];

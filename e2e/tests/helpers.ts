@@ -25,7 +25,7 @@ export interface Job {
   updated_at: string;
   /** States reachable from current_status — the UI disables everything else. */
   allowed_transitions: StatusType[];
-  /** Only FAILED jobs can be re-run (OPEN_QUESTIONS Q7). */
+  /** Only FAILED or CANCELLED jobs can be re-run (OPEN_QUESTIONS Q7, Q10). */
   can_retry: boolean;
 }
 

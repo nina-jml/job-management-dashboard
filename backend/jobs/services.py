@@ -71,7 +71,8 @@ def apply_status_change(job: Job, target: str) -> JobStatus | None:
        is appended and no error is raised. A double-click or a retried request
        after a dropped response asked for a state the job is already in; that is
        not a failure (OPEN_QUESTIONS Q8, TEST_PLAN case C6).
-    2. The job is FAILED and `target` is PENDING → a **re-run**.
+    2. The job is retryable — FAILED or CANCELLED, i.e. work that did not finish —
+       and `target` is PENDING → a **re-run**.
     3. Otherwise the transition must satisfy `transitions.ALLOWED`, or
        `TransitionError` propagates and the view turns it into a 400.
     """

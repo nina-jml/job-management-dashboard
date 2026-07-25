@@ -15,7 +15,7 @@ Slice detail lives in [PLAN.md](./PLAN.md).
 
 | # | Slice | Spec file | Positive cases | Negative cases | Tier | Status |
 |---|---|---|---|---|---|---|
-| 0 | Walking skeleton: compose, Dockerfiles, Makefile, `/api/health/`, React shell | `00-smoke` | A1, A2, A4 | — | T3 | ✅ done |
+| 0 | Walking skeleton: compose, Dockerfiles, Makefile, `/api/health/`, React shell | `00-smoke` | A1, A2, A4–A6 | — | T3 | ✅ done |
 | 1 | Models, indexes, cursor-paginated `GET /api/jobs/`, error handler, seed command | `01-jobs-list-api` | E1, E2 | E7, E8 | T2 | ✅ done |
 | **1.5** | 🔍 **UI mockup — design & test-plan sign-off.** Every UI state on one page, no backend | — | — | — | review gate | ✅ **signed off** |
 | 2 | `POST /api/jobs/` + automatic PENDING, atomic, name validation | `02-create-job-api` | B1, B6, B7 | B2, B3, B4 | T2 | ✅ done |
@@ -40,7 +40,7 @@ broken `make test`.
 **Coverage as of slice 4 (backend complete, plus the CANCELLED state):** 57 E2E specs and 43 backend
 unit tests passing; T3 cold
 gate green from pruned Docker, suite re-runnable without `make clean`, and all three images build on
-`linux/amd64`. Cases A1–A4, B1–B4, B6, B7, C1–C8, C10, C11, C13, D1–D4 covered; the rest are UI-facing.
+`linux/amd64`. Cases A1–A4, B1–B4, B6, B7, C1–C8, C10, C11, C13–C17, D1–D4 covered; the rest are UI-facing.
 
 ---
 
@@ -69,7 +69,7 @@ up after itself. The suite must pass twice in a row without `make clean` (case A
 |---|---|---|---|
 | **T1 — lightweight** | `make test-spec SPEC=03-update-job-api` — one spec against the already-running stack, no rebuild. Plus `make test-backend` during backend slices. | seconds | after every meaningful change, inside a slice |
 | **T2 — suite** | `make test` — rebuild + full Playwright suite | ~1–2 min | at the close of **every** slice; catches cross-slice regressions |
-| **T3 — cold gate** | `make clean && make build && make test` from pruned Docker, plus a `--platform linux/amd64` build | several min | slices **0, 4, 7, 11**, and any slice touching Docker, compose, the Makefile, or dependencies |
+| **T3 — cold gate** | `make clean && make build && make test` from pruned Docker; a `--platform linux/amd64` build; then `make up` and eyeball the database through a GUI client on the URL it prints | several min | slices **0, 4, 7, 11**, and any slice touching Docker, compose, the Makefile, or dependencies |
 
 T1→T2 is a **scope** axis: one spec versus the whole suite. T2→T3 is **not** — they run identical
 assertions. What changes is the starting state, so T3 validates the *build and provision path* rather than
@@ -94,6 +94,8 @@ it is the evaluation not starting.
 | A2 | + | Stack startup | tests wait for `/api/health/` | no race with Postgres init |
 | A3 | + | Re-run suite without `clean` | passes again | isolation holds; no leftover-state dependency |
 | A4 | + | Build `--platform linux/amd64` | succeeds | prompt targets "modern Linux or Mac" |
+| A5 | + | `make up`, then connect a GUI client to the printed URL | tables and rows visible | a manual sanity check that the data matches what the API reports. Part of T3 |
+| A6 | + | `make test` with 8080, 8000 and 55432 all occupied | still passes | the gate publishes no host ports, so it cannot fail on a port collision on the grader's machine |
 
 ### B · Create job — `02-create-job-api`, `06-create-job-ui`
 
@@ -128,7 +130,7 @@ dead end.
 | C9 | − | PATCH returns 500 | **optimistic badge rolls back** to prior value | error shown; log unchanged after reload |
 | C10 | + | Rename only, no `status` key | name changes | **no status event appended**; **`updated_at` advances but `current_status_at` does not** — the exact divergence the projection guard depends on |
 | C11 | + | Two concurrent PATCHes | serialized by the row lock | both outcomes are individually legal under the map; no lost update; log and projection agree |
-| C12 | + | UI: controls offered per state | `FAILED` → **Re-run**; `COMPLETED` → delete only; `RUNNING` → menu with `COMPLETED`/`FAILED` enabled and the rest disabled | invalid transitions are *unreachable*, not merely rejected |
+| C12 | + | UI: controls offered per state | `FAILED`/`CANCELLED` → **Re-run**; `COMPLETED` → delete only; `RUNNING` → select with `COMPLETED`/`FAILED`/`CANCELLED` enabled and the rest disabled | invalid transitions are *unreachable*, not merely rejected; driven by the API's `allowed_transitions`, never a second copy of the map in TypeScript |
 | C13 | − | Re-run a **completed** job | **400** | done is done; a re-run of a success is a new job, not a resurrection. The UI never offers the action |
 | C14 | + | Cancel a **queued** job | 200; status becomes `CANCELLED` | terminal, but `can_retry` is true — the work never finished |
 | C15 | + | Cancel a **running** job | 200; status becomes `CANCELLED` | the main use case: stop work in flight |
@@ -220,7 +222,7 @@ gate (group A) is positive-only by nature — there is no meaningful "negative" 
 | UI updates dynamically | B1, C1, D1 | C9, D5 (rollback) |
 | **Required E2E critical flow** | **C1** (create → PENDING → RUNNING) | C9 |
 | Performance at scale | F1–F4, F6–F10 | F5, E8 |
-| `make test` from clean | A1, A2, A3, A4 | — |
+| `make test` from clean | A1–A6 | — |
 
 ---
 

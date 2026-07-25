@@ -7,7 +7,9 @@ gated by `make test`. Read `docs/PLAN.md` for the slice order and
 ## Non-negotiables
 
 - **`make test` must pass on a clean machine** with only make, docker, docker compose
-  and bash, and **DockerHub as the only reachable registry**. The graders run it once;
+  and bash, and **DockerHub as the only reachable registry**. It also publishes **no
+  host ports** — `docker-compose.dev.yml` adds those for `make up` — so the gate
+  cannot fail because 8080 happens to be busy on the grader's machine. The graders run it once;
   if it fails they stop evaluating. Never introduce an image from another registry —
   in particular `mcr.microsoft.com/playwright`, which is why the e2e image is built
   from `node:22-bookworm`.
@@ -24,10 +26,11 @@ Each slice is independently shippable and independently green. In order, every t
 2. **T1** — `make test-spec SPEC=<name>` while iterating (seconds; specs are mounted,
    so no rebuild). `make test-backend` for backend-only work.
 3. **T2** — `make test` at the close of every slice.
-4. **T3** — `make clean && make build && make test` from pruned Docker, plus an
-   amd64 build check. Slices **0, 4, 7, 11**, *and* any slice touching Docker,
-   compose, the Makefile, or dependencies — that class of change passes warm and
-   fails cold.
+4. **T3** — `make clean && make build && make test` from pruned Docker, an amd64
+   build check, then `make up` and eyeball the database through a GUI client on
+   the URL it prints (`make db-url`). Slices **0, 4, 7, 11**, *and* any slice
+   touching Docker, compose, the Makefile, or dependencies — that class of change
+   passes warm and fails cold.
 5. **Log the time**: `./scripts/timelog.sh start "<slice>"` / `stop "<note>"`.
    The README has to report a real figure, so it is logged as work happens, never
    reconstructed at the end.
