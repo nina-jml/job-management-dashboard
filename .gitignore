@@ -20,3 +20,6 @@ e2e/test-results/
 
 # OS
 .DS_Store
+
+# Review working notes — not a deliverable
+.review/
