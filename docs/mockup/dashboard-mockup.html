@@ -23,6 +23,7 @@
     --st-running:      #0b6a8d;   --st-running-bg:   #d9eff7;
     --st-completed:    #1b6640;   --st-completed-bg: #d8f0e2;
     --st-failed:       #9c2937;   --st-failed-bg:    #fbe0e3;
+    --st-cancelled:    #55606e;   --st-cancelled-bg: #e5e8ec;
 
     --sans: ui-sans-serif, -apple-system, "Segoe UI Variable Text", "Segoe UI",
             Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -51,6 +52,7 @@
       --st-running:      #5fc9ea;  --st-running-bg:   #0d2c37;
       --st-completed:    #62cb8c;  --st-completed-bg: #10301d;
       --st-failed:       #f2818d;  --st-failed-bg:    #37171c;
+      --st-cancelled:    #a5b0bd;  --st-cancelled-bg: #232a34;
 
       --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 6px 20px rgb(0 0 0 / 0.3);
     }
@@ -65,6 +67,7 @@
     --st-running: #5fc9ea;   --st-running-bg: #0d2c37;
     --st-completed: #62cb8c; --st-completed-bg: #10301d;
     --st-failed: #f2818d;    --st-failed-bg: #37171c;
+    --st-cancelled: #a5b0bd; --st-cancelled-bg: #232a34;
     --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 6px 20px rgb(0 0 0 / 0.3);
   }
 
@@ -77,6 +80,7 @@
     --st-running: #0b6a8d;   --st-running-bg: #d9eff7;
     --st-completed: #1b6640; --st-completed-bg: #d8f0e2;
     --st-failed: #9c2937;    --st-failed-bg: #fbe0e3;
+    --st-cancelled: #55606e; --st-cancelled-bg: #e5e8ec;
     --shadow: 0 1px 2px rgb(15 22 32 / 0.06), 0 6px 20px rgb(15 22 32 / 0.05);
   }
 
@@ -328,6 +332,7 @@
   .status[data-status="RUNNING"]   { color: var(--st-running);   background: var(--st-running-bg); }
   .status[data-status="COMPLETED"] { color: var(--st-completed); background: var(--st-completed-bg); }
   .status[data-status="FAILED"]    { color: var(--st-failed);    background: var(--st-failed-bg); }
+  .status[data-status="CANCELLED"] { color: var(--st-cancelled); background: var(--st-cancelled-bg); }
 
   .name { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; }
   .name b { font-weight: 550; font-size: 0.95rem; overflow-wrap: anywhere; }
@@ -567,6 +572,7 @@
             <button class="chip" data-filter="RUNNING" aria-pressed="false">Running</button>
             <button class="chip" data-filter="COMPLETED" aria-pressed="false">Completed</button>
             <button class="chip" data-filter="FAILED" aria-pressed="false">Failed</button>
+            <button class="chip" data-filter="CANCELLED" aria-pressed="false">Cancelled</button>
           </div>
         </div>
         <form class="field grow" id="create-form" novalidate>
@@ -748,6 +754,9 @@
               <tr><td><span class="status" data-status="FAILED">Failed</span></td>
                   <td>Terminated with an error. Terminal, but retryable.</td>
                   <td>Re-run → Pending</td></tr>
+              <tr><td><span class="status" data-status="CANCELLED">Cancelled</span></td>
+                  <td>Called off deliberately, while queued or running. Terminal, but retryable.</td>
+                  <td>Re-run → Pending</td></tr>
             </tbody>
           </table>
         </div>
@@ -816,21 +825,23 @@
 (function () {
   "use strict";
 
-  var STATUSES = ["PENDING", "RUNNING", "COMPLETED", "FAILED"];
-  var LABEL = { PENDING: "Pending", RUNNING: "Running", COMPLETED: "Completed", FAILED: "Failed" };
+  var STATUSES = ["PENDING", "RUNNING", "COMPLETED", "FAILED", "CANCELLED"];
+  var LABEL = { PENDING: "Pending", RUNNING: "Running", COMPLETED: "Completed",
+               FAILED: "Failed", CANCELLED: "Cancelled" };
 
   // The state machine (OPEN_QUESTIONS Q7). The dropdown disables what this
   // forbids, so an invalid transition is unreachable rather than merely
   // rejected — and the same map is enforced server-side.
   var ALLOWED = {
-    PENDING:   ["RUNNING", "FAILED"],
-    RUNNING:   ["COMPLETED", "FAILED"],
+    PENDING:   ["RUNNING", "FAILED", "CANCELLED"],
+    RUNNING:   ["COMPLETED", "FAILED", "CANCELLED"],
     COMPLETED: [],           // terminal — done is done
-    FAILED:    []            // terminal, but retryable below
+    FAILED:    [],           // terminal, but retryable below
+    CANCELLED: []            // terminal, but retryable below
   };
-  // You retry a failure; you do not re-run a success. Re-running something that
-  // succeeded is a new job, not a resurrection.
-  var RETRYABLE = ["FAILED"];
+  // You retry work that did not finish — a failure or a cancellation. Re-running
+  // something that succeeded is a new job, not a resurrection.
+  var RETRYABLE = ["FAILED", "CANCELLED"];
 
   function canTransition(from, to) { return ALLOWED[from].indexOf(to) !== -1; }
   function canRetry(status) { return RETRYABLE.indexOf(status) !== -1; }
@@ -852,6 +863,9 @@
     { id: 3284912, name: "Crash Pulse — Frontal Offset 40%", status: "FAILED",
       created: "2026-07-25 07:12", updated: "2026-07-25 07:44",
       history: [["FAILED", "2026-07-25 07:44"], ["RUNNING", "2026-07-25 07:15"], ["PENDING", "2026-07-25 07:12"]] },
+    { id: 3284911, name: "Ice Accretion — Wing Leading Edge", status: "CANCELLED",
+      created: "2026-07-25 07:30", updated: "2026-07-25 08:12",
+      history: [["CANCELLED", "2026-07-25 08:12"], ["RUNNING", "2026-07-25 07:33"], ["PENDING", "2026-07-25 07:30"]] },
     { id: 3284910, name: "CFD Mesh Convergence Study", status: "COMPLETED",
       created: "2026-07-25 06:40", updated: "2026-07-25 09:05",
       history: [["COMPLETED", "2026-07-25 09:05"], ["RUNNING", "2026-07-25 06:44"], ["PENDING", "2026-07-25 06:40"]] }
@@ -1180,7 +1194,8 @@
     var extra = [
       ["Aeroacoustic Far-Field Propagation", ["PENDING", "RUNNING", "COMPLETED"]],
       ["Turbine Disc Creep — 1200 h",        ["PENDING", "RUNNING"]],
-      ["Multiphase Separator CFD",           ["PENDING", "RUNNING", "FAILED"]]
+      ["Multiphase Separator CFD",           ["PENDING", "RUNNING", "FAILED"]],
+      ["Ice Accretion — Wing Leading Edge",  ["PENDING", "RUNNING", "CANCELLED"]]
     ];
     extra.forEach(function (row, i) {
       var lifecycle = row[1];

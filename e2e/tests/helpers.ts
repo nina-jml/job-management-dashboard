@@ -13,7 +13,7 @@ export function uniquePrefix(label: string): string {
   return `e2e-${label}-${randomUUID().slice(0, 8)}-`;
 }
 
-export const STATUS_TYPES = ["PENDING", "RUNNING", "COMPLETED", "FAILED"] as const;
+export const STATUS_TYPES = ["PENDING", "RUNNING", "COMPLETED", "FAILED", "CANCELLED"] as const;
 export type StatusType = (typeof STATUS_TYPES)[number];
 
 export interface Job {

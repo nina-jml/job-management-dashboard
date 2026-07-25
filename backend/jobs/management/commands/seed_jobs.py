@@ -32,12 +32,17 @@ NAME_PARTS = (
 )
 
 # Plausible lifecycles, so filtering and history views have something real to
-# show. Weighted toward terminal states, as a real queue would be.
+# show. Weighted toward terminal states, as a real queue would be. Every entry
+# is a legal walk through jobs.transitions.ALLOWED — seeded data that the state
+# machine would reject makes for very confusing debugging.
 LIFECYCLES = (
-    ([StatusType.PENDING], 15),
-    ([StatusType.PENDING, StatusType.RUNNING], 20),
-    ([StatusType.PENDING, StatusType.RUNNING, StatusType.COMPLETED], 45),
-    ([StatusType.PENDING, StatusType.RUNNING, StatusType.FAILED], 20),
+    ([StatusType.PENDING], 14),
+    ([StatusType.PENDING, StatusType.RUNNING], 18),
+    ([StatusType.PENDING, StatusType.RUNNING, StatusType.COMPLETED], 40),
+    ([StatusType.PENDING, StatusType.RUNNING, StatusType.FAILED], 16),
+    # Called off mid-flight, and called off before it ever started.
+    ([StatusType.PENDING, StatusType.RUNNING, StatusType.CANCELLED], 8),
+    ([StatusType.PENDING, StatusType.CANCELLED], 4),
 )
 
 

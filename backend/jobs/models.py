@@ -16,16 +16,22 @@ from django.utils import timezone
 
 
 class StatusType(models.TextChoices):
-    """The four states a job can be observed in.
+    """The states a job can be observed in.
 
     Stored as strings rather than ints: readable straight out of the database
-    and straight off the wire, and adding a state later is a no-op migration.
+    and straight off the wire, and adding a state is a no-op at the column level
+    — `choices` is Django metadata, so CANCELLED arrived without a schema change.
+
+    CANCELLED is deliberately distinct from deleting the job. Deleting removes
+    the record; cancelling stops the work and *keeps* it. A cancelled job still
+    consumed compute time, and that is exactly the history you want to audit.
     """
 
     PENDING = "PENDING", "Pending"
     RUNNING = "RUNNING", "Running"
     COMPLETED = "COMPLETED", "Completed"
     FAILED = "FAILED", "Failed"
+    CANCELLED = "CANCELLED", "Cancelled"
 
 
 class Job(models.Model):

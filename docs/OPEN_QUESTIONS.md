@@ -91,14 +91,16 @@ one gate would mean an unrelated unit failure blocks everything, for no gain in 
 
 ```python
 ALLOWED = {
-    StatusType.PENDING:   {StatusType.RUNNING, StatusType.FAILED},
-    StatusType.RUNNING:   {StatusType.COMPLETED, StatusType.FAILED},
+    StatusType.PENDING:   {StatusType.RUNNING, StatusType.FAILED, StatusType.CANCELLED},
+    StatusType.RUNNING:   {StatusType.COMPLETED, StatusType.FAILED, StatusType.CANCELLED},
     StatusType.COMPLETED: set(),   # terminal — done is done
     StatusType.FAILED:    set(),   # terminal, but retryable (below)
+    StatusType.CANCELLED: set(),   # terminal, but retryable (below)
 }
 
-# Re-run is the only way out of a terminal state, and only from FAILED.
-RETRYABLE = {StatusType.FAILED}
+# Re-run is the only way out of a terminal state, and only from the two that
+# represent work which did not finish.
+RETRYABLE = {StatusType.FAILED, StatusType.CANCELLED}
 ```
 
 A disallowed transition is a `400`, not a silent no-op. The UI never offers one: the dropdown disables
@@ -108,9 +110,9 @@ what the map forbids, so invalid transitions are *unreachable* rather than merel
 retry is a new attempt, not a backwards edit of the old one. Modelling that honestly is worth more than the
 flexibility of arbitrary edits.
 
-**The escape hatch, and its limit.** A **failed** job offers an explicit **Re-run** action that moves it to
-`PENDING` and appends that event to the log. A **completed** job offers nothing — its only remaining action
-is delete.
+**The escape hatch, and its limit.** A **failed** or **cancelled** job offers an explicit **Re-run** action
+that moves it to `PENDING` and appends that event to the log. A **completed** job offers nothing — its only
+remaining action is delete.
 
 That asymmetry is the point. You retry a failure; you do not re-run a success. Re-running something that
 already succeeded is not a retry, it is a *new job* — which is exactly how a user should express it, and
@@ -156,6 +158,32 @@ run — a real business-intelligence leak for a multi-tenant product.
 That matters once tenancy and auth exist, not before. If it ever does, the answer is **UUIDv7** rather than
 UUIDv4: v7 is time-ordered, so it stays non-enumerable *without* destroying the insert locality and index
 size that v4 costs. Noted in the README as the hardening step.
+
+### Q10 · Should there be a CANCELLED state?
+
+**Decision: yes.** `CANCELLED` is reachable from `PENDING` and `RUNNING` — you can call off work that is
+queued as readily as work that is running — and is terminal but **retryable**, exactly like `FAILED`. It
+needs no special affordance: it is an ordinary option in the status control.
+
+Not reachable from `COMPLETED` or `FAILED`: there is nothing left to stop, and allowing it would let a
+cancellation rewrite *why* a job ended.
+
+**Cancelling is not deleting**, and that distinction is the point of the feature:
+
+| | Delete | Cancel |
+|---|---|---|
+| The record | removed entirely | kept |
+| The status log | cascaded away | preserved, with the cancellation appended |
+| Answers "did this ever run?" | no — no trace | yes, and for how long |
+
+A cancelled job consumed compute time and may have been billed for it. Deleting it erases the evidence;
+cancelling records the outcome. In a scheduler those are different operations with different meanings, not
+two routes to the same end.
+
+**Why retryable.** `COMPLETED` is a dead end because the work succeeded — running it again is a *new* job.
+`FAILED` and `CANCELLED` both describe work that *did not finish*, so "try that again" is a coherent thing
+to ask for. The unit tests encode this as an invariant rather than a list: every retryable state must be
+terminal, so there is never more than one way out of a given state.
 
 ---
 

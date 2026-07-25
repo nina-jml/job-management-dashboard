@@ -68,7 +68,7 @@ erDiagram
     JOB_STATUS {
         bigint   id PK
         bigint   job_id FK
-        varchar  status_type "PENDING | RUNNING | COMPLETED | FAILED"
+        varchar  status_type "PENDING | RUNNING | COMPLETED | FAILED | CANCELLED"
         datetime timestamp "server-stamped"
     }
 ```
@@ -155,10 +155,17 @@ class StatusType(models.TextChoices):
     RUNNING   = "RUNNING"
     COMPLETED = "COMPLETED"
     FAILED    = "FAILED"
+    CANCELLED = "CANCELLED"   # deliberate stop; distinct from deleting the job
 ```
 
-Stored as strings, not ints — readable in the DB and in API payloads, and adding a state later doesn't
-require a data migration.
+Stored as strings, not ints — readable in the DB and in API payloads, and adding a state doesn't require a
+schema change. `CANCELLED` proved that: `manage.py sqlmigrate` for the migration that added it emits
+`(no-op)` for both columns, because `choices` is Django-level metadata and the column is already
+`varchar(16)`.
+
+**Cancelling is not deleting.** Deleting removes the record; cancelling stops the work and keeps it. A
+cancelled job still consumed compute time, and that is precisely the history worth auditing — so the two
+are different operations with different outcomes, not two routes to the same end.
 
 ### Indexes
 

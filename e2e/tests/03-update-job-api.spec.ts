@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import type { APIRequestContext } from "@playwright/test";
 
-import { uniquePrefix, type Job, type StatusType } from "./helpers";
+import { history, uniquePrefix, type Job, type StatusType } from "./helpers";
 
 /**
  * Slice 3 — PATCH /api/jobs/<id>/.
@@ -33,6 +33,7 @@ async function advanceTo(
     RUNNING: ["RUNNING"],
     COMPLETED: ["RUNNING", "COMPLETED"],
     FAILED: ["RUNNING", "FAILED"],
+    CANCELLED: ["RUNNING", "CANCELLED"],
   };
   let current = job;
   for (const step of route[target]!) {
@@ -122,7 +123,7 @@ test.describe("PATCH /api/jobs/<id>/", () => {
 
     const rerun = (await response.json()) as Job;
     expect(rerun.current_status).toBe("PENDING");
-    expect(rerun.allowed_transitions).toEqual(["FAILED", "RUNNING"]);
+    expect(rerun.allowed_transitions).toEqual(["CANCELLED", "FAILED", "RUNNING"]);
   });
 
   test("re-applying the current status is an idempotent no-op (C6)", async ({ request }) => {
@@ -235,11 +236,11 @@ test.describe("PATCH /api/jobs/<id>/", () => {
 
   test("advertises the transitions the UI may offer (C12 backing data)", async ({ request }) => {
     const job = await createJob(request, "c12");
-    expect(job.allowed_transitions).toEqual(["FAILED", "RUNNING"]);
+    expect(job.allowed_transitions).toEqual(["CANCELLED", "FAILED", "RUNNING"]);
     expect(job.can_retry).toBe(false);
 
     const running = (await (await patch(request, job.id, { status: "RUNNING" })).json()) as Job;
-    expect(running.allowed_transitions).toEqual(["COMPLETED", "FAILED"]);
+    expect(running.allowed_transitions).toEqual(["CANCELLED", "COMPLETED", "FAILED"]);
 
     const failed = (await (await patch(request, job.id, { status: "FAILED" })).json()) as Job;
     expect(failed.allowed_transitions).toEqual([]);
@@ -252,5 +253,70 @@ test.describe("PATCH /api/jobs/<id>/", () => {
     const response = await request.put(`/api/jobs/${job.id}/`, { data: { name: "x" } });
 
     expect(response.status()).toBe(405);
+  });
+
+  test("cancels a queued job before it ever starts (C14)", async ({ request }) => {
+    const job = await createJob(request, "c14");
+
+    const response = await patch(request, job.id, { status: "CANCELLED" });
+    expect(response.status()).toBe(200);
+
+    const cancelled = (await response.json()) as Job;
+    expect(cancelled.current_status).toBe("CANCELLED");
+    // Terminal, but the work never finished — so it can be re-run.
+    expect(cancelled.allowed_transitions).toEqual([]);
+    expect(cancelled.can_retry).toBe(true);
+  });
+
+  test("cancels a running job (C15)", async ({ request }) => {
+    const job = await createJob(request, "c15");
+    await patch(request, job.id, { status: "RUNNING" });
+
+    const response = await patch(request, job.id, { status: "CANCELLED" });
+    expect(response.status()).toBe(200);
+    expect(((await response.json()) as Job).current_status).toBe("CANCELLED");
+  });
+
+  test("re-runs a cancelled job (C16)", async ({ request }) => {
+    const job = await createJob(request, "c16");
+    await advanceTo(request, job, "CANCELLED");
+
+    const response = await patch(request, job.id, { status: "PENDING" });
+    expect(response.status()).toBe(200);
+
+    const rerun = (await response.json()) as Job;
+    expect(rerun.current_status).toBe("PENDING");
+
+    // Append-only: the cancellation stays on the record. Cancelling is not
+    // deleting — the job consumed compute time and that history survives.
+    const { results } = await history(request, job.id);
+    expect(results.map((entry) => entry.status_type)).toEqual([
+      "PENDING",
+      "CANCELLED",
+      "RUNNING",
+      "PENDING",
+    ]);
+  });
+
+  test("refuses to cancel a completed job (C17)", async ({ request }) => {
+    const job = await createJob(request, "c17");
+    await advanceTo(request, job, "COMPLETED");
+
+    const response = await patch(request, job.id, { status: "CANCELLED" });
+
+    // Nothing left to stop.
+    expect(response.status()).toBe(400);
+    expect((await response.json()).errors).toHaveProperty("status");
+
+    const after = (await (await request.get(`/api/jobs/${job.id}/`)).json()) as Job;
+    expect(after.current_status).toBe("COMPLETED");
+  });
+
+  test("refuses to cancel a failed job (C17)", async ({ request }) => {
+    const job = await createJob(request, "c17b");
+    await advanceTo(request, job, "FAILED");
+
+    // The job already stopped on its own; cancelling would rewrite why.
+    expect((await patch(request, job.id, { status: "CANCELLED" })).status()).toBe(400);
   });
 });

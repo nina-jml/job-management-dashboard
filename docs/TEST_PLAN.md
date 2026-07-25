@@ -19,7 +19,7 @@ Slice detail lives in [PLAN.md](./PLAN.md).
 | 1 | Models, indexes, cursor-paginated `GET /api/jobs/`, error handler, seed command | `01-jobs-list-api` | E1, E2 | E7, E8 | T2 | ✅ done |
 | **1.5** | 🔍 **UI mockup — design & test-plan sign-off.** Every UI state on one page, no backend | — | — | — | review gate | ✅ **signed off** |
 | 2 | `POST /api/jobs/` + automatic PENDING, atomic, name validation | `02-create-job-api` | B1, B6, B7 | B2, B3, B4 | T2 | ✅ done |
-| 3 | `PATCH` appends event, projection guard, `select_for_update`, transition policy | `03-update-job-api` | C1, C5, C6, C10, C11 | C3, C4, C7, C8, C13 | T2 | ✅ done |
+| 3 | `PATCH` appends event, projection guard, `select_for_update`, transition policy | `03-update-job-api` | C1, C5, C6, C10, C11, C14–C16 | C3, C4, C7, C8, C13, C17 | T2 | ✅ done |
 | 4 | `DELETE` + cascade, `GET /api/jobs/<id>/statuses/` | `04-delete-job-api` | D1, D2, D3 | D4 | **T3** | ✅ done |
 | 5 | UI: list, badges, typed client, `ErrorBanner`, loading/empty states | `05-job-list-ui` | E1, E3, E6 | — † | T2 | pending |
 | 6 | UI: create form + client-side validation | `06-create-job-ui` | B1 | B2, B3 | T2 | pending |
@@ -37,7 +37,8 @@ Slices 0–4 deliver a complete, demonstrable backend before any UI exists; slic
 where both the design and this plan are signed off, reviewed while 2–4 continue. If time runs short the fallback is a smaller UI, never a
 broken `make test`.
 
-**Coverage as of slice 4 (backend complete):** 52 E2E specs and 35 backend unit tests passing; T3 cold
+**Coverage as of slice 4 (backend complete, plus the CANCELLED state):** 57 E2E specs and 43 backend
+unit tests passing; T3 cold
 gate green from pruned Docker, suite re-runnable without `make clean`, and all three images build on
 `linux/amd64`. Cases A1–A4, B1–B4, B6, B7, C1–C8, C10, C11, C13, D1–D4 covered; the rest are UI-facing.
 
@@ -108,10 +109,11 @@ it is the evaluation not starting.
 
 ### C · Update status — `03-update-job-api`, `07-update-status-ui`
 
-Transitions are enforced against the map in `jobs/transitions.py` (OPEN_QUESTIONS Q7):
-`PENDING → {RUNNING, FAILED}`, `RUNNING → {COMPLETED, FAILED}`, and both `COMPLETED` and `FAILED` are
-terminal. **Re-run** is the only way out of a terminal state, and only from `FAILED` — you retry a failure,
-you do not re-run a success. `COMPLETED` is a genuine dead end.
+Transitions are enforced against the map in `jobs/transitions.py` (OPEN_QUESTIONS Q7 and Q10):
+`PENDING → {RUNNING, FAILED, CANCELLED}`, `RUNNING → {COMPLETED, FAILED, CANCELLED}`, and `COMPLETED`,
+`FAILED` and `CANCELLED` are all terminal. **Re-run** is the only way out of a terminal state, and only
+from `FAILED` or `CANCELLED` — the two that describe work which did not finish. `COMPLETED` is a genuine
+dead end.
 
 | ID | ± | Action | Expected behaviour | Validation |
 |---|---|---|---|---|
@@ -128,6 +130,10 @@ you do not re-run a success. `COMPLETED` is a genuine dead end.
 | C11 | + | Two concurrent PATCHes | serialized by the row lock | both outcomes are individually legal under the map; no lost update; log and projection agree |
 | C12 | + | UI: controls offered per state | `FAILED` → **Re-run**; `COMPLETED` → delete only; `RUNNING` → menu with `COMPLETED`/`FAILED` enabled and the rest disabled | invalid transitions are *unreachable*, not merely rejected |
 | C13 | − | Re-run a **completed** job | **400** | done is done; a re-run of a success is a new job, not a resurrection. The UI never offers the action |
+| C14 | + | Cancel a **queued** job | 200; status becomes `CANCELLED` | terminal, but `can_retry` is true — the work never finished |
+| C15 | + | Cancel a **running** job | 200; status becomes `CANCELLED` | the main use case: stop work in flight |
+| C16 | + | Re-run a **cancelled** job | 200; back to `PENDING` | the `CANCELLED` entry survives in the log — cancelling is not deleting, and the job's compute time stays on the record |
+| C17 | − | Cancel a **completed** or **failed** job | **400** | nothing left to stop; a cancellation must not rewrite why a job ended |
 
 **On timestamps.** `updated_at` and `current_status_at` are asserted separately throughout this group
 because they are *meant* to diverge: any save moves `updated_at`, but only a status event moves
@@ -203,11 +209,11 @@ gate (group A) is positive-only by nature — there is no meaningful "negative" 
 |---|---|---|
 | `GET /api/jobs/` includes current status | E1, E2 | E4, E7 |
 | `POST /api/jobs/` auto-creates PENDING | B1 | B2, B3, B4, B5 |
-| `PATCH` creates a new JobStatus entry | C1, C5, C10, C11 | C3, C4, C7, C8, C9, C13 |
+| `PATCH` creates a new JobStatus entry | C1, C5, C10, C11, C14–C16 | C3, C4, C7, C8, C9, C13, C17 |
 | `DELETE` cascades to JobStatus | D1, D2, D3 | D4, D5 |
 | Frontend lists jobs with status | E1, E3 | E4 |
 | Create form | B1, B6, B7 | B2, B3 |
-| Status update control | C1, C2, C5, C12 | C3, C4, C9, C13 |
+| Status update control | C1, C2, C5, C12, C14–C16 | C3, C4, C9, C13, C17 |
 | Delete button | D1, D6 | D5 |
 | API error handling | E5 (recovery) | B5, C9, D5, E4, F5 |
 | Client-side validation | B1 | B2, B3, B4 |

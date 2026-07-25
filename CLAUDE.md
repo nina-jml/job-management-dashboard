@@ -35,6 +35,24 @@ Each slice is independently shippable and independently green. In order, every t
 
 Do not start a slice until the previous one's validation passes.
 
+## Review touchpoints
+
+Nina reviews at **larger touchpoints**, not every commit — code review and push happen there; between
+them the loop above runs at speed (small tests, quick iterations, a commit per slice).
+
+The touchpoints are the **T3 slices**, which is not a coincidence: they are the points where a coherent
+piece of work is finished and cold-verified.
+
+| Touchpoint | What is up for review |
+|---|---|
+| slice 1.5 | design + test plan ✅ signed off |
+| **slice 4** | the whole backend ✅ done — API, state machine, cascade |
+| slice 7 | the UI through the required critical flow |
+| slice 11 | delivery: README, writeups, final cold gate |
+
+At a touchpoint: make sure T3 is green, summarize what changed since the last one, and **stop** rather
+than rolling into the next slice. Between touchpoints, keep moving — do not wait for review to continue.
+
 ## Design decisions already settled
 
 Full reasoning in `docs/OPEN_QUESTIONS.md` — do not relitigate these without asking:
@@ -45,10 +63,13 @@ Full reasoning in `docs/OPEN_QUESTIONS.md` — do not relitigate these without a
 - The projection guard compares against **`current_status_at`, never `updated_at`** —
   any save bumps `updated_at`, so guarding on it would let a rename silently drop a
   later status event.
-- **Strict status transitions** (`jobs/transitions.py`): `PENDING → {RUNNING, FAILED}`,
-  `RUNNING → {COMPLETED, FAILED}`, both terminal. **Re-run only from `FAILED`** — you
-  retry a failure, you do not re-run a success. Same status re-applied is an
-  **idempotent 200 no-op**, not a 400.
+- **Strict status transitions** (`jobs/transitions.py`):
+  `PENDING → {RUNNING, FAILED, CANCELLED}`, `RUNNING → {COMPLETED, FAILED, CANCELLED}`;
+  `COMPLETED`, `FAILED` and `CANCELLED` are terminal. **Re-run only from `FAILED` or
+  `CANCELLED`** — the two that describe work which did not finish. Same status
+  re-applied is an **idempotent 200 no-op**, not a 400.
+- **Cancelling is not deleting.** Delete removes the record; cancel keeps it, because a
+  cancelled job still consumed compute time and that history is worth auditing.
 - **Cursor pagination, never offset.** No `COUNT(*)` on the hot path.
 - **Filter and search are server-side across the whole table**, never the loaded page.
 - Timestamps are **server-stamped**; the API takes no client timestamp.
