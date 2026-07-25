@@ -7,6 +7,35 @@ Related: [SPEC.md](./SPEC.md) · [PLAN.md](./PLAN.md) · [OPEN_QUESTIONS.md](./O
 
 ---
 
+## Slices at a glance
+
+Every slice ships with the spec that proves it. Case IDs refer to §3; validation tiers to §2.
+Slice detail lives in [PLAN.md](./PLAN.md).
+
+| # | Slice | Spec file | Cases | Tier | Status |
+|---|---|---|---|---|---|
+| 0 | Walking skeleton: compose, Dockerfiles, Makefile, `/api/health/`, React shell | `00-smoke` | F1, F2, F4 | T3 | ✅ done |
+| 1 | Models, indexes, cursor-paginated `GET /api/jobs/`, error handler, seed command | `01-jobs-list-api` | D1, D2 | T2 | ✅ done |
+| — | **Test plan sign-off** | — | — | — | ⏳ **awaiting review** |
+| 2 | `POST /api/jobs/` + automatic PENDING, atomic, name validation | `02-create-job-api` | A1–A4, A6, A7 | T2 | pending |
+| 3 | `PATCH` appends event, projection guard, `select_for_update` | `03-update-job-api` | B1, B3–B6, B8, B9 | T2 | pending |
+| 4 | `DELETE` + cascade, `GET /api/jobs/<id>/statuses/` | `04-delete-job-api` | C1, C2, C3 | **T3** | pending |
+| 5 | UI: list, badges, typed client, `ErrorBanner`, loading/empty states | `05-job-list-ui` | D1, D3, D6 | T2 | pending |
+| 6 | UI: create form + client-side validation | `06-create-job-ui` | A1, A2, A3 | T2 | pending |
+| 7 | ⭐ UI: status update — **the prompt's required critical flow** + optimistic rollback | `07-update-status-ui` | B1, B2, B7 | **T3** | pending |
+| 8 | UI: delete (in-app confirm, never `window.confirm`) | `08-delete-job-ui` | C1, C4, C5 | T2 | pending |
+| 9 | Fault-injection sweep: 500 per verb, abort, slow, rollback, recovery | `09-fault-injection` | A5, B7, C4, D4, D5 | T2 | pending |
+| 10 | Scale: load-more, status filter, debounced search, 250k seeded | `10-pagination-scale` | E1–E7 | T2 | pending |
+| 11 | README, performance + prompt-engineering writeups, final tidy | full suite | all | **T3 ×2** | pending |
+
+Slices 0–4 deliver a complete, demonstrable backend before any UI exists — if time runs short the fallback
+is a smaller UI, never a broken `make test`. Slice 9 verifies error handling rather than introducing it;
+the handling itself is built into slices 1–8 (see §1).
+
+**Coverage as of slice 1:** 12 E2E specs and 14 backend unit tests passing; infrastructure gate F1–F4 green.
+
+---
+
 ## 1. Strategy
 
 **One runner: Playwright.** Backend-only slices are tested through Playwright's `request` fixture
