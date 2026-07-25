@@ -33,24 +33,28 @@ def record_status(job: Job, status_type: str, *, timestamp=None) -> JobStatus:
     """
     timestamp = timestamp or timezone.now()
 
-    # Re-read under the lock: `job` may have been fetched before another writer
-    # committed, and we need the current projection to compare against.
-    locked = Job.objects.select_for_update().get(pk=job.pk)
+    # Two instances of the same row are in play, deliberately:
+    #   `job`        — the caller's, possibly read before another writer committed
+    #   `locked_job` — re-read under SELECT ... FOR UPDATE, so its projection is
+    #                  current and no one else can change it until we commit
+    # The guard below compares against the locked copy; the caller's is synced at
+    # the end so it does not silently hold stale values.
+    locked_job = Job.objects.select_for_update().get(pk=job.pk)
 
-    event = JobStatus.objects.create(job=locked, status_type=status_type, timestamp=timestamp)
+    event = JobStatus.objects.create(job=locked_job, status_type=status_type, timestamp=timestamp)
 
     # Guard on current_status_at, never updated_at: updated_at moves on every
     # save (a rename bumps it), which would make a later legitimate event look
     # stale and get silently dropped.
-    if timestamp >= locked.current_status_at:
-        locked.current_status = status_type
-        locked.current_status_at = timestamp
-        locked.save(update_fields=["current_status", "current_status_at", "updated_at"])
+    if timestamp >= locked_job.current_status_at:
+        locked_job.current_status = status_type
+        locked_job.current_status_at = timestamp
+        locked_job.save(update_fields=["current_status", "current_status_at", "updated_at"])
 
     # Keep the caller's instance consistent with what was just committed.
-    job.current_status = locked.current_status
-    job.current_status_at = locked.current_status_at
-    job.updated_at = locked.updated_at
+    job.current_status = locked_job.current_status
+    job.current_status_at = locked_job.current_status_at
+    job.updated_at = locked_job.updated_at
 
     return event
 
@@ -73,8 +77,13 @@ def apply_status_change(job: Job, target: str) -> JobStatus | None:
     """
     # Lock before reading the status the decision is based on, or two concurrent
     # requests could both validate against a stale value.
-    locked = Job.objects.select_for_update().get(pk=job.pk)
-    current = locked.current_status
+    #
+    # `record_status()` below takes the same lock again. Within this transaction
+    # that re-acquisition is free — the row is already held — and it costs one
+    # extra SELECT. Worth it: `record_status()` stays correct when called on its
+    # own, which `create_job()` does.
+    locked_job = Job.objects.select_for_update().get(pk=job.pk)
+    current = locked_job.current_status
 
     if target == current:
         return None
