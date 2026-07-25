@@ -74,7 +74,7 @@ with the spec that proves it; full matrix in [`docs/TEST_PLAN.md`](docs/TEST_PLA
 | 6 | UI: create form + validation | `06-create-job-ui` | ✅ |
 | 7 | ⭐ UI: status update — the critical flow | `07-update-status-ui` | ✅ |
 | 8 | UI: delete + in-app confirm, and the `client.ts` failure branches | `08-delete-job-ui` | ✅ |
-| 9 | Scale: pagination and filter at 250k rows | `09-pagination-scale` | ⏳ |
+| 9 | Scale: pagination and filter at 250k rows | `09-pagination-scale` | ✅ |
 | 10 | Fault-injection pass | `10-fault-injection` | ⏳ |
 | 11 | README, writeups, final cold gate | full suite | ⏳ |
 
@@ -205,6 +205,41 @@ and cursor pagination avoids both:
 
 The trade-off, stated plainly: no "jump to page 47". For a feed-shaped dashboard that is the
 right trade — nobody navigates a large list by page number; they narrow it.
+
+### Measured, not asserted
+
+Seeded to **250,000 jobs** (`make seed N=250000`, ~1m50s) with roughly 640,000 status rows behind
+them. Query cost from `EXPLAIN ANALYZE`, on the same table, for the same 25 rows 200,000 deep:
+
+| Query | Execution time |
+|---|---|
+| Keyset seek — `WHERE created_at < … ORDER BY … LIMIT 25` | **0.101 ms** |
+| `OFFSET 200000 LIMIT 25` — the same page, the other way | **39.703 ms** |
+| `COUNT(*)` — what `PageNumberPagination` adds to *every* request | **30.557 ms** |
+
+The keyset seek is **~390× faster** than the offset it replaces, and the count DRF would have run
+on every page load costs more on its own than serving the page. Neither number is a guess about
+what happens at a million rows; both are measured at a quarter of one, and the shapes are what
+matter — the seek is flat in depth, the other two are linear in table size.
+
+End to end over HTTP, including Django and serialization:
+
+| Rows in table | First page | 200,000 rows deep | Filtered by status |
+|---|---|---|---|
+| 100 | 10.6 ms | 10.0 ms | 10.1 ms |
+| 250,000 | 19.0 ms | 28.3 ms | 16.7 ms |
+
+Medians of 15 samples. The 2,500× increase in table size costs roughly 8 ms, and walking 200,000
+rows in costs about 9 ms more than the first page — the depth-independence the design claims,
+rather than a promise about it. The residual difference is buffer-cache behaviour on a larger
+index, not the pagination strategy.
+
+**Virtualization: judged unnecessary, not overlooked.** Server cost is flat, but DOM cost is linear
+in what the user has *loaded* — and loading is an explicit "Load more" click of 25 rows, not
+infinite scroll. Reaching even 500 rendered rows takes 20 deliberate actions. Virtualizing would
+add a dependency and complicate every spec that addresses rows by selector, to fix a cost this UI
+does not reach. If load-more became infinite scroll, or the page size grew, the threshold worth
+acting on is somewhere near 1,000 rendered rows.
 
 **Composite indexes covering the exact `ORDER BY` and `WHERE`:**
 

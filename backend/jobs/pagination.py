@@ -16,10 +16,28 @@ feed-shaped dashboard that is the right trade — filter and search are how user
 actually narrow a large list.
 """
 
+from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.pagination import CursorPagination
 
 
-class JobCursorPagination(CursorPagination):
+class BadCursorIsBadRequest:
+    """Report a malformed cursor as 400, not DRF's 404.
+
+    DRF raises `NotFound` when a cursor fails to decode, which tells the client
+    the *collection* does not exist and sends them looking in the wrong place.
+    A cursor is a query parameter, so a malformed one is a bad request — the
+    same class of mistake as `?status=BANANA`, and it is reported the same way,
+    blamed on the parameter that caused it (TEST_PLAN case F5).
+    """
+
+    def decode_cursor(self, request):
+        try:
+            return super().decode_cursor(request)
+        except NotFound as exc:
+            raise ValidationError({"cursor": [str(exc.detail)]}) from exc
+
+
+class JobCursorPagination(BadCursorIsBadRequest, CursorPagination):
     # Must match Job.Meta.ordering. The `-id` tiebreaker makes the ordering
     # total, which keyset pagination requires for correctness: with ties, rows
     # can be skipped or repeated across page boundaries (TEST_PLAN case F2).
@@ -41,7 +59,7 @@ class JobCursorPagination(CursorPagination):
     max_page_size = 100
 
 
-class JobStatusCursorPagination(CursorPagination):
+class JobStatusCursorPagination(BadCursorIsBadRequest, CursorPagination):
     """History pages for a single job.
 
     Same reasoning as above, one level down: a job polled by a scheduler can
