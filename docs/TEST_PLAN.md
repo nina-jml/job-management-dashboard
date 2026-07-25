@@ -20,6 +20,7 @@ Slice detail lives in [PLAN.md](./PLAN.md).
 | 2 | `POST /api/jobs/` + automatic PENDING, atomic, name validation | `02-create-job-api` | B1, B6, B7 | B2, B3, B4 | T2 | pending |
 | 3 | `PATCH` appends event, projection guard, `select_for_update`, transition policy | `03-update-job-api` | C1, C3, C4, C8, C9, C10 | C5, C6 | T2 | pending |
 | 4 | `DELETE` + cascade, `GET /api/jobs/<id>/statuses/` | `04-delete-job-api` | D1, D2, D3 | D4 | **T3** | pending |
+| 4.5 | 🔍 **UI mockup & design sign-off** — every UI state on one static page, no backend | — | — | — | review gate | pending |
 | 5 | UI: list, badges, typed client, `ErrorBanner`, loading/empty states | `05-job-list-ui` | E1, E3, E6 | — † | T2 | pending |
 | 6 | UI: create form + client-side validation | `06-create-job-ui` | B1 | B2, B3 | T2 | pending |
 | 7 | ⭐ UI: status update — **the prompt's required critical flow** | `07-update-status-ui` | C1, C2 | C7 | **T3** | pending |

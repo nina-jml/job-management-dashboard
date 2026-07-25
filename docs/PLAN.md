@@ -158,6 +158,33 @@ monotonic guard. C9 (two concurrent PATCHes, no lost update) is the case that pr
 D2 proves the history is unreachable via the API, D3 (backend unit) proves no orphan rows survive — the
 E2E check alone cannot tell those apart.
 
+### Slice 4.5 — UI mockup & design sign-off 🔍
+**S: S** · **Spec:** none — this is a review gate · **Validation: explicit approval before slice 5**
+
+One self-contained HTML page showing **every state the UI can be in**, with hard-coded data, no backend and
+no React. Reviewed and approved before a line of component code is written.
+
+States it must show:
+
+| Area | States |
+|---|---|
+| Job list | populated (all four status badges), empty, loading, error + retry |
+| Create form | idle, invalid (empty / whitespace), submitting, server error with input preserved |
+| Status control | dropdown closed, dropdown open, update in flight (optimistic), rolled back after failure |
+| History | timeline collapsed, expanded |
+| Delete | button, in-app confirm dialog (never `window.confirm`), row-restored-after-failure |
+| Scale controls | status filter, search box, "load more" affordance, end-of-list |
+
+*Why the gate exists:* a layout or interaction problem caught on a static page costs minutes. The same
+problem caught after slices 5–8 are wired through TanStack Query means unpicking components, tests and
+optimistic-update logic that were all built on the wrong shape.
+
+*Why it sits here but need not run here:* it has **no backend dependency**, so it can be built and reviewed
+in parallel with slices 2–4 rather than blocking after them. The only hard constraint is that it is
+approved before slice 5 starts.
+
+Deliverable: a viewable page (published artifact link) plus the same file committed under `docs/mockup/`.
+
 ### Slice 5 — Frontend: job list
 **S: M** · **Spec:** `05-job-list-ui` · **Cases:** E1, E3, E6 · **Validation: T1 → T2**
 
