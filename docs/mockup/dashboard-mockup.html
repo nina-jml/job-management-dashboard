@@ -239,9 +239,11 @@
   /* ---------- rows ---------- */
   .rows { display: flex; flex-direction: column; }
 
+  /* Name leads (it's what you scan for), status sits right where the eye
+     lands before the controls that act on it. */
   .row {
     display: grid;
-    grid-template-columns: 7.5rem minmax(0, 1fr) auto auto;
+    grid-template-columns: minmax(0, 1fr) auto 9.5rem auto;
     align-items: center;
     gap: 1rem;
     padding: 0.8rem 1.1rem;
@@ -260,6 +262,42 @@
     border-radius: 2px;
     text-align: center;
     white-space: nowrap;
+    display: inline-block;
+  }
+  .status-cell { display: flex; justify-content: flex-end; }
+
+  /* Terminal jobs state why they have no control, rather than showing a dead
+     button. Sized as a label, not as body copy. */
+  .terminal-note {
+    font-family: var(--mono);
+    font-size: 0.66rem;
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    color: var(--faint);
+    white-space: nowrap;
+  }
+
+  .scope-hint {
+    font-size: 0.7rem;
+    color: var(--faint);
+    font-style: italic;
+    max-width: 22rem;
+  }
+
+  /* The badge becomes this select in place — one control, one location,
+     no duplicated status. */
+  .status-select {
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 0.2rem 0.3rem;
+    width: 100%;
+    border: 1px solid var(--accent);
+    border-radius: 2px;
+    background: var(--surface);
+    color: var(--text);
   }
   .status[data-status="PENDING"]   { color: var(--st-pending);   background: var(--st-pending-bg); }
   .status[data-status="RUNNING"]   { color: var(--st-running);   background: var(--st-running-bg); }
@@ -293,65 +331,9 @@
     * { transition: none !important; }
   }
 
-  /* ---------- status menu ---------- */
-  .menu-wrap { position: relative; }
-  .menu {
-    position: absolute;
-    right: 0;
-    top: calc(100% + 4px);
-    z-index: 20;
-    min-width: 10.5rem;
-    background: var(--surface);
-    border: 1px solid var(--border-firm);
-    border-radius: var(--r);
-    box-shadow: var(--shadow);
-    padding: 0.25rem;
-    display: flex;
-    flex-direction: column;
-  }
-  .menu button {
-    border: none;
-    background: transparent;
-    text-align: left;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.4rem 0.5rem;
-    font-family: var(--mono);
-    font-size: 0.72rem;
-    letter-spacing: 0.07em;
-    text-transform: uppercase;
-  }
-  .menu button:hover:not([disabled]) { background: var(--surface-alt); }
-  .menu button[aria-current="true"] { color: var(--accent); }
-  .menu button[disabled] { opacity: 0.45; cursor: not-allowed; }
-  .menu-note {
-    margin-left: auto;
-    font-size: 0.62rem;
-    letter-spacing: 0.08em;
-    color: var(--faint);
-    text-transform: uppercase;
-  }
-  .swatch { width: 8px; height: 8px; border-radius: 2px; flex: none; }
-
-  .terminal-note {
-    font-family: var(--mono);
-    font-size: 0.66rem;
-    text-transform: uppercase;
-    letter-spacing: 0.09em;
-    color: var(--faint);
-    white-space: nowrap;
-  }
-
-  .scope-hint {
-    font-size: 0.72rem;
-    color: var(--faint);
-    font-style: italic;
-  }
-
   /* ---------- history timeline ---------- */
   .history {
-    padding: 0.25rem 1.1rem 1rem 8.6rem;
+    padding: 0.25rem 1.1rem 1rem 2rem;
     border-bottom: 1px solid var(--border);
     background: var(--surface-alt);
   }
@@ -503,8 +485,9 @@
   .scroll-x { overflow-x: auto; }
 
   @media (max-width: 40rem) {
-    .row { grid-template-columns: 6.5rem minmax(0, 1fr); row-gap: 0.6rem; }
-    .row .meta-col, .row .actions { grid-column: 1 / -1; }
+    .row { grid-template-columns: minmax(0, 1fr) auto; row-gap: 0.6rem; }
+    .row .actions { grid-column: 1 / -1; justify-content: flex-end; }
+    .status-cell { justify-content: flex-start; }
     .history { padding-left: 1.1rem; }
   }
 </style>
@@ -549,8 +532,7 @@
         <div class="field grow">
           <label for="q">Search all jobs</label>
           <input type="search" id="q" placeholder="Search every job by name…" />
-          <span class="scope-hint">Mockup filters the loaded rows; the real search is server-side
-            across the whole table, debounced.</span>
+          <span class="scope-hint">Mockup filters loaded rows — the real one queries the whole table.</span>
         </div>
         <div class="field">
           <label>Status</label>
@@ -599,9 +581,9 @@
           doesn't jump when data lands.</p>
         <div class="frame">
           <div class="rows">
-            <div class="row"><div class="skel w1"></div><div class="skel w2"></div><div class="skel w3"></div><div></div></div>
-            <div class="row"><div class="skel w1"></div><div class="skel w2"></div><div class="skel w3"></div><div></div></div>
-            <div class="row"><div class="skel w1"></div><div class="skel w2"></div><div class="skel w3"></div><div></div></div>
+            <div class="row"><div class="skel w2"></div><div class="skel w3"></div><div class="skel w1"></div><div></div></div>
+            <div class="row"><div class="skel w2"></div><div class="skel w3"></div><div class="skel w1"></div><div></div></div>
+            <div class="row"><div class="skel w2"></div><div class="skel w3"></div><div class="skel w1"></div><div></div></div>
           </div>
         </div>
       </div>
@@ -656,10 +638,11 @@
         <div class="frame">
           <div class="rows">
             <div class="row">
-              <span class="status" data-status="RUNNING"><span class="pending-dot"></span>Running</span>
               <span class="name"><b>Battery Thermal Runaway (2C)</b>
                 <span class="meta"><span>#4812</span><span>saving…</span></span></span>
-              <span></span><span class="actions"><button disabled>Change status</button></span>
+              <span></span>
+              <span class="status-cell"><span class="status" data-status="RUNNING"><span class="pending-dot"></span>Running</span></span>
+              <span class="actions"><button disabled>Edit</button></span>
             </div>
           </div>
           <div class="banner">
@@ -672,10 +655,11 @@
           </div>
           <div class="rows">
             <div class="row">
-              <span class="status" data-status="PENDING">Pending</span>
               <span class="name"><b>Battery Thermal Runaway (2C)</b>
                 <span class="meta"><span>#4812</span><span>restored</span></span></span>
-              <span></span><span class="actions"><button>Change status</button></span>
+              <span></span>
+              <span class="status-cell"><span class="status" data-status="PENDING">Pending</span></span>
+              <span class="actions"><button>Edit</button></span>
             </div>
           </div>
         </div>
@@ -744,29 +728,45 @@
 
       <div class="plate">
         <div class="plate-head"><h3>Status control by state</h3><span class="case-tag">C12</span><span class="case-tag">C3</span></div>
-        <p class="plate-note">What each row offers. A completed job says why it has no control instead of
-          showing a disabled button with no explanation.</p>
+        <p class="plate-note">What each row offers, and what editing looks like: <b>Edit</b> turns the
+          status badge itself into a select, in place — so status appears exactly once per row rather than
+          as a badge on one side and a button on the other. Illegal transitions are disabled inside the
+          select. A completed job says why it has no control instead of showing a dead button.</p>
         <div class="frame">
           <div class="rows">
             <div class="row">
-              <span class="status" data-status="PENDING">Pending</span>
               <span class="name"><b>Rotor Blade Modal Analysis</b>
                 <span class="meta"><span>#4811</span><span>queued 07:58</span></span></span>
               <span></span>
-              <span class="actions"><button>Change status</button><button class="danger">Delete</button></span>
+              <span class="status-cell"><span class="status" data-status="PENDING">Pending</span></span>
+              <span class="actions"><button>Edit</button><button class="danger">Delete</button></span>
             </div>
             <div class="row">
-              <span class="status" data-status="COMPLETED">Completed</span>
+              <span class="name"><b>Transonic Wing Sweep — editing</b>
+                <span class="meta"><span>#4814</span><span>the badge itself becomes the control</span></span></span>
+              <span></span>
+              <span class="status-cell">
+                <select class="status-select" aria-label="Status for Transonic Wing Sweep">
+                  <option disabled>Pending</option>
+                  <option selected>Running</option>
+                  <option>Completed</option>
+                  <option>Failed</option>
+                </select>
+              </span>
+              <span class="actions"><button class="ghost">Cancel</button><button class="danger">Delete</button></span>
+            </div>
+            <div class="row">
               <span class="name"><b>LES Combustor Validation</b>
                 <span class="meta"><span>#4813</span><span>finished 10:58</span></span></span>
               <span></span>
-              <span class="actions"><span class="terminal-note">Completed — no further changes</span><button class="danger">Delete</button></span>
+              <span class="status-cell"><span class="status" data-status="COMPLETED">Completed</span></span>
+              <span class="actions"><span class="terminal-note">No further changes</span><button class="danger">Delete</button></span>
             </div>
             <div class="row">
-              <span class="status" data-status="FAILED">Failed</span>
               <span class="name"><b>Crash Pulse — Frontal Offset 40%</b>
                 <span class="meta"><span>#4809</span><span>failed 07:44</span></span></span>
               <span></span>
+              <span class="status-cell"><span class="status" data-status="FAILED">Failed</span></span>
               <span class="actions"><button>↻ Re-run</button><button class="danger">Delete</button></span>
             </div>
           </div>
@@ -826,7 +826,7 @@
   var filter = "ALL";
   var query = "";
   var expanded = null;
-  var menuFor = null;
+  var editingId = null;
   var banner = null;
   var savingId = null;
 
@@ -892,7 +892,7 @@
   }
 
   function changeStatus(job, next, isRetry) {
-    menuFor = null;
+    editingId = null;
     var previous = job.status;
     if (!isRetry && !canTransition(previous, next)) return;   // unreachable via the UI
     job.status = next;
@@ -961,8 +961,9 @@
 
   function renderRow(job) {
     var row = el("div", "row");
-    row.appendChild(statusEl(job.status, job.status === "RUNNING"));
+    var editing = editingId === job.id;
 
+    // --- name (leads: it's what you scan for) ---
     var name = el("span", "name");
     name.appendChild(el("b", null, job.name));
     var meta = el("span", "meta");
@@ -973,8 +974,10 @@
     name.appendChild(meta);
     row.appendChild(name);
 
+    // --- history disclosure ---
     var histBtn = el("button", "ghost",
-      (expanded === job.id ? "▾ " : "▸ ") + job.history.length + " events");
+      (expanded === job.id ? "▾ " : "▸ ") + job.history.length +
+      (job.history.length === 1 ? " event" : " events"));
     histBtn.setAttribute("aria-expanded", expanded === job.id ? "true" : "false");
     histBtn.addEventListener("click", function () {
       expanded = expanded === job.id ? null : job.id;
@@ -982,59 +985,68 @@
     });
     row.appendChild(histBtn);
 
+    // --- status: badge, or the same cell as a select while editing ---
+    var statusCell = el("span", "status-cell");
+    if (editing) {
+      var select = el("select", "status-select");
+      select.setAttribute("aria-label", "Status for " + job.name);
+      STATUSES.forEach(function (s) {
+        var opt = document.createElement("option");
+        opt.value = s;
+        opt.textContent = LABEL[s];
+        opt.selected = s === job.status;
+        // Every state stays visible so the rules are legible; only legal ones
+        // are selectable.
+        opt.disabled = s !== job.status && !canTransition(job.status, s);
+        select.appendChild(opt);
+      });
+      select.addEventListener("change", function () {
+        if (this.value !== job.status) {
+          changeStatus(job, this.value);
+        } else {
+          editingId = null;   // re-picked the current status: nothing to do
+          render();
+        }
+      });
+      select.addEventListener("keydown", function (e) {
+        if (e.key === "Escape") { editingId = null; render(); }
+      });
+      statusCell.appendChild(select);
+      window.setTimeout(function () { select.focus(); }, 0);
+    } else {
+      statusCell.appendChild(statusEl(job.status, job.status === "RUNNING"));
+    }
+    row.appendChild(statusCell);
+
+    // --- actions ---
     var actions = el("div", "actions");
 
-    if (canRetry(job.status)) {
-      // Failed jobs get a re-run instead of a status menu.
+    if (editing) {
+      var cancel = el("button", "ghost", "Cancel");
+      cancel.addEventListener("click", function () { editingId = null; render(); });
+      actions.appendChild(cancel);
+    } else if (canRetry(job.status)) {
+      // Failed jobs get a re-run rather than a status edit.
       var retry = el("button", null, "↻ Re-run");
       retry.disabled = savingId === job.id;
       retry.title = "Start this job again — appends a Pending event to its history";
       retry.addEventListener("click", function () { changeStatus(job, "PENDING", true); });
       actions.appendChild(retry);
     } else if (isTerminal(job.status)) {
-      // Completed is a genuine dead end: no menu, no re-run. Say so, rather
-      // than showing a disabled control with no explanation.
-      var done = el("span", "terminal-note", "Completed — no further changes");
-      actions.appendChild(done);
+      // Completed is a genuine dead end. Say so, rather than showing a dead
+      // control with no explanation.
+      actions.appendChild(el("span", "terminal-note", "No further changes"));
     } else {
-      var menuWrap = el("div", "menu-wrap");
-      var trigger = el("button", null, "Change status");
-      trigger.disabled = savingId === job.id;
-      trigger.setAttribute("aria-haspopup", "true");
-      trigger.setAttribute("aria-expanded", menuFor === job.id ? "true" : "false");
-      trigger.addEventListener("click", function (e) {
+      var edit = el("button", null, "Edit");
+      edit.disabled = savingId === job.id;
+      edit.title = "Change this job's status";
+      edit.setAttribute("aria-label", "Edit status for " + job.name);
+      edit.addEventListener("click", function (e) {
         e.stopPropagation();
-        menuFor = menuFor === job.id ? null : job.id;
+        editingId = job.id;
         render();
       });
-      menuWrap.appendChild(trigger);
-
-      if (menuFor === job.id) {
-        var menu = el("div", "menu");
-        menu.addEventListener("click", function (e) { e.stopPropagation(); });
-        STATUSES.forEach(function (s) {
-          var allowed = canTransition(job.status, s);
-          var current = s === job.status;
-          var b = el("button", null, null);
-          var sw = el("span", "swatch");
-          sw.style.background = "var(--st-" + s.toLowerCase() + ")";
-          b.appendChild(sw);
-          b.appendChild(document.createTextNode(LABEL[s]));
-          if (current) {
-            b.appendChild(el("span", "menu-note", "current"));
-            b.setAttribute("aria-current", "true");
-          } else if (!allowed) {
-            b.appendChild(el("span", "menu-note", "not allowed"));
-          }
-          // Every state stays visible so the rules are legible; only the legal
-          // ones are actionable.
-          b.disabled = !allowed;
-          if (allowed) b.addEventListener("click", function () { changeStatus(job, s); });
-          menu.appendChild(b);
-        });
-        menuWrap.appendChild(menu);
-      }
-      actions.appendChild(menuWrap);
+      actions.appendChild(edit);
     }
 
     var del = el("button", "danger", "Delete");
@@ -1139,10 +1151,6 @@
       });
     });
     render();
-  });
-
-  document.addEventListener("click", function () {
-    if (menuFor !== null) { menuFor = null; render(); }
   });
 
   render();
