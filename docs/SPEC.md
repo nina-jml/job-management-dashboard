@@ -231,8 +231,24 @@ row, so two simultaneous status changes serialize instead of racing on the proje
 Errors: unknown status → `400`; unknown id → `404`.
 
 ### `DELETE /api/jobs/<id>/`
-`204 No Content`. `on_delete=CASCADE` removes all `JobStatus` rows — enforced at the DB level by the FK
-constraint, not only in Django, so it holds for raw SQL too.
+`204 No Content`, and every `JobStatus` row for that job goes with it.
+
+Worth being precise about *where* that is enforced, because it is easy to assume more than is true.
+Django's `on_delete=CASCADE` is an **ORM-level** rule: the delete collector loads the affected children and
+issues its own `DELETE` statements. The foreign key Django emits in Postgres carries no `ON DELETE CASCADE`
+clause, so a raw `DELETE FROM jobs_job …` outside the ORM raises a foreign-key violation rather than
+cascading.
+
+For a prototype where every write goes through the ORM that is sufficient. It is called out here because
+the difference matters the moment anything touches the database directly — a bulk cleanup script, a
+migration, psql. Making it true at the database level as well is one `RunSQL` migration
+(`ALTER TABLE … ADD CONSTRAINT … ON DELETE CASCADE`), and is the natural hardening step if this ever grew
+beyond a prototype.
+
+Testing follows the same split: E2E can only prove the history is *unreachable* through the API (case D2),
+because the nested `…/statuses/` route 404s on the parent lookup whether the children were deleted or
+orphaned. Proving **no orphan rows remain** requires direct database access, so it is a backend unit test
+(case D3).
 
 ### `GET /api/health/`
 `{"status": "ok", "database": "ok"}` — used by the compose healthcheck and by `make test` to know when the

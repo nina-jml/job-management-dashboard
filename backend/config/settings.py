@@ -78,7 +78,7 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "UTC"
 USE_I18N = False
-USE_TZ = True  # store UTC, render in the browser's locale (OPEN_QUESTIONS A6)
+USE_TZ = True  # store UTC, render in the browser's locale (OPEN_QUESTIONS A5)
 
 
 # --- Static -----------------------------------------------------------------

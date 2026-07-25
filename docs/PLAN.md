@@ -146,15 +146,17 @@ handler, `seed_jobs` management command.
 `POST /api/jobs/`, atomic job + initial status, name validation. A job must never exist with an empty log.
 
 ### Slice 3 — PATCH: append event, update projection
-**S: M** · **Spec:** `03-update-job-api` · **Cases:** C1, C3, C4, C5, C6, C8, C9 · **Validation: T1 → T2**
+**S: M** · **Spec:** `03-update-job-api` · **Cases:** C1, C3, C4, C5, C6, C8, C9, C10 · **Validation: T1 → T2**
 
 Write-only `status` serializer field, `record_status()` with `select_for_update()` + atomic block, the
 monotonic guard. C9 (two concurrent PATCHes, no lost update) is the case that proves the lock.
 
 ### Slice 4 — Delete + cascade + history endpoint
-**S: S** · **Spec:** `04-delete-job-api` · **Cases:** D1, D2, D3 · **Validation: T3** (backend complete)
+**S: S** · **Spec:** `04-delete-job-api` · **Cases:** D1, D2, D3, D4 · **Validation: T3** (backend complete)
 
-`DELETE` → 204, FK cascade enforced at the DB level; `GET /api/jobs/<id>/statuses/`.
+`DELETE` → 204 with the ORM cascade removing every `JobStatus` row; `GET /api/jobs/<id>/statuses/`.
+D2 proves the history is unreachable via the API, D3 (backend unit) proves no orphan rows survive — the
+E2E check alone cannot tell those apart.
 
 ### Slice 5 — Frontend: job list
 **S: M** · **Spec:** `05-job-list-ui` · **Cases:** E1, E3, E6 · **Validation: T1 → T2**
@@ -177,13 +179,13 @@ Create → assert `PENDING` → change to `RUNNING` → badge updates → **surv
 reachable. Optimistic update with rollback on failure.
 
 ### Slice 8 — Frontend: delete
-**S: S** · **Spec:** `08-delete-job-ui` · **Cases:** D1, D4, D5 · **Validation: T1 → T2**
+**S: S** · **Spec:** `08-delete-job-ui` · **Cases:** D1, D5, D6 · **Validation: T1 → T2**
 
 Row disappears without refresh and stays gone after reload. Any confirm step is an in-app dialog —
 **never `window.confirm`**, which blocks automation and would hang the suite.
 
 ### Slice 9 — Fault-injection sweep
-**S: M** · **Spec:** `09-fault-injection` · **Cases:** B5, C7, D4, E4, E5 · **Validation: T2**
+**S: M** · **Spec:** `09-fault-injection` · **Cases:** B5, C7, D5, E4, E5 · **Validation: T2**
 
 `page.route()` fault injection proves the handling built in slices 1–8 holds: 500 on each verb, aborted
 requests, slow responses, optimistic rollback, and recovery once the route is unblocked.

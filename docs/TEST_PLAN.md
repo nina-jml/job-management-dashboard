@@ -18,13 +18,13 @@ Slice detail lives in [PLAN.md](./PLAN.md).
 | 1 | Models, indexes, cursor-paginated `GET /api/jobs/`, error handler, seed command | `01-jobs-list-api` | E1, E2 | E7, E8 | T2 | ✅ done |
 | — | **Test plan sign-off** | — | — | — | — | ⏳ **awaiting review** |
 | 2 | `POST /api/jobs/` + automatic PENDING, atomic, name validation | `02-create-job-api` | B1, B6, B7 | B2, B3, B4 | T2 | pending |
-| 3 | `PATCH` appends event, projection guard, `select_for_update` | `03-update-job-api` | C1, C3, C4, C8, C9 | C5, C6 | T2 | pending |
-| 4 | `DELETE` + cascade, `GET /api/jobs/<id>/statuses/` | `04-delete-job-api` | D1, D2 | D3 | **T3** | pending |
+| 3 | `PATCH` appends event, projection guard, `select_for_update`, transition policy | `03-update-job-api` | C1, C3, C4, C8, C9, C10 | C5, C6 | T2 | pending |
+| 4 | `DELETE` + cascade, `GET /api/jobs/<id>/statuses/` | `04-delete-job-api` | D1, D2, D3 | D4 | **T3** | pending |
 | 5 | UI: list, badges, typed client, `ErrorBanner`, loading/empty states | `05-job-list-ui` | E1, E3, E6 | — † | T2 | pending |
 | 6 | UI: create form + client-side validation | `06-create-job-ui` | B1 | B2, B3 | T2 | pending |
 | 7 | ⭐ UI: status update — **the prompt's required critical flow** | `07-update-status-ui` | C1, C2 | C7 | **T3** | pending |
-| 8 | UI: delete (in-app confirm, never `window.confirm`) | `08-delete-job-ui` | D1, D5 | D4 | T2 | pending |
-| 9 | Fault-injection sweep: 500 per verb, abort, slow, rollback, recovery | `09-fault-injection` | — ‡ | B5, C7, D4, E4, E5 | T2 | pending |
+| 8 | UI: delete (in-app confirm, never `window.confirm`) | `08-delete-job-ui` | D1, D6 | D5 | T2 | pending |
+| 9 | Fault-injection sweep: 500 per verb, abort, slow, rollback, recovery | `09-fault-injection` | — ‡ | B5, C7, D5, E4, E5 | T2 | pending |
 | 10 | Scale: load-more, status filter, debounced search, 250k seeded | `10-pagination-scale` | F1–F4, F6, F7 | F5 | T2 | pending |
 | 11 | README, performance + prompt-engineering writeups, final tidy | full suite | A1–A4 | — | **T3 ×2** | pending |
 
@@ -76,7 +76,7 @@ is exactly the failure the evaluator's one-shot `make test` would surface.
 
 ## 3. Case matrix
 
-`+` positive · `−` negative. **40 cases, 14 negative.** Each ID maps to an assertion in the named spec file.
+`+` positive · `−` negative. **42 cases, 14 negative.** Each ID maps to an assertion in the named spec file.
 
 ### A · Infrastructure gate — `00-smoke` + manual
 
@@ -106,25 +106,40 @@ it is the evaluation not starting.
 
 | ID | ± | Action | Expected behaviour | Validation |
 |---|---|---|---|---|
-| C1 | + | PENDING → RUNNING | badge updates immediately | **persists across reload**; log has 2 entries, `PENDING` still present |
+| C1 | + | PENDING → RUNNING | badge updates immediately | **persists across reload**; log has 2 entries, `PENDING` still present; **`current_status_at` and `updated_at` both advance** |
 | C2 | + | Reach all four states | each selectable and persisted | badge label + colour correct per state |
-| C3 | + | COMPLETED → RUNNING (backwards) | allowed | asserts the no-state-machine decision (OQ assumption A2); log grows |
-| C4 | + | Same status applied twice | new event appended | log grows; `current_status` unchanged; `current_status_at` advances |
+| C3 | + | COMPLETED → RUNNING (backwards) | allowed under the shipped permissive policy | documents `transitions.POLICY` (Q7) rather than asserting an absence of rules; log grows |
+| C4 | + | Same status twice — double-submit or retry race | handled as an ordinary update | API-level only; unreachable through the dropdown. Appends an event, `current_status` unchanged, **`current_status_at` and `updated_at` advance**, nothing corrupted |
 | C5 | − | `status: "NOT_A_STATUS"` | 400 | log unchanged; projection unchanged |
 | C6 | − | PATCH nonexistent id | 404 | no side effects |
 | C7 | − | PATCH returns 500 | **optimistic badge rolls back** to prior value | error shown; log unchanged after reload |
-| C8 | + | Rename only, no `status` key | name changes | **no status event appended** — log length unchanged |
+| C8 | + | Rename only, no `status` key | name changes | **no status event appended**; **`updated_at` advances but `current_status_at` does not** — the exact divergence the projection guard depends on |
 | C9 | + | Two concurrent PATCHes | both events logged | `current_status` = the later event; no lost update (row lock holds) |
+| C10 | + | Backend unit: policy swapped to `STRICT` | COMPLETED → RUNNING rejected with 400 | proves the strict map is functional rather than decorative (`make test-backend`) |
+
+**On timestamps.** `updated_at` and `current_status_at` are asserted separately throughout this group
+because they are *meant* to diverge: any save moves `updated_at`, but only a status event moves
+`current_status_at`. C8 pins that divergence down — and it is precisely why `record_status()` guards on
+`current_status_at`. Guarding on `updated_at` would let a rename make a later legitimate status event look
+stale and be silently dropped.
 
 ### D · Delete — `04-delete-job-api`, `08-delete-job-ui`
 
 | ID | ± | Action | Expected behaviour | Validation |
 |---|---|---|---|---|
-| D1 | + | Delete a job | 204; row disappears | no refresh needed; **still gone after reload** |
-| D2 | + | Cascade | all `JobStatus` rows removed | `GET …/statuses/` → 404; no orphans |
-| D3 | − | Delete nonexistent id | 404 | no side effects |
-| D4 | − | DELETE returns 500 | **row restored in UI** | error shown; job still present after reload |
-| D5 | + | Delete while another row's timeline is expanded | unrelated rows unaffected | expanded state preserved |
+| D1 | + | Delete a job | 204; the row disappears | two separate claims: **(a)** the row leaves the list with no manual refresh — the "UI updates dynamically" requirement; **(b)** after a full page reload it is *still* absent, and `GET /api/jobs/<id>/` → 404 — proving the delete reached the server rather than only the client cache |
+| D2 | + | Cascade — history unreachable | `GET /api/jobs/<id>/statuses/` → 404 | proves the history is gone **through the API**. See the note below on what this does *not* prove |
+| D3 | + | Cascade — no orphan rows (backend unit) | `JobStatus.objects.filter(job_id=<deleted>)` is empty | the real cascade assertion; runs under `make test-backend` |
+| D4 | − | Delete nonexistent id | 404 | no side effects |
+| D5 | − | DELETE returns 500 | **row restored in UI** | error shown; job still present after reload |
+| D6 | + | Delete while another row's timeline is expanded | unrelated rows unaffected | expanded state preserved |
+
+**Why D2 alone is not enough.** The `…/statuses/` route is nested under the job, so it 404s on the *parent*
+lookup. A job whose status rows were orphaned rather than deleted would return a byte-identical 404 —
+the E2E assertion cannot tell the two apart. Detecting orphans requires querying `JobStatus` by a `job_id`
+that no longer resolves, which needs direct database access; hence D3 as a backend unit test. Related: the
+cascade is enforced by Django's ORM collector, **not** by an `ON DELETE CASCADE` clause on the Postgres
+constraint (see SPEC.md §2).
 
 ### E · List & read — `01-jobs-list-api`, `05-job-list-ui`
 
@@ -163,14 +178,14 @@ gate (group A) is positive-only by nature — there is no meaningful "negative" 
 | `GET /api/jobs/` includes current status | E1, E2 | E4, E7 |
 | `POST /api/jobs/` auto-creates PENDING | B1 | B2, B3, B4, B5 |
 | `PATCH` creates a new JobStatus entry | C1, C4, C8 | C5, C6, C7 |
-| `DELETE` cascades to JobStatus | D1, D2 | D3, D4 |
+| `DELETE` cascades to JobStatus | D1, D2, D3 | D4, D5 |
 | Frontend lists jobs with status | E1, E3 | E4 |
 | Create form | B1, B6, B7 | B2, B3 |
 | Status update control | C1, C2, C3 | C7 |
-| Delete button | D1, D5 | D4 |
-| API error handling | E5 (recovery) | B5, C7, D4, E4, F5 |
+| Delete button | D1, D6 | D5 |
+| API error handling | E5 (recovery) | B5, C7, D5, E4, F5 |
 | Client-side validation | B1 | B2, B3, B4 |
-| UI updates dynamically | B1, C1, D1 | C7, D4 (rollback) |
+| UI updates dynamically | B1, C1, D1 | C7, D5 (rollback) |
 | **Required E2E critical flow** | **C1** (create → PENDING → RUNNING) | C7 |
 | Performance at scale | F1–F4, F6, F7 | F5, E8 |
 | `make test` from clean | A1, A2, A3, A4 | — |
