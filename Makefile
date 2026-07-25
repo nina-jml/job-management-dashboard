@@ -34,7 +34,9 @@ test-spec: ## Run one spec against the running stack, e.g. make test-spec SPEC=0
 
 test-backend: ## Run backend unit tests (pytest-django), outside the make test gate
 	$(COMPOSE) up -d --wait db
-	$(COMPOSE) run --rm backend pytest
+	# --build so the image carries the code being tested. Backend source is not
+	# bind-mounted (unlike e2e specs) — the image stays the artifact.
+	$(COMPOSE) run --rm --build backend pytest
 
 test-all: test-backend test ## Run backend unit tests and the E2E suite
 

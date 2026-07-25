@@ -30,14 +30,16 @@ class JobViewSet(
     mixins.ListModelMixin,
     mixins.RetrieveModelMixin,
     mixins.CreateModelMixin,
+    mixins.UpdateModelMixin,
     viewsets.GenericViewSet,
 ):
-    """Jobs: list, retrieve, create.
+    """Jobs: list, retrieve, create, update.
 
     Composed from explicit mixins rather than `ModelViewSet` so each verb
-    arrives with the slice that tests it — update in slice 3, destroy in
-    slice 4. An untested endpoint is never reachable.
+    arrives with the slice that tests it — destroy lands in slice 4. An
+    untested endpoint is never reachable.
     """
 
     queryset = Job.objects.all()
     serializer_class = JobSerializer
+    http_method_names = ["get", "post", "patch", "head", "options"]

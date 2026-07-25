@@ -1,14 +1,15 @@
 """
 The single writer of the status projection.
 
-Every path that records a status — job creation, PATCH, the seed command —
-goes through `record_status()`. That is the whole point: one function can drift
-from the log, six cannot.
+Every path that records a status — job creation, PATCH, re-run, the seed
+command — goes through `record_status()`. That is the whole point: one function
+can drift from the log, six cannot.
 """
 
 from django.db import transaction
 from django.utils import timezone
 
+from . import transitions
 from .models import Job, JobStatus, StatusType
 
 
@@ -20,7 +21,12 @@ def record_status(job: Job, status_type: str, *, timestamp=None) -> JobStatus:
     loses information. Only the projection on `Job` is conditional.
 
     Locks the job row for the duration, so two concurrent status changes
-    serialize instead of racing (TEST_PLAN case C9).
+    serialize instead of racing (TEST_PLAN case C11).
+
+    This is the low-level writer: it enforces no transition rules, because the
+    seed command and job creation legitimately write states the state machine
+    would not permit as *edits*. Callers that act on user input go through
+    `apply_status_change()`.
 
     `timestamp` is not accepted from API clients (OPEN_QUESTIONS Q3); it exists
     for the seed command, which backdates rows to build realistic histories.
@@ -47,6 +53,38 @@ def record_status(job: Job, status_type: str, *, timestamp=None) -> JobStatus:
     job.updated_at = locked.updated_at
 
     return event
+
+
+@transaction.atomic
+def apply_status_change(job: Job, target: str) -> JobStatus | None:
+    """Move a job to `target`, enforcing the state machine.
+
+    Returns the appended event, or `None` when the request was a no-op.
+
+    Three cases, in order:
+
+    1. `target` is the status the job already has → **idempotent no-op**. Nothing
+       is appended and no error is raised. A double-click or a retried request
+       after a dropped response asked for a state the job is already in; that is
+       not a failure (OPEN_QUESTIONS Q8, TEST_PLAN case C6).
+    2. The job is FAILED and `target` is PENDING → a **re-run**.
+    3. Otherwise the transition must satisfy `transitions.ALLOWED`, or
+       `TransitionError` propagates and the view turns it into a 400.
+    """
+    # Lock before reading the status the decision is based on, or two concurrent
+    # requests could both validate against a stale value.
+    locked = Job.objects.select_for_update().get(pk=job.pk)
+    current = locked.current_status
+
+    if target == current:
+        return None
+
+    if transitions.can_retry(current) and target == transitions.RETRY_TARGET:
+        transitions.check_retry(current)
+    else:
+        transitions.check(current, target)
+
+    return record_status(job, target)
 
 
 @transaction.atomic

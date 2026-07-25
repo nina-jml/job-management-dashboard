@@ -23,6 +23,10 @@ export interface Job {
   current_status_at: string;
   created_at: string;
   updated_at: string;
+  /** States reachable from current_status — the UI disables everything else. */
+  allowed_transitions: StatusType[];
+  /** Only FAILED jobs can be re-run (OPEN_QUESTIONS Q7). */
+  can_retry: boolean;
 }
 
 export interface Page<T> {
@@ -39,6 +43,8 @@ export const JOB_FIELDS = [
   "current_status_at",
   "created_at",
   "updated_at",
+  "allowed_transitions",
+  "can_retry",
 ] as const;
 
 export async function listJobs(
