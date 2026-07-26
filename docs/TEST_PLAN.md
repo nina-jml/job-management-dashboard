@@ -26,7 +26,7 @@ Slice detail lives in [PLAN.md](./PLAN.md).
 | 7 | ⭐ UI: status update — **the prompt's required critical flow** | `07-update-status-ui` | C1, C2, C12, C15 | C9 | **T3** | ✅ done |
 | 8 | UI: delete (in-app confirm, never `window.confirm`), plus the two `client.ts` failure branches | `08-delete-job-ui` | D1, D6 | D5, E9, E10 | T2 | ✅ done |
 | 9 | Scale: load-more, status filter, 250k seeded | `09-pagination-scale` | F1–F3, F6–F9 | F5 | T2 | ✅ done |
-| 10 | Fault-injection pass: 500 per verb, slow responses, mutation recovery | `10-fault-injection` | — ‡ | the modes not already covered | T2 | pending |
+| 10 | Fault-injection pass: history failures, mutation recovery, aborted mutations, slow responses | `10-fault-injection` | — ‡ | the modes not already covered | T2 | ✅ done |
 | 11 | README, performance + prompt-engineering writeups, final tidy | full suite | A1–A4 | — | **T3 ×2** | pending |
 
 ‡ Slice 10 is negative by construction — its one positive assertion is recovery (E5: the error clears and

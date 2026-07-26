@@ -75,7 +75,7 @@ with the spec that proves it; full matrix in [`docs/TEST_PLAN.md`](docs/TEST_PLA
 | 7 | ⭐ UI: status update — the critical flow | `07-update-status-ui` | ✅ |
 | 8 | UI: delete + in-app confirm, and the `client.ts` failure branches | `08-delete-job-ui` | ✅ |
 | 9 | Scale: pagination and filter at 250k rows | `09-pagination-scale` | ✅ |
-| 10 | Fault-injection pass | `10-fault-injection` | ⏳ |
+| 10 | Fault-injection pass | `10-fault-injection` | ✅ |
 | 11 | README, writeups, final cold gate | full suite | ⏳ |
 
 Currently green: **96 E2E specs, 43 backend unit tests.**
@@ -360,14 +360,24 @@ feature rather than in a single sweep at the end: the create form's 500 lives in
 rollback and its 404 case in `07`, the list's error banner and recovery in `05`. Faults are injected
 with Playwright's `page.route()` — no fault-injection library, no test-only code path in the app.
 
-A final **fault-injection pass** (`10-fault-injection`) runs after the scale slice rather than before
-it, so it covers the pagination surfaces in the same pass. It is verification only and ships no
-runtime code — worth saying explicitly, because the *sweeper* described under
-[counts by status](#counts-by-status--designed-deliberately-not-built) is a different thing entirely: a
-scheduled production reconciler, designed and deliberately not built.
+A final **fault-injection pass** (`10-fault-injection`) covers what the per-slice specs cannot, and
+deliberately does not repeat what they already do. A 500 on each verb already exists where that verb
+lives, so re-testing it there would be theatre. What the pass adds is the ground none of them touch:
 
-If the pass has to be cut for time, the per-slice failure specs still stand on their own; what is lost
-is the systematic per-verb coverage, not the error handling itself.
+| | Why it was missing |
+|---|---|
+| The **history endpoint** failing at all | Its error branch had never run |
+| Recovery after a failed **mutation** | E5 only ever covered the list recovering |
+| A **dropped connection mid-mutation** | E9 only covered an aborted list request |
+| **Slow** responses as a visible state | Nothing asserted the UI looks busy rather than frozen |
+
+Recovery is the assertion that matters most: an app that reports a failure but can never move past it
+has handled the error only in the sense that it did not crash. So every fault is injected **once** —
+the second attempt has to succeed, and the banner has to go with it.
+
+It is verification only and ships no runtime code — worth saying explicitly, because the *sweeper*
+described under [counts by status](#counts-by-status--designed-deliberately-not-built) is a different
+thing entirely: a scheduled production reconciler, designed and deliberately not built.
 
 ---
 

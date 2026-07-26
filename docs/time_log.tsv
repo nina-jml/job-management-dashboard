@@ -12,3 +12,4 @@ start_epoch	end_epoch	start_iso	end_iso	label
 1785013920	1785015420	2026-07-25T21:12:00Z	2026-07-25T21:37:00Z	slice 7.5 — review fixes — tz on timestamps, multi-select filter, counts deferred to README; 96 e2e + 43 unit green (start reconstructed: timelog start hit a tool error)
 1785021673	1785022458	2026-07-25T23:21:13Z	2026-07-25T23:34:18Z	slice 8 — delete UI + client.ts fault cases — slice 8 — delete UI + E9/E10; 116 e2e green, no flakes
 1785022465	1785023454	2026-07-25T23:34:25Z	2026-07-25T23:50:54Z	slice 9 — scale: pagination at 250k — slice 9 — pagination at 250k; 125 e2e green, latency measured
+1785023461	1785024043	2026-07-25T23:51:01Z	2026-07-26T00:00:43Z	slice 10 — fault-injection pass — slice 10 — fault-injection pass; 135 e2e green
