@@ -468,7 +468,7 @@ The assignment took a bit longer than I anticipated (see time breakdown below), 
 waiting around for the agent. I initially went in recording my interactions with Claude from the very
 beginning, but soon realized that there would be some multi-tasking and waiting around / taking pauses
 in between (plus I have an old-ish Mac and I didn't want to eat into its 8GB RAM) so I stopped the
-recording. The transcript is saved in the docs folder.
+recording. The transcripts are saved in the docs folder.
 
 I spent a little time before working with Claude Code ramping up on the different technologies and
 doing a little research by browsing the internet and using Claude chat, which isn't captured here.
