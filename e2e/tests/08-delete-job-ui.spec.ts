@@ -107,6 +107,44 @@ test.describe("delete a job", () => {
     expect((await request.get(`/api/jobs/${job.id}/`)).status()).toBe(200);
   });
 
+  test("Escape still works after focus leaves the buttons", async ({ page, request }) => {
+    const job = await makeJob(request, "escape-blur");
+
+    await page.goto("/");
+    await listReady(page);
+    await openDeleteDialog(page, job.id);
+
+    // Click the explanatory text. It is not focusable, so focus falls back to
+    // <body> — and a keydown handler bound to the dialog element would never
+    // see the keypress again, because the dialog div is not focusable either
+    // and nothing inside it is focused to bubble from. The previous test
+    // presses Escape while Cancel still holds focus, so it cannot catch this.
+    await page.locator(".dialog p").click();
+    await page.keyboard.press("Escape");
+
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    expect((await request.get(`/api/jobs/${job.id}/`)).status()).toBe(200);
+  });
+
+  test("keeps Tab inside the dialog", async ({ page, request }) => {
+    const job = await makeJob(request, "focus-trap");
+
+    await page.goto("/");
+    await listReady(page);
+    await openDeleteDialog(page, job.id);
+
+    // aria-modal="true" tells assistive tech the rest of the page is inert. It
+    // does not make it so, so tabbing has to be held inside deliberately or the
+    // attribute is a claim the app does not honour.
+    for (let press = 0; press < 6; press += 1) {
+      await page.keyboard.press("Tab");
+      const inside = await page.evaluate(
+        () => document.activeElement?.closest(".dialog") !== null,
+      );
+      expect(inside).toBe(true);
+    }
+  });
+
   test("restores the row when the delete fails (D5)", async ({ page, request }) => {
     const job = await makeJob(request, "d5");
 
@@ -122,12 +160,25 @@ test.describe("delete a job", () => {
       });
     });
 
+    // Stall the reconciling refetch, registered after the first load so only
+    // the refetch is held.
+    //
+    // This is what makes the test bite. `useDeleteJob` invalidates the list in
+    // `finally`, so without the stall the row reappears from the server whether
+    // or not the rollback ran — delete the snapshot restore and the test still
+    // passes, which would make it a test of invalidation wearing rollback's
+    // name.
+    await page.route("**/api/jobs/?*", async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 4000));
+      await route.continue();
+    });
+
     await openDeleteDialog(page, job.id);
     await page.getByRole("button", { name: "Delete job" }).click();
 
-    // The row was removed optimistically; a failed delete has to put it back,
-    // or the UI claims a deletion the server refused.
-    await expect(row(page, job.id)).toBeVisible();
+    // Back well inside the stall, so the only thing that can have restored it
+    // is the rollback.
+    await expect(row(page, job.id)).toBeVisible({ timeout: 2000 });
     await expect(page.getByRole("alert").filter({ hasText: /Internal server error/i })).toBeVisible();
 
     // And it is genuinely still there, not just re-rendered.

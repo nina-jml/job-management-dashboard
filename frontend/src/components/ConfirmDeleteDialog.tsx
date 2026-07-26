@@ -5,7 +5,6 @@ import { formatJobId } from "../lib/format";
 
 interface Props {
   job: Job;
-  isDeleting: boolean;
   onCancel: () => void;
   onConfirm: () => void;
 }
@@ -19,16 +18,59 @@ interface Props {
  *
  * It names the job and states the consequence, because "are you sure?" asks the
  * user to confirm something the dialog has not told them.
+ *
+ * There is deliberately no busy state. Deletion is optimistic, so confirming
+ * closes this immediately and the row itself carries the in-flight state —
+ * there is nothing left here to disable.
  */
-export function ConfirmDeleteDialog({ job, isDeleting, onCancel, onConfirm }: Props) {
+export function ConfirmDeleteDialog({ job, onCancel, onConfirm }: Props) {
+  const dialogRef = useRef<HTMLDivElement>(null);
   const cancelRef = useRef<HTMLButtonElement>(null);
 
-  // Focus lands on the harmless choice. The dialog is reached by clicking
-  // Delete, so an Enter still held down from that click must not carry through
-  // and complete the deletion.
   useEffect(() => {
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+
+    // Focus lands on the harmless choice. The dialog is reached by clicking
+    // Delete, so an Enter still held from that click must not carry through.
     cancelRef.current?.focus();
-  }, []);
+
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onCancel();
+        return;
+      }
+
+      if (event.key !== "Tab" || !dialogRef.current) return;
+
+      // `aria-modal` tells assistive tech the rest of the page is inert; it
+      // does not make it so. Without this, Tab walks straight out of the dialog
+      // into the list behind it and the claim is a lie.
+      const focusable = dialogRef.current.querySelectorAll<HTMLElement>("button");
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (!first || !last) return;
+
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+
+    // On `document`, not on the dialog element: the dialog div is not
+    // focusable, so a handler bound to it only sees events bubbling from a
+    // focused descendant. Click the explanatory paragraph and focus falls back
+    // to <body> — at which point Escape would silently stop working.
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      // Put focus back where the user left it, not at the top of the document.
+      previouslyFocused?.focus?.();
+    };
+  }, [onCancel]);
 
   return (
     <div
@@ -36,17 +78,15 @@ export function ConfirmDeleteDialog({ job, isDeleting, onCancel, onConfirm }: Pr
       onClick={(event) => {
         // Only a click on the backdrop itself dismisses — not one that bubbled
         // up from inside the dialog.
-        if (event.target === event.currentTarget && !isDeleting) onCancel();
+        if (event.target === event.currentTarget) onCancel();
       }}
     >
       <div
         className="dialog"
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="confirm-delete-title"
-        onKeyDown={(event) => {
-          if (event.key === "Escape" && !isDeleting) onCancel();
-        }}
       >
         <h3 id="confirm-delete-title">Delete this job?</h3>
         <div className="job-ref">
@@ -57,11 +97,11 @@ export function ConfirmDeleteDialog({ job, isDeleting, onCancel, onConfirm }: Pr
           can&rsquo;t be undone — to stop a job but keep its history, cancel it instead.
         </p>
         <div className="row-actions">
-          <button type="button" ref={cancelRef} onClick={onCancel} disabled={isDeleting}>
+          <button type="button" ref={cancelRef} onClick={onCancel}>
             Cancel
           </button>
-          <button type="button" className="danger" onClick={onConfirm} disabled={isDeleting}>
-            {isDeleting ? "Deleting…" : "Delete job"}
+          <button type="button" className="danger" onClick={onConfirm}>
+            Delete job
           </button>
         </div>
       </div>

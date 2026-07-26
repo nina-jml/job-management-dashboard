@@ -200,20 +200,24 @@ export function useDeleteJob() {
 
       try {
         await jobsApi.remove(id);
+        // Its history describes a job that no longer exists, so drop it. Only
+        // on the paths where that is actually true — doing this in `finally`
+        // would also evict the history of a job whose delete failed and whose
+        // row was just restored, remounting an expanded timeline for nothing.
+        queryClient.removeQueries({ queryKey: jobKeys.history(id) });
       } catch (failure) {
         // A 404 is success. The user asked for this job to be gone and it is
         // gone — someone else got there first. Surfacing an error for an
         // outcome that matches the intent teaches people to ignore errors.
-        if (!(failure instanceof ApiError && failure.status === 404)) {
+        if (failure instanceof ApiError && failure.status === 404) {
+          queryClient.removeQueries({ queryKey: jobKeys.history(id) });
+        } else {
           snapshot.forEach(([key, data]) => {
             queryClient.setQueryData<JobPages>(key, data);
           });
           setErrors((current) => new Map(current).set(id, failure));
         }
       } finally {
-        // Its history describes a job that no longer exists either way: on
-        // success because it cascaded, on a 404 because it already had.
-        queryClient.removeQueries({ queryKey: jobKeys.history(id) });
         await queryClient.invalidateQueries({ queryKey: jobKeys.lists });
         setDeletingIds((current) => {
           const next = new Set(current);

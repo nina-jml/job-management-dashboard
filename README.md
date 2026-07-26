@@ -3,7 +3,7 @@
 A dashboard for viewing, creating and managing computational jobs. Django + PostgreSQL behind a
 React/TypeScript frontend, containerized, with a Playwright end-to-end suite.
 
-> **Status: in progress.** The backend is complete and cold-verified; the UI is being built.
+> **Status:** every build slice is complete and green — 137 E2E specs, 43 backend unit tests.
 > See [What's built](#whats-built).
 
 ---
@@ -78,7 +78,7 @@ with the spec that proves it; full matrix in [`docs/TEST_PLAN.md`](docs/TEST_PLA
 | 10 | Fault-injection pass | `10-fault-injection` | ✅ |
 | 11 | README, writeups, final cold gate | full suite | ⏳ |
 
-Currently green: **96 E2E specs, 43 backend unit tests.**
+Currently green: **137 E2E specs, 43 backend unit tests.**
 
 ---
 
@@ -267,6 +267,26 @@ prerequisite) — and even then, a highly unselective term still has to sort a l
 trigram makes substring search viable rather than free. An unindexed version would have contradicted the
 performance claim it was meant to support, so the analysis is here and the feature is not.
 
+**Sorting by column: declined, and the reason is the interesting part.** It looks like the smallest
+of the features left out and is actually the largest, because the cursor encodes a position *in a
+specific ordering*. Three consequences:
+
+- Every sortable column needs its **own composite index** ending in `-id`, or sorting is a full sort
+  of the table — the precise cost this section exists to avoid.
+- Changing sort has to **reset the cursor**. A position in one ordering is meaningless in another, so
+  "sort by name" cannot preserve where you were.
+- **Sorting by status would be incorrect**, not merely slow. Per the limitation recorded below, DRF
+  builds its cursor predicate from `ordering[0]` alone and pages rows sharing that value by integer
+  offset. Ordering by `created_at`, a collision needs two inserts in the same microsecond. Ordering by
+  `current_status` there are **five distinct values in the entire table**, so every page boundary
+  falls inside a tie group and the offset path becomes the only path — rows get skipped and repeated
+  during an ordinary walk.
+
+Sorting by `name` or a timestamp is a migration and an index away. Sorting by status requires the
+composite-cursor subclass described below first. Offering the first and quietly omitting the second
+would have been the worst option: a control that works on four columns and silently corrupts
+pagination on the fifth.
+
 **No N+1.** `current_status` is a column, so listing jobs touches one table. History is fetched
 only when a row is expanded.
 
@@ -278,6 +298,25 @@ encoding a composite position.
 
 **Described but not built** — honestly out of scope for a few-hour build: read replicas, a
 caching layer, `JobStatus` partitioned by time, approximate counts from `pg_class.reltuples`.
+
+### Why "showing 25 of 1,204" is not in the footer
+
+The footer reports what is loaded, never a total, and that is a consequence of cursor pagination
+rather than an oversight — a total means `COUNT(*)` on the hot path, which is the second of the two
+reasons cursor pagination was chosen at all.
+
+A total *can* be had cheaply, but only while filtering stays categorical. With per-status counters
+maintained in `record_status()`, the total for any status selection is arithmetic over five rows —
+no count, no scan. That design is written up under
+[counts by status](#counts-by-status--designed-deliberately-not-built).
+
+It stops being cheap the moment search exists. No counter can answer "how many names match
+`%combustor%`"; that needs a real `COUNT(*)` over a trigram match, on every keystroke, on the hot
+path. The escapes are a capped count ("25 of 1000+") or an approximation from `pg_class.reltuples`,
+and both are less honest than the number the footer shows now.
+
+So the three omissions are not independent: search and an exact total pull against each other, and
+picking either constrains the other. Left out together, deliberately.
 
 ### Counts by status — designed, deliberately not built
 
@@ -425,13 +464,66 @@ docs/                  spec, plan, test plan, open questions, UI mockup
 
 ## AI usage & prompt engineering
 
-<!-- TODO(nina) -->
+The assignment took a bit longer than I anticipated (see time breakdown below), but a lot of it was
+waiting around for the agent. I initially went in recording my interactions with Claude from the very
+beginning, but soon realized that there would be some multi-tasking and waiting around / taking pauses
+in between (plus I have an old-ish Mac and I didn't want to eat into its 8GB RAM) so I stopped the
+recording. The transcript is saved in the docs folder.
+
+I spent a little time before working with Claude Code ramping up on the different technologies and
+doing a little research by browsing the internet and using Claude chat, which isn't captured here.
+When I was ready to start coding, I went with an approach of iterating on a spec and test plan first,
+coming up with a plan that involved smaller testable pieces, and then executing on the plan. I wanted
+to be able to write the tests before the entire app was finished but I didn't want to just write a
+bunch of failing tests so I opted to split the work into slices that could still be tested with an
+end-to-end Playwright test. I did give instructions to generally do lighter-weight tests on an
+already-running build rather than the entire `make test` every time, with `make test` at the bigger
+touchpoints.
+
+Even with the test plan and end-to-end testing along the way, I also wanted to understand the code.
+Claude does produce a lot of code and I made sure to review the pieces that did the core
+functionality — like creating a new job and ensuring it appears in the list, updating the job status,
+deleting a job and its job statuses. There were basically 3 categories of files — the files with the
+core functionality that I read line by line and sought to understand deeply, the files with some more
+boilerplate code/schemas that I sanity checked and understood their general shape (docker files,
+makefile, serializers), and the files that I essentially just made sure I knew their purpose and that
+they exist (configs, CSS, etc.). I did ask the agent to explain some parts of the code to me. I asked
+for some small changes, like variable naming to make it more readable etc. Most of the bigger changes
+and architecture decisions were made during design.
 
 ---
 
 ## Time spent
 
-<!-- TODO(nina): final figure from `make time` at slice 11. Currently 1h 19m logged. -->
+**3h 52m**, tracked as the work happened rather than reconstructed afterwards. `scripts/timelog.sh`
+opens and closes each session; `make time` renders the ledger to
+[`docs/TIME_LOG.md`](docs/TIME_LOG.md).
 
-Tracked as work happened rather than reconstructed afterwards — `scripts/timelog.sh` records each
-session and `make time` renders the ledger to [`docs/TIME_LOG.md`](docs/TIME_LOG.md).
+| Where it went | Time | |
+|---|---|---|
+| Planning — spec, slice plan, test plan, time tracker | 25m | 11% |
+| Backend — models, list, create, PATCH + state machine, delete + cascade | 41m | 18% |
+| `CANCELLED` — added mid-build after a design conversation | 11m | 5% |
+| Frontend — job list, create form, status update, delete | 1h 25m | 37% |
+| Scale and fault injection — 250k measurement, failure paths | 25m | 11% |
+| Review fixes — two rounds, 19 findings | 39m | 17% |
+| Delivery — README, writeups, cold gate | *in progress* | |
+
+Two things that figure does *not* include, deliberately: the wall-clock cost of Docker builds and
+test runs, which is machine time rather than work, and the design conversations that shaped the
+`CANCELLED` state, the transition policy and the scope cuts — those happened alongside the build
+rather than as billable blocks.
+
+Where it actually went is more interesting than the total. **The frontend cost more than twice the
+backend**, which is worth noting: the backend is a state machine with a projection, and once
+`record_status()` existed the rest followed from it. The UI is where every partial state lives —
+optimistic updates, rollback, per-row in-flight tracking, an error that belongs to *this* row and not
+that one — and that is where both review rounds concentrated.
+
+**Review fixes are 17% of the total.** The first round found a bug that made the critical flow
+silently fail whenever a history panel had been opened; the second found a spec that deleted rows
+belonging to other specs. Neither was reachable by the suite as written.
+
+Two ledger entries have reconstructed start times, marked as such in `TIME_LOG.md`: one where the
+tracker call failed, one where a session was never opened. Both are noted rather than quietly
+rounded, because a time log that hides its own gaps is not evidence of anything.

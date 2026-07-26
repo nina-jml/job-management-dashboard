@@ -38,13 +38,13 @@ Slices 0–4 deliver a complete, demonstrable backend before any UI exists; slic
 where both the design and this plan are signed off, reviewed while 2–4 continue. If time runs short the fallback is a smaller UI, never a
 broken `make test`.
 
-**Coverage as of slice 7.5 (backend, the required critical flow, and the review fixes on top of it):**
-E2E specs and 43 backend unit tests passing; T3 cold gate green from pruned Docker at slice 7, suite
-re-runnable without `make clean`, and all three images build on `linux/amd64`.
+**Coverage as of slice 10 (every build slice complete):** 135 E2E specs and 43 backend unit tests
+passing; T3 cold gate green from pruned Docker at slice 7, suite re-runnable without `make clean`, and
+all three images build on `linux/amd64`. The final T3 ×2 is slice 11's.
 
-Covered: A1–A4, B1–B4, B6, B7, C1–C8, C10, C11, C13–C17, D1–D4 (backend), plus E1, E3–E10, B5, C9, C12,
-D5, D6 and F3/F3a–F3c from the UI slices. Outstanding: F1, F2, F5–F9 (slice 9) and the fault-injection
-pass (slice 10). F4 and F10 are struck — search is out of scope.
+Covered: A1–A4, B1–B7, C1–C17, D1–D6, E1, E3–E10, F1–F3, F3a–F3c, F5–F9 — every case in this matrix
+except the two struck below. F4 and F10 are struck: search is out of scope (see PLAN.md slice 9). F7 is
+covered by out-of-band measurement rather than by a spec, for the reason given in its row.
 
 ---
 

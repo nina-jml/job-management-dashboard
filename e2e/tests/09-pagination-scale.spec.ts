@@ -108,14 +108,23 @@ test.describe("pagination at scale", () => {
     expect(ids.length).toBeGreaterThan(20);
     expect(new Set(ids).size).toBe(ids.length);
 
-    // Ordering is newest-first by (created_at, id), so a correct walk is
-    // monotonically non-increasing in id for rows created in sequence.
-    const walked = await Promise.all(
-      ids.slice(0, 30).map(async (id) => {
-        const response = await request.get(`/api/jobs/${id}/`);
-        return (await response.json()) as Job;
-      }),
-    );
+    // Ordering is newest-first by (created_at, id), so a correct walk returns
+    // non-increasing created_at.
+    //
+    // Rows can legitimately vanish between the walk and this re-fetch — other
+    // specs delete their own fixtures in parallel. Those are skipped rather
+    // than dereferenced: reading `created_at` off a 404 body yields undefined,
+    // and the assertion below would then compare NaN to NaN and fail with a
+    // confusing message about ordering rather than an honest one about a
+    // missing row.
+    const walked: Job[] = [];
+    for (const id of ids.slice(0, 30)) {
+      const response = await request.get(`/api/jobs/${id}/`);
+      if (response.status() === 404) continue;
+      expect(response.status()).toBe(200);
+      walked.push((await response.json()) as Job);
+    }
+
     for (let i = 1; i < walked.length; i += 1) {
       const previous = Date.parse(walked[i - 1]!.created_at);
       const current = Date.parse(walked[i]!.created_at);
@@ -129,6 +138,7 @@ test.describe("pagination at scale", () => {
     const mine = new Set(made.map((job) => job.id));
 
     const seen: number[] = [];
+    const removed: number[] = [];
     let deleted = false;
 
     await walkAll(request, 5, 40, async (body) => {
@@ -139,12 +149,20 @@ test.describe("pagination at scale", () => {
       // would shift its window and silently skip a row at every subsequent
       // boundary; a keyset cursor holds a value, not a position, so removing
       // rows behind it changes nothing.
+      //
+      // Restricted to this test's own fixtures. `seen` comes from the
+      // unfiltered head of the table, and the suite runs `fullyParallel` — so
+      // taking the first three ids outright would hard-delete whatever another
+      // spec created in the window between `seedJobs` and this page fetch, and
+      // fail that spec instead of this one.
       if (!deleted && seen.length >= 5) {
         deleted = true;
-        for (const id of seen.slice(0, 3)) {
-          const response = await request.delete(`/api/jobs/${id}/`);
-          expect([204, 404]).toContain(response.status());
+        const owned = seen.filter((id) => mine.has(id)).slice(0, 3);
+        expect(owned.length).toBeGreaterThan(0);
+        for (const id of owned) {
+          expect((await request.delete(`/api/jobs/${id}/`)).status()).toBe(204);
         }
+        removed.push(...owned);
       }
     });
 
@@ -152,10 +170,9 @@ test.describe("pagination at scale", () => {
 
     // Every one of this test's own jobs was seen exactly once, except any it
     // deleted itself before reaching them.
-    const survivors = made.filter((job) => mine.has(job.id) && !seen.slice(0, 3).includes(job.id));
     const seenSet = new Set(seen);
-    for (const job of survivors) {
-      expect(seenSet.has(job.id)).toBe(true);
+    for (const job of made) {
+      if (!removed.includes(job.id)) expect(seenSet.has(job.id)).toBe(true);
     }
   });
 

@@ -168,7 +168,6 @@ export function App() {
       {pendingDelete && (
         <ConfirmDeleteDialog
           job={pendingDelete}
-          isDeleting={deletingIds.has(pendingDelete.id)}
           onCancel={() => setPendingDelete(null)}
           onConfirm={() => {
             const job = pendingDelete;
