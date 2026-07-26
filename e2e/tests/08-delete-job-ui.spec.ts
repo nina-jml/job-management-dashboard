@@ -4,12 +4,12 @@ import type { Page } from "@playwright/test";
 import { uniquePrefix, type Job } from "./helpers";
 
 /**
- * Slice 8 — deleting a job through the UI.
+ * Step 8 — deleting a job through the UI.
  *
  * TEST_PLAN cases D1 (row goes, and stays gone after a reload), D5 (a failed
  * delete restores the row) and D6 (an unrelated expanded timeline is
  * undisturbed), plus E9 and E10 — the two `client.ts` failure branches pulled
- * forward from slice 9, because every network call in the app goes through that
+ * forward from step 9, because every network call in the app goes through that
  * file and nothing exercised them.
  */
 
@@ -46,7 +46,7 @@ test.describe("delete a job", () => {
     // something it has not identified.
     await expect(page.getByRole("dialog")).toContainText(job.name);
 
-    await page.getByRole("button", { name: "Delete job" }).click();
+    await page.getByRole("button", { name: "Yes, delete it" }).click();
 
     // (a) gone with no manual refresh — the "UI updates dynamically" requirement
     await expect(row(page, job.id)).toHaveCount(0);
@@ -74,20 +74,43 @@ test.describe("delete a job", () => {
     await page.goto("/");
     await listReady(page);
     await openDeleteDialog(page, job.id);
-    await page.getByRole("button", { name: "Delete job" }).click();
+    await page.getByRole("button", { name: "Yes, delete it" }).click();
     await expect(row(page, job.id)).toHaveCount(0);
 
     expect(nativeDialogs).toEqual([]);
   });
 
-  test("cancelling deletes nothing", async ({ page, request }) => {
-    const job = await makeJob(request, "cancel");
+  test("suggests canceling only when canceling is possible", async ({ page, request }) => {
+    const open = await makeJob(request, "copy-open");
+    const finished = await makeJob(request, "copy-done");
+    await request.patch(`/api/jobs/${finished.id}/`, { data: { status: "RUNNING" } });
+    await request.patch(`/api/jobs/${finished.id}/`, { data: { status: "COMPLETED" } });
+
+    await page.goto("/");
+    await listReady(page);
+
+    // A pending job can be canceled, so offering it as the alternative to
+    // deletion is useful advice.
+    await openDeleteDialog(page, open.id);
+    await expect(page.getByRole("dialog")).toContainText(/cancel it instead/i);
+    await page.getByRole("button", { name: "No, exit" }).click();
+
+    // A completed job cannot. Pointing at a control that is not on screen is
+    // advice the user cannot act on, which is worse than no advice.
+    await openDeleteDialog(page, finished.id);
+    await expect(page.getByRole("dialog")).not.toContainText(/cancel it instead/i);
+    // The question itself is asked either way.
+    await expect(page.getByRole("dialog")).toContainText(/Are you sure you want to delete it\?/i);
+  });
+
+  test("backing out deletes nothing", async ({ page, request }) => {
+    const job = await makeJob(request, "back-out");
 
     await page.goto("/");
     await listReady(page);
     await openDeleteDialog(page, job.id);
 
-    await page.getByRole("button", { name: "Cancel", exact: true }).click();
+    await page.getByRole("button", { name: "No, exit" }).click();
 
     await expect(page.getByRole("dialog")).toHaveCount(0);
     await expect(row(page, job.id)).toBeVisible();
@@ -118,8 +141,8 @@ test.describe("delete a job", () => {
     // <body> — and a keydown handler bound to the dialog element would never
     // see the keypress again, because the dialog div is not focusable either
     // and nothing inside it is focused to bubble from. The previous test
-    // presses Escape while Cancel still holds focus, so it cannot catch this.
-    await page.locator(".dialog p").click();
+    // presses Escape while "No, exit" still holds focus, so it cannot catch it.
+    await page.locator(".dialog p").first().click();
     await page.keyboard.press("Escape");
 
     await expect(page.getByRole("dialog")).toHaveCount(0);
@@ -174,7 +197,7 @@ test.describe("delete a job", () => {
     });
 
     await openDeleteDialog(page, job.id);
-    await page.getByRole("button", { name: "Delete job" }).click();
+    await page.getByRole("button", { name: "Yes, delete it" }).click();
 
     // Back well inside the stall, so the only thing that can have restored it
     // is the rollback.
@@ -196,7 +219,7 @@ test.describe("delete a job", () => {
     await expect(page.locator(".history")).toBeVisible();
 
     await openDeleteDialog(page, remove.id);
-    await page.getByRole("button", { name: "Delete job" }).click();
+    await page.getByRole("button", { name: "Yes, delete it" }).click();
 
     await expect(row(page, remove.id)).toHaveCount(0);
     // The unrelated row keeps both its place and its expanded state — deleting
@@ -216,7 +239,7 @@ test.describe("delete a job", () => {
     expect((await request.delete(`/api/jobs/${job.id}/`)).status()).toBe(204);
 
     await openDeleteDialog(page, job.id);
-    await page.getByRole("button", { name: "Delete job" }).click();
+    await page.getByRole("button", { name: "Yes, delete it" }).click();
 
     // The user asked for it to be gone and it is gone. Reporting a 404 here
     // shows an error for an outcome that matches the intent, which is how

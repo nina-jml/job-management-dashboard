@@ -45,13 +45,13 @@ def test_the_map_has_no_self_edges():
 
 def test_terminal_states_are_the_three_finished_ones():
     terminal = {s for s in StatusType.values if transitions.is_terminal(s)}
-    assert terminal == {StatusType.COMPLETED, StatusType.FAILED, StatusType.CANCELLED}
+    assert terminal == {StatusType.COMPLETED, StatusType.FAILED, StatusType.CANCELED}
 
 
 def test_only_unfinished_work_is_retryable():
     # You retry a failure or a cancellation — work that did not finish.
     # Re-running a success is a new job.
-    assert transitions.RETRYABLE == {StatusType.FAILED, StatusType.CANCELLED}
+    assert transitions.RETRYABLE == {StatusType.FAILED, StatusType.CANCELED}
     assert not transitions.can_retry(StatusType.COMPLETED)
 
 
@@ -66,9 +66,9 @@ def test_cancellation_is_reachable_from_unfinished_states_only():
     # You can call off queued or running work; there is nothing left to stop
     # once a job has completed or failed.
     for status in (StatusType.PENDING, StatusType.RUNNING):
-        assert StatusType.CANCELLED in transitions.ALLOWED[status]
+        assert StatusType.CANCELED in transitions.ALLOWED[status]
     for status in (StatusType.COMPLETED, StatusType.FAILED):
-        assert StatusType.CANCELLED not in transitions.ALLOWED[status]
+        assert StatusType.CANCELED not in transitions.ALLOWED[status]
 
 
 def test_every_state_is_reachable_from_pending():
@@ -115,7 +115,7 @@ def test_a_completed_job_is_told_a_re_run_would_be_a_new_job():
 
 def test_a_running_job_is_told_re_run_does_not_apply_yet():
     # The message enumerates RETRYABLE, so it stays accurate as states are added.
-    with pytest.raises(TransitionError, match="Only cancelled or failed jobs can be re-run"):
+    with pytest.raises(TransitionError, match="Only canceled or failed jobs can be re-run"):
         transitions.check_retry(StatusType.RUNNING)
 
 
@@ -184,24 +184,24 @@ def test_a_completed_job_cannot_be_re_run():
 def test_a_queued_job_can_be_cancelled_before_it_starts():
     job = create_job("Turbine Disc Creep")
 
-    apply_status_change(job, StatusType.CANCELLED)
+    apply_status_change(job, StatusType.CANCELED)
 
     job.refresh_from_db()
-    assert job.current_status == StatusType.CANCELLED
+    assert job.current_status == StatusType.CANCELED
     assert job.statuses.count() == 2
 
 
 def test_a_running_job_can_be_cancelled():
     job = advance(create_job("Multiphase Separator CFD"), StatusType.RUNNING)
 
-    apply_status_change(job, StatusType.CANCELLED)
+    apply_status_change(job, StatusType.CANCELED)
 
     job.refresh_from_db()
-    assert job.current_status == StatusType.CANCELLED
+    assert job.current_status == StatusType.CANCELED
 
 
 def test_a_cancelled_job_can_be_re_run():
-    job = advance(create_job("Aeroacoustic Propagation"), StatusType.RUNNING, StatusType.CANCELLED)
+    job = advance(create_job("Aeroacoustic Propagation"), StatusType.RUNNING, StatusType.CANCELED)
 
     apply_status_change(job, StatusType.PENDING)
 
@@ -209,14 +209,14 @@ def test_a_cancelled_job_can_be_re_run():
     assert job.current_status == StatusType.PENDING
     # Append-only: the cancellation stays on the record. A cancelled job still
     # consumed compute time, and that is the history worth auditing.
-    assert job.statuses.filter(status_type=StatusType.CANCELLED).exists()
+    assert job.statuses.filter(status_type=StatusType.CANCELED).exists()
 
 
 def test_a_completed_job_cannot_be_cancelled():
     job = advance(create_job("CFD Mesh Convergence"), StatusType.RUNNING, StatusType.COMPLETED)
 
     with pytest.raises(TransitionError):
-        apply_status_change(job, StatusType.CANCELLED)
+        apply_status_change(job, StatusType.CANCELED)
 
     job.refresh_from_db()
     assert job.current_status == StatusType.COMPLETED
@@ -227,14 +227,14 @@ def test_a_failed_job_cannot_be_cancelled():
     job = advance(create_job("Battery Thermal Runaway"), StatusType.RUNNING, StatusType.FAILED)
 
     with pytest.raises(TransitionError):
-        apply_status_change(job, StatusType.CANCELLED)
+        apply_status_change(job, StatusType.CANCELED)
 
 
 def test_cancelling_twice_is_an_idempotent_no_op():
-    job = advance(create_job("Crash Pulse"), StatusType.RUNNING, StatusType.CANCELLED)
+    job = advance(create_job("Crash Pulse"), StatusType.RUNNING, StatusType.CANCELED)
     before = job.statuses.count()
 
-    assert apply_status_change(job, StatusType.CANCELLED) is None
+    assert apply_status_change(job, StatusType.CANCELED) is None
 
     job.refresh_from_db()
     assert job.statuses.count() == before

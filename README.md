@@ -3,7 +3,7 @@
 A dashboard for viewing, creating and managing computational jobs. Django + PostgreSQL behind a
 React/TypeScript frontend, containerized, with a Playwright end-to-end suite.
 
-> **Status:** every build slice is complete and green — 137 E2E specs, 43 backend unit tests.
+> **Status:** every build step is complete and green — 137 E2E specs, 43 backend unit tests.
 > See [What's built](#whats-built).
 
 ---
@@ -59,10 +59,10 @@ overlays for humans.
 
 ## What's built
 
-Work is sliced so each piece is independently shippable and independently green. Each slice ships
+Work is split into steps so each piece is independently shippable and independently green. Each step ships
 with the spec that proves it; full matrix in [`docs/TEST_PLAN.md`](docs/TEST_PLAN.md).
 
-| # | Slice | Spec | |
+| # | Step | Spec | |
 |---|---|---|---|
 | 0 | Walking skeleton — compose, Makefile, `/api/health/` | `00-smoke` | ✅ |
 | 1 | Models, indexes, cursor-paginated list | `01-jobs-list-api` | ✅ |
@@ -132,7 +132,7 @@ erDiagram
     JOB_STATUS {
         bigint   id PK
         bigint   job_id FK
-        varchar  status_type "PENDING | RUNNING | COMPLETED | FAILED | CANCELLED"
+        varchar  status_type "PENDING | RUNNING | COMPLETED | FAILED | CANCELED"
         datetime timestamp "server-stamped"
     }
 ```
@@ -148,18 +148,18 @@ Enforced by `jobs/transitions.py` and mirrored in the UI, so an illegal move is 
 rather than merely rejected.
 
 ```
-PENDING   → RUNNING, FAILED, CANCELLED
-RUNNING   → COMPLETED, FAILED, CANCELLED
+PENDING   → RUNNING, FAILED, CANCELED
+RUNNING   → COMPLETED, FAILED, CANCELED
 COMPLETED → ∅                          terminal: the work succeeded
 FAILED    → ∅  + Re-run → PENDING      terminal, retryable
-CANCELLED → ∅  + Re-run → PENDING      terminal, retryable
+CANCELED  → ∅  + Re-run → PENDING      terminal, retryable
 ```
 
 You retry work that did not finish. Re-running something that *succeeded* is a new job, not a
 retry — so `COMPLETED` is a genuine dead end.
 
-**Cancelling is not deleting.** Delete removes the record and cascades the log away; cancel stops
-the work and keeps both. A cancelled job still consumed compute time, and that is exactly the
+**Canceling is not deleting.** Delete removes the record and cascades the log away; cancel stops
+the work and keeps both. A canceled job still consumed compute time, and that is exactly the
 history worth auditing.
 
 ---
@@ -373,16 +373,16 @@ here.
 specifies. Backend unit tests run separately under `make test-backend`, deliberately outside the
 gate — folding them in would let an unrelated unit failure block everything.
 
-Backend-only slices are still tested through Playwright's `request` fixture rather than a second
-framework, so there is one runner and one `make test` from slice 0 onward.
+Backend-only steps are still tested through Playwright's `request` fixture rather than a second
+framework, so there is one runner and one `make test` from step 0 onward.
 
 Three validation tiers:
 
 | Tier | Command | When |
 |---|---|---|
 | **T1** | `make test-spec SPEC=…` — one spec, no rebuild | while iterating |
-| **T2** | `make test` — the full suite | at the close of every slice |
-| **T3** | `make clean && make build && make test` from pruned Docker, an amd64 build check, then eyeball the database | slices 0, 4, 7, 11 and any change to the build surface |
+| **T2** | `make test` — the full suite | at the close of every step |
+| **T3** | `make clean && make build && make test` from pruned Docker, an amd64 build check, then eyeball the database | steps 0, 4, 7, 11 and any change to the build surface |
 
 T1→T2 is a scope axis. **T2→T3 is not** — they run identical assertions. What changes is the
 starting state, so T3 validates the build and provision path rather than the application: files
@@ -392,14 +392,14 @@ dependencies resolving from a warm cache. That class of defect passes warm and f
 E2E runs against a real Postgres, so no spec assumes an empty database. Each namespaces its
 fixtures with a run-unique prefix, which is what makes the suite re-runnable without `make clean`.
 
-### Failure paths are tested per slice, not deferred to one pass
+### Failure paths are tested per step, not deferred to one pass
 
-Error handling is part of each slice's definition of done, so the specs that prove it ship with the
+Error handling is part of each step's definition of done, so the specs that prove it ship with the
 feature rather than in a single sweep at the end: the create form's 500 lives in `06`, the optimistic
 rollback and its 404 case in `07`, the list's error banner and recovery in `05`. Faults are injected
 with Playwright's `page.route()` — no fault-injection library, no test-only code path in the app.
 
-A final **fault-injection pass** (`10-fault-injection`) covers what the per-slice specs cannot, and
+A final **fault-injection pass** (`10-fault-injection`) covers what the per-step specs cannot, and
 deliberately does not repeat what they already do. A 500 on each verb already exists where that verb
 lives, so re-testing it there would be theatre. What the pass adds is the ground none of them touch:
 
@@ -432,7 +432,7 @@ asked, what was decided, and what was assumed without asking. A few worth surfac
   ticket; a UUID is not. The trade-off is enumerability, which matters once auth exists — and the
   answer then is UUIDv7, not v4.
 - **Status is stored as text, not an int or a native Postgres `ENUM`.** Readable in psql, in
-  logs, and on the wire; adding `CANCELLED` was a genuine no-op migration.
+  logs, and on the wire; adding `CANCELED` was a genuine no-op migration.
 - **No authentication, no multi-tenancy.** The brief never introduces a user concept.
 
 Design and planning docs: [`SPEC.md`](docs/SPEC.md) · [`PLAN.md`](docs/PLAN.md) ·
@@ -456,7 +456,7 @@ backend/jobs/          the application
 frontend/src/          React + TypeScript
   api/                 typed client — the only place that talks to the network
   components/          JobList, JobRow, StatusBadge, StatusTimeline, ErrorBanner
-e2e/tests/             Playwright specs, one per slice
+e2e/tests/             Playwright specs, one per step
 docs/                  spec, plan, test plan, open questions, UI mockup
 ```
 
@@ -475,7 +475,7 @@ doing a little research by browsing the internet and using Claude chat, which is
 When I was ready to start coding, I went with an approach of iterating on a spec and test plan first,
 coming up with a plan that involved smaller testable pieces, and then executing on the plan. I wanted
 to be able to write the tests before the entire app was finished but I didn't want to just write a
-bunch of failing tests so I opted to split the work into slices that could still be tested with an
+bunch of failing tests so I opted to split the work into steps that could still be tested with an
 end-to-end Playwright test. I did give instructions to generally do lighter-weight tests on an
 already-running build rather than the entire `make test` every time, with `make test` at the bigger
 touchpoints.
@@ -501,9 +501,9 @@ opens and closes each session; `make time` renders the ledger to
 
 | Where it went | Time | |
 |---|---|---|
-| Planning — spec, slice plan, test plan, time tracker | 25m | 11% |
+| Planning — spec, step plan, test plan, time tracker | 25m | 11% |
 | Backend — models, list, create, PATCH + state machine, delete + cascade | 41m | 18% |
-| `CANCELLED` — added mid-build after a design conversation | 11m | 5% |
+| `CANCELED` — added mid-build after a design conversation | 11m | 5% |
 | Frontend — job list, create form, status update, delete | 1h 25m | 37% |
 | Scale and fault injection — 250k measurement, failure paths | 25m | 11% |
 | Review fixes — two rounds, 19 findings | 39m | 17% |
@@ -511,7 +511,7 @@ opens and closes each session; `make time` renders the ledger to
 
 Two things that figure does *not* include, deliberately: the wall-clock cost of Docker builds and
 test runs, which is machine time rather than work, and the design conversations that shaped the
-`CANCELLED` state, the transition policy and the scope cuts — those happened alongside the build
+`CANCELED` state, the transition policy and the scope cuts — those happened alongside the build
 rather than as billable blocks.
 
 Where it actually went is more interesting than the total. **The frontend cost more than twice the

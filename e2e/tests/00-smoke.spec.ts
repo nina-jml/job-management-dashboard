@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 /**
- * Slice 0 — the walking skeleton.
+ * Step 0 — the walking skeleton.
  *
  * Proves the pipeline before any feature exists: images build, compose wires
  * the services together, nginx serves the app and proxies /api to Django, and

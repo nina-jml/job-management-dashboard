@@ -12,12 +12,12 @@ import {
 } from "./helpers";
 
 /**
- * Slice 1 — the list endpoint.
+ * Step 1 — the list endpoint.
  *
  * TEST_PLAN cases E1 (payload carries name + current status) and E2 (newest
  * first, stable ordering). Runs against the seeded baseline that `make test`
  * creates, and asserts on structure and invariants rather than on specific
- * rows, so it stays valid as later slices add data.
+ * rows, so it stays valid as later steps add data.
  */
 test.describe("GET /api/jobs/", () => {
   test("returns a cursor-paginated envelope", async ({ request }) => {

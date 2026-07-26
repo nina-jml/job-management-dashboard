@@ -41,8 +41,8 @@ LIFECYCLES = (
     ([StatusType.PENDING, StatusType.RUNNING, StatusType.COMPLETED], 40),
     ([StatusType.PENDING, StatusType.RUNNING, StatusType.FAILED], 16),
     # Called off mid-flight, and called off before it ever started.
-    ([StatusType.PENDING, StatusType.RUNNING, StatusType.CANCELLED], 8),
-    ([StatusType.PENDING, StatusType.CANCELLED], 4),
+    ([StatusType.PENDING, StatusType.RUNNING, StatusType.CANCELED], 8),
+    ([StatusType.PENDING, StatusType.CANCELED], 4),
 )
 
 

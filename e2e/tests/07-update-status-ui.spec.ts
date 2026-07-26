@@ -4,7 +4,7 @@ import type { Page } from "@playwright/test";
 import { history, uniquePrefix, type Job } from "./helpers";
 
 /**
- * Slice 7 — updating a job's status through the UI.
+ * Step 7 — updating a job's status through the UI.
  *
  * ⭐ This is the flow the assignment names explicitly: create a job, see it as
  * PENDING, change its status, and verify the change. TEST_PLAN cases C1, C2,
@@ -83,9 +83,9 @@ test.describe("update job status", () => {
     await setStatus(page, job.id, "Running");
     await expect(row(page, job.id).locator(".status")).toHaveText(/Running/);
 
-    await setStatus(page, job.id, "Cancelled");
-    await expect(row(page, job.id).locator(".status")).toHaveText(/Cancelled/);
-    // Cancelled is terminal but retryable, exactly like failed.
+    await setStatus(page, job.id, "Canceled");
+    await expect(row(page, job.id).locator(".status")).toHaveText(/Canceled/);
+    // Canceled is terminal but retryable, exactly like failed.
     await expect(row(page, job.id).getByRole("button", { name: /Re-run/ })).toBeVisible();
   });
 
@@ -93,13 +93,13 @@ test.describe("update job status", () => {
     const job = await makeJob(request, "c12ui");
     await page.goto("/");
 
-    // From PENDING: Running, Failed and Cancelled are selectable; Completed is not.
+    // From PENDING: Running, Failed and Canceled are selectable; Completed is not.
     await row(page, job.id).getByRole("button", { name: /Edit/ }).click();
     const options = row(page, job.id).locator("select option");
     const enabled = await options.evaluateAll((nodes) =>
       nodes.filter((n) => !(n as HTMLOptionElement).disabled).map((n) => n.textContent),
     );
-    expect(new Set(enabled)).toEqual(new Set(["Pending", "Running", "Failed", "Cancelled"]));
+    expect(new Set(enabled)).toEqual(new Set(["Pending", "Running", "Failed", "Canceled"]));
   });
 
   test("a completed job offers no status control at all (C12)", async ({ page, request }) => {
@@ -292,16 +292,16 @@ test.describe("update job status", () => {
       await route.continue();
     });
 
-    await setStatus(page, job.id, "Cancelled");
+    await setStatus(page, job.id, "Canceled");
 
-    // CANCELLED is terminal, but `allowed_transitions` and `can_retry` still
+    // CANCELED is terminal, but `allowed_transitions` and `can_retry` still
     // describe PENDING until the refetch lands — they are the server's answer
     // and are deliberately not guessed. A row that looked settled in that gap
     // would offer moves the server is about to reject, contradicting C12's
     // claim that illegal transitions are unreachable rather than just refused.
     await expect(row(page, job.id).getByRole("button", { name: /Edit status/ })).toBeDisabled();
 
-    // Once reconciled, the row offers what CANCELLED actually permits: a
+    // Once reconciled, the row offers what CANCELED actually permits: a
     // re-run — it is terminal *and* retryable — and no status editor at all.
     await expect(row(page, job.id).getByRole("button", { name: /Re-run/ })).toBeVisible();
     await expect(row(page, job.id).getByRole("button", { name: /Edit status/ })).toHaveCount(0);

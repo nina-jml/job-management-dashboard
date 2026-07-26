@@ -4,7 +4,7 @@ import type { APIRequestContext } from "@playwright/test";
 import { history, uniquePrefix, type Job } from "./helpers";
 
 /**
- * Slice 4 — DELETE /api/jobs/<id>/ and the status history endpoint.
+ * Step 4 — DELETE /api/jobs/<id>/ and the status history endpoint.
  *
  * TEST_PLAN cases D1 (delete persists), D2 (history unreachable after delete),
  * D4 (404 for an unknown id).

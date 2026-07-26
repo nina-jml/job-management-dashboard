@@ -2,18 +2,18 @@
 
 **Status: ✅ signed off 2026-07-25** by Nina, together with the UI mockup and design. Reviewed against a
 working harness, the models and list endpoint, and a clickable mockup rather than in the abstract.
-Slices 2–11 build against this plan.
+Steps 2–11 build against this plan.
 
 Related: [SPEC.md](./SPEC.md) · [PLAN.md](./PLAN.md) · [OPEN_QUESTIONS.md](./OPEN_QUESTIONS.md)
 
 ---
 
-## Slices at a glance
+## Steps at a glance
 
-Every slice ships with the spec that proves it. Case IDs refer to §3; validation tiers to §2.
-Slice detail lives in [PLAN.md](./PLAN.md).
+Every step ships with the spec that proves it. Case IDs refer to §3; validation tiers to §2.
+Step detail lives in [PLAN.md](./PLAN.md).
 
-| # | Slice | Spec file | Positive cases | Negative cases | Tier | Status |
+| # | Step | Spec file | Positive cases | Negative cases | Tier | Status |
 |---|---|---|---|---|---|---|
 | 0 | Walking skeleton: compose, Dockerfiles, Makefile, `/api/health/`, React shell | `00-smoke` | A1, A2, A4–A6 | — | T3 | ✅ done |
 | 1 | Models, indexes, cursor-paginated `GET /api/jobs/`, error handler, seed command | `01-jobs-list-api` | E1, E2 | E7, E8 | T2 | ✅ done |
@@ -29,36 +29,36 @@ Slice detail lives in [PLAN.md](./PLAN.md).
 | 10 | Fault-injection pass: history failures, mutation recovery, aborted mutations, slow responses | `10-fault-injection` | — ‡ | the modes not already covered | T2 | ✅ done |
 | 11 | README, performance + prompt-engineering writeups, final tidy | full suite | A1–A4 | — | **T3 ×2** | pending |
 
-‡ Slice 10 is negative by construction — its one positive assertion is recovery (E5: the error clears and
-a retry succeeds once the fault is removed). Slice 5 built the error-handling machinery (`ApiError`,
-`ErrorBanner`, query error states) and covers E4/E5 directly; slice 10 re-exercises them systematically
+‡ Step 10 is negative by construction — its one positive assertion is recovery (E5: the error clears and
+a retry succeeds once the fault is removed). Step 5 built the error-handling machinery (`ApiError`,
+`ErrorBanner`, query error states) and covers E4/E5 directly; step 10 re-exercises them systematically
 alongside the verbs it injects into, so both rows legitimately list them.
 
-Slices 0–4 deliver a complete, demonstrable backend before any UI exists; slice 1.5 is the single gate
+Steps 0–4 deliver a complete, demonstrable backend before any UI exists; step 1.5 is the single gate
 where both the design and this plan are signed off, reviewed while 2–4 continue. If time runs short the fallback is a smaller UI, never a
 broken `make test`.
 
-**Coverage as of slice 10 (every build slice complete):** 135 E2E specs and 43 backend unit tests
-passing; T3 cold gate green from pruned Docker at slice 7, suite re-runnable without `make clean`, and
-all three images build on `linux/amd64`. The final T3 ×2 is slice 11's.
+**Coverage as of step 10 (every build step complete):** 135 E2E specs and 43 backend unit tests
+passing; T3 cold gate green from pruned Docker at step 7, suite re-runnable without `make clean`, and
+all three images build on `linux/amd64`. The final T3 ×2 is step 11's.
 
 Covered: A1–A4, B1–B7, C1–C17, D1–D6, E1, E3–E10, F1–F3, F3a–F3c, F5–F9 — every case in this matrix
-except the two struck below. F4 and F10 are struck: search is out of scope (see PLAN.md slice 9). F7 is
+except the two struck below. F4 and F10 are struck: search is out of scope (see PLAN.md step 9). F7 is
 covered by out-of-band measurement rather than by a spec, for the reason given in its row.
 
 ---
 
 ## 1. Strategy
 
-**One runner: Playwright.** Backend-only slices are tested through Playwright's `request` fixture
-(`APIRequestContext`) rather than a second framework, so there is a single `make test` from slice 0 onward
+**One runner: Playwright.** Backend-only steps are tested through Playwright's `request` fixture
+(`APIRequestContext`) rather than a second framework, so there is a single `make test` from step 0 onward
 and no divergence between "the tests I run" and "the tests the evaluator runs".
 
 `pytest-django` covers backend units — the projection guard, serializer validation, cascade behaviour — but
 runs under `make test-backend`, deliberately outside the `make test` gate (see OPEN_QUESTIONS Q6).
 
-**Error handling is tested throughout, not at the end.** Handling is built into each slice's definition of
-done; the fault-injection pass (slice 10) then systematically proves it holds. Negative cases appear in
+**Error handling is tested throughout, not at the end.** Handling is built into each step's definition of
+done; the fault-injection pass (step 10) then systematically proves it holds. Negative cases appear in
 every functional group below, not clustered in one.
 
 **Isolation.** E2E runs against a real Postgres, so no spec may assume an empty database. Every spec
@@ -71,9 +71,9 @@ up after itself. The suite must pass twice in a row without `make clean` (case A
 
 | Tier | Command | Cost | When |
 |---|---|---|---|
-| **T1 — lightweight** | `make test-spec SPEC=03-update-job-api` — one spec against the already-running stack, no rebuild. Plus `make test-backend` during backend slices. | seconds | after every meaningful change, inside a slice |
-| **T2 — suite** | `make test` — rebuild + full Playwright suite | ~1–2 min | at the close of **every** slice; catches cross-slice regressions |
-| **T3 — cold gate** | `make clean && make build && make test` from pruned Docker; a `--platform linux/amd64` build; then `make up` and eyeball the database through a GUI client on the URL it prints | several min | slices **0, 4, 7, 11**, and any slice touching Docker, compose, the Makefile, or dependencies |
+| **T1 — lightweight** | `make test-spec SPEC=03-update-job-api` — one spec against the already-running stack, no rebuild. Plus `make test-backend` during backend steps. | seconds | after every meaningful change, inside a step |
+| **T2 — suite** | `make test` — rebuild + full Playwright suite | ~1–2 min | at the close of **every** step; catches cross-step regressions |
+| **T3 — cold gate** | `make clean && make build && make test` from pruned Docker; a `--platform linux/amd64` build; then `make up` and eyeball the database through a GUI client on the URL it prints | several min | steps **0, 4, 7, 11**, and any step touching Docker, compose, the Makefile, or dependencies |
 
 T1→T2 is a **scope** axis: one spec versus the whole suite. T2→T3 is **not** — they run identical
 assertions. What changes is the starting state, so T3 validates the *build and provision path* rather than
@@ -116,9 +116,9 @@ it is the evaluation not starting.
 ### C · Update status — `03-update-job-api`, `07-update-status-ui`
 
 Transitions are enforced against the map in `jobs/transitions.py` (OPEN_QUESTIONS Q7 and Q10):
-`PENDING → {RUNNING, FAILED, CANCELLED}`, `RUNNING → {COMPLETED, FAILED, CANCELLED}`, and `COMPLETED`,
-`FAILED` and `CANCELLED` are all terminal. **Re-run** is the only way out of a terminal state, and only
-from `FAILED` or `CANCELLED` — the two that describe work which did not finish. `COMPLETED` is a genuine
+`PENDING → {RUNNING, FAILED, CANCELED}`, `RUNNING → {COMPLETED, FAILED, CANCELED}`, and `COMPLETED`,
+`FAILED` and `CANCELED` are all terminal. **Re-run** is the only way out of a terminal state, and only
+from `FAILED` or `CANCELED` — the two that describe work which did not finish. `COMPLETED` is a genuine
 dead end.
 
 | ID | ± | Action | Expected behaviour | Validation |
@@ -134,11 +134,11 @@ dead end.
 | C9 | − | PATCH returns 500 | **optimistic badge rolls back** to prior value | error shown; log unchanged after reload |
 | C10 | + | Rename only, no `status` key | name changes | **no status event appended**; **`updated_at` advances but `current_status_at` does not** — the exact divergence the projection guard depends on |
 | C11 | + | Two concurrent PATCHes | serialized by the row lock | both outcomes are individually legal under the map; no lost update; log and projection agree |
-| C12 | + | UI: controls offered per state | `FAILED`/`CANCELLED` → **Re-run**; `COMPLETED` → delete only; `RUNNING` → select with `COMPLETED`/`FAILED`/`CANCELLED` enabled and the rest disabled | invalid transitions are *unreachable*, not merely rejected; driven by the API's `allowed_transitions`, never a second copy of the map in TypeScript |
+| C12 | + | UI: controls offered per state | `FAILED`/`CANCELED` → **Re-run**; `COMPLETED` → delete only; `RUNNING` → select with `COMPLETED`/`FAILED`/`CANCELED` enabled and the rest disabled | invalid transitions are *unreachable*, not merely rejected; driven by the API's `allowed_transitions`, never a second copy of the map in TypeScript |
 | C13 | − | Re-run a **completed** job | **400** | done is done; a re-run of a success is a new job, not a resurrection. The UI never offers the action |
-| C14 | + | Cancel a **queued** job | 200; status becomes `CANCELLED` | terminal, but `can_retry` is true — the work never finished |
-| C15 | + | Cancel a **running** job | 200; status becomes `CANCELLED` | the main use case: stop work in flight |
-| C16 | + | Re-run a **cancelled** job | 200; back to `PENDING` | the `CANCELLED` entry survives in the log — cancelling is not deleting, and the job's compute time stays on the record |
+| C14 | + | Cancel a **queued** job | 200; status becomes `CANCELED` | terminal, but `can_retry` is true — the work never finished |
+| C15 | + | Cancel a **running** job | 200; status becomes `CANCELED` | the main use case: stop work in flight |
+| C16 | + | Re-run a **canceled** job | 200; back to `PENDING` | the `CANCELED` entry survives in the log — canceling is not deleting, and the job's compute time stays on the record |
 | C17 | − | Cancel a **completed** or **failed** job | **400** | nothing left to stop; a cancellation must not rewrite why a job ended |
 
 **On timestamps.** `updated_at` and `current_status_at` are asserted separately throughout this group
@@ -266,4 +266,4 @@ Stated rather than hidden — each is a deliberate scope call, not an oversight.
 | Author | Claude (agent) |
 | Reviewer | Nina |
 | Date | 2026-07-25 |
-| Decision | ☑ **approved** — test plan, UI mockup and design all signed off together at slice 1.5 |
+| Decision | ☑ **approved** — test plan, UI mockup and design all signed off together at step 1.5 |

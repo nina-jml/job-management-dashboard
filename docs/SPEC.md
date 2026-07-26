@@ -68,7 +68,7 @@ erDiagram
     JOB_STATUS {
         bigint   id PK
         bigint   job_id FK
-        varchar  status_type "PENDING | RUNNING | COMPLETED | FAILED | CANCELLED"
+        varchar  status_type "PENDING | RUNNING | COMPLETED | FAILED | CANCELED"
         datetime timestamp "server-stamped"
     }
 ```
@@ -155,16 +155,23 @@ class StatusType(models.TextChoices):
     RUNNING   = "RUNNING"
     COMPLETED = "COMPLETED"
     FAILED    = "FAILED"
-    CANCELLED = "CANCELLED"   # deliberate stop; distinct from deleting the job
+    CANCELED  = "CANCELED"    # deliberate stop; distinct from deleting the job
 ```
 
 Stored as strings, not ints — readable in the DB and in API payloads, and adding a state doesn't require a
-schema change. `CANCELLED` proved that: `manage.py sqlmigrate` for the migration that added it emits
+schema change. `CANCELED` proved that: `manage.py sqlmigrate` for the migration that added it emits
 `(no-op)` for both columns, because `choices` is Django-level metadata and the column is already
 `varchar(16)`.
 
-**Cancelling is not deleting.** Deleting removes the record; cancelling stops the work and keeps it. A
-cancelled job still consumed compute time, and that is precisely the history worth auditing — so the two
+The flip side showed up later, when the spelling changed from `CANCELLED` to `CANCELED`. *Adding* a state
+is free; *renaming* one is not, and for exactly the reason the column is cheap — the value is stored as a
+string, so altering `choices` alone would have left every existing row saying `CANCELLED` while the
+application no longer recognised it. Migration `0003_canceled_spelling` therefore carries a `RunPython`
+step that respells both the log and the projection, and is reversible in both directions. Readable string
+enums trade a free schema for a data migration on rename; that is the right trade here, but it is a trade.
+
+**Canceling is not deleting.** Deleting removes the record; canceling stops the work and keeps it. A
+canceled job still consumed compute time, and that is precisely the history worth auditing — so the two
 are different operations with different outcomes, not two routes to the same end.
 
 ### Indexes
@@ -204,7 +211,7 @@ default, so neither end needs a parsing rule. Omitting the parameter means unfil
 never a silently empty result. `IN` over the leading column of `(current_status, created_at, id)`
 stays a set of index range seeks, so selecting four statuses costs about what selecting one does.
 
-**Search by name is designed and deliberately not built** (see PLAN.md slice 9). It is not a text box:
+**Search by name is designed and deliberately not built** (see PLAN.md step 9). It is not a text box:
 `name ILIKE '%combustor%'` **cannot use a btree index** — a leading wildcard forces a sequential scan,
 exactly the query shape that falls over on a multi-million-row table. Doing it honestly needs a trigram
 index:
@@ -218,7 +225,7 @@ CREATE INDEX job_name_trgm_idx ON jobs_job USING gin (name gin_trgm_ops);
 `AddIndex`) rather than a deployment prerequisite — and stated honestly, a *highly unselective* term still
 has to sort a large candidate set, so trigram makes substring search viable rather than free. It was cut
 because the assignment does not ask for it and an unindexed version would contradict the very performance
-claim the scale slice exists to make. The status filter already demonstrates the server-side-narrowing
+claim the scale step exists to make. The status filter already demonstrates the server-side-narrowing
 property.
 
 ```json
@@ -374,13 +381,13 @@ read replicas, caching layers, cursor-based sync, partitioning `JobStatus` by ti
 
 Vite + React + TypeScript. Server state via TanStack Query (caching, invalidation, and error/loading states
 are the bulk of what this app does — hand-rolling that is more code, not less). Styling: CSS Modules or
-Tailwind, decided at slice 5 against the approved mockup.
+Tailwind, decided at step 5 against the approved mockup.
 
 Components stay small and dumb: `JobList` → `JobRow` → `StatusBadge` / `StatusSelect` / `DeleteButton`;
 `CreateJobForm`; `ErrorBanner`. All API access goes through one typed `api/jobs.ts` client so error handling
 and the base URL live in exactly one place.
 
-Behaviours required by the prompt, mapped to slices in [PLAN.md](./PLAN.md): dynamic updates after every
+Behaviours required by the prompt, mapped to steps in [PLAN.md](./PLAN.md): dynamic updates after every
 mutation, client-side validation on the create form, visible error messages on any API failure.
 
 ---

@@ -91,16 +91,16 @@ one gate would mean an unrelated unit failure blocks everything, for no gain in 
 
 ```python
 ALLOWED = {
-    StatusType.PENDING:   {StatusType.RUNNING, StatusType.FAILED, StatusType.CANCELLED},
-    StatusType.RUNNING:   {StatusType.COMPLETED, StatusType.FAILED, StatusType.CANCELLED},
+    StatusType.PENDING:   {StatusType.RUNNING, StatusType.FAILED, StatusType.CANCELED},
+    StatusType.RUNNING:   {StatusType.COMPLETED, StatusType.FAILED, StatusType.CANCELED},
     StatusType.COMPLETED: set(),   # terminal — done is done
     StatusType.FAILED:    set(),   # terminal, but retryable (below)
-    StatusType.CANCELLED: set(),   # terminal, but retryable (below)
+    StatusType.CANCELED: set(),   # terminal, but retryable (below)
 }
 
 # Re-run is the only way out of a terminal state, and only from the two that
 # represent work which did not finish.
-RETRYABLE = {StatusType.FAILED, StatusType.CANCELLED}
+RETRYABLE = {StatusType.FAILED, StatusType.CANCELED}
 ```
 
 A disallowed transition is a `400`, not a silent no-op. The UI never offers one: the dropdown disables
@@ -110,7 +110,7 @@ what the map forbids, so invalid transitions are *unreachable* rather than merel
 retry is a new attempt, not a backwards edit of the old one. Modelling that honestly is worth more than the
 flexibility of arbitrary edits.
 
-**The escape hatch, and its limit.** A **failed** or **cancelled** job offers an explicit **Re-run** action
+**The escape hatch, and its limit.** A **failed** or **canceled** job offers an explicit **Re-run** action
 that moves it to `PENDING` and appends that event to the log. A **completed** job offers nothing — its only
 remaining action is delete.
 
@@ -159,16 +159,16 @@ That matters once tenancy and auth exist, not before. If it ever does, the answe
 UUIDv4: v7 is time-ordered, so it stays non-enumerable *without* destroying the insert locality and index
 size that v4 costs. Noted in the README as the hardening step.
 
-### Q10 · Should there be a CANCELLED state?
+### Q10 · Should there be a CANCELED state?
 
-**Decision: yes.** `CANCELLED` is reachable from `PENDING` and `RUNNING` — you can call off work that is
+**Decision: yes.** `CANCELED` is reachable from `PENDING` and `RUNNING` — you can call off work that is
 queued as readily as work that is running — and is terminal but **retryable**, exactly like `FAILED`. It
 needs no special affordance: it is an ordinary option in the status control.
 
 Not reachable from `COMPLETED` or `FAILED`: there is nothing left to stop, and allowing it would let a
 cancellation rewrite *why* a job ended.
 
-**Cancelling is not deleting**, and that distinction is the point of the feature:
+**Canceling is not deleting**, and that distinction is the point of the feature:
 
 | | Delete | Cancel |
 |---|---|---|
@@ -176,12 +176,12 @@ cancellation rewrite *why* a job ended.
 | The status log | cascaded away | preserved, with the cancellation appended |
 | Answers "did this ever run?" | no — no trace | yes, and for how long |
 
-A cancelled job consumed compute time and may have been billed for it. Deleting it erases the evidence;
-cancelling records the outcome. In a scheduler those are different operations with different meanings, not
+A canceled job consumed compute time and may have been billed for it. Deleting it erases the evidence;
+canceling records the outcome. In a scheduler those are different operations with different meanings, not
 two routes to the same end.
 
 **Why retryable.** `COMPLETED` is a dead end because the work succeeded — running it again is a *new* job.
-`FAILED` and `CANCELLED` both describe work that *did not finish*, so "try that again" is a coherent thing
+`FAILED` and `CANCELED` both describe work that *did not finish*, so "try that again" is a coherent thing
 to ask for. The unit tests encode this as an invariant rather than a list: every retryable state must be
 terminal, so there is never more than one way out of a given state.
 
@@ -208,4 +208,4 @@ terminal, so there is never more than one way out of a given state.
 | **The standard Playwright image is not on DockerHub.** `mcr.microsoft.com/playwright` is a Microsoft registry; the prompt only guarantees DockerHub access. Using it would fail `make test` on the evaluator's machine — which per the prompt ends the evaluation. | Build the e2e image from `node:22-bookworm` (DockerHub) with `npx playwright install --with-deps chromium`. Verified by TEST_PLAN case A1 on a pruned Docker. |
 | Tests racing Postgres initialization — the classic intermittent CI failure. | `GET /api/health/` checks the DB connection; compose healthchecks and `make test` both gate on it. TEST_PLAN case A2. |
 | E2E state leaking between runs, making the suite pass once and fail on re-run. | Every spec namespaces its fixtures with a run-unique prefix and scopes assertions to them. TEST_PLAN case A3. |
-| Apple Silicon build that doesn't work on the evaluator's amd64 Linux. | Explicit `--platform linux/amd64` build check at slices 0 and 11. TEST_PLAN case A4. |
+| Apple Silicon build that doesn't work on the evaluator's amd64 Linux. | Explicit `--platform linux/amd64` build check at steps 0 and 11. TEST_PLAN case A4. |

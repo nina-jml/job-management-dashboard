@@ -13,7 +13,7 @@ export function uniquePrefix(label: string): string {
   return `e2e-${label}-${randomUUID().slice(0, 8)}-`;
 }
 
-export const STATUS_TYPES = ["PENDING", "RUNNING", "COMPLETED", "FAILED", "CANCELLED"] as const;
+export const STATUS_TYPES = ["PENDING", "RUNNING", "COMPLETED", "FAILED", "CANCELED"] as const;
 export type StatusType = (typeof STATUS_TYPES)[number];
 
 export interface Job {
@@ -25,7 +25,7 @@ export interface Job {
   updated_at: string;
   /** States reachable from current_status — the UI disables everything else. */
   allowed_transitions: StatusType[];
-  /** Only FAILED or CANCELLED jobs can be re-run (OPEN_QUESTIONS Q7, Q10). */
+  /** Only FAILED or CANCELED jobs can be re-run (OPEN_QUESTIONS Q7, Q10). */
   can_retry: boolean;
 }
 

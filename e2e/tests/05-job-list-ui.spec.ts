@@ -4,11 +4,11 @@ import type { Page } from "@playwright/test";
 import { uniquePrefix, type Job } from "./helpers";
 
 /**
- * Slice 5 — the job list.
+ * Step 5 — the job list.
  *
  * TEST_PLAN cases E1 (rows show name and current status), E3 (empty state),
  * E6 (history timeline). Error paths are built here too but swept
- * systematically in slice 9.
+ * systematically in step 9.
  */
 
 const row = (page: Page, id: number) => page.locator(`[data-job-id="${id}"]`);
@@ -226,13 +226,13 @@ test.describe("job list", () => {
     await listReady(page);
 
     await page.getByRole("button", { name: "Completed", exact: true }).click();
-    await page.getByRole("button", { name: "Cancelled", exact: true }).click();
+    await page.getByRole("button", { name: "Canceled", exact: true }).click();
     await expect(row(page, pending.id)).toHaveCount(0);
 
     await page.getByRole("button", { name: "All", exact: true }).click();
 
     // Every chip released, not just the ones All happens to know about.
-    for (const label of ["Pending", "Running", "Completed", "Failed", "Cancelled"]) {
+    for (const label of ["Pending", "Running", "Completed", "Failed", "Canceled"]) {
       await expect(page.getByRole("button", { name: label, exact: true })).toHaveAttribute(
         "aria-pressed",
         "false",

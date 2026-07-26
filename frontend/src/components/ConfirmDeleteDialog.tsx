@@ -27,6 +27,10 @@ export function ConfirmDeleteDialog({ job, onCancel, onConfirm }: Props) {
   const dialogRef = useRef<HTMLDivElement>(null);
   const cancelRef = useRef<HTMLButtonElement>(null);
 
+  // Straight from the server's `allowed_transitions`, so the copy cannot
+  // disagree with what the status control actually offers.
+  const canCancelInstead = job.allowed_transitions.includes("CANCELED");
+
   useEffect(() => {
     const previouslyFocused = document.activeElement as HTMLElement | null;
 
@@ -94,14 +98,28 @@ export function ConfirmDeleteDialog({ job, onCancel, onConfirm }: Props) {
         </div>
         <p>
           Its status history is deleted with it, including the record of how long it ran. This
-          can&rsquo;t be undone — to stop a job but keep its history, cancel it instead.
+          can&rsquo;t be undone
+          {/*
+            Only offered when canceling is actually reachable. Suggesting it for
+            a job that has already finished points at a control that is not
+            there — advice the user cannot take is worse than no advice.
+            `allowed_transitions` is the server's answer, so this asks the state
+            machine rather than re-deriving it.
+          */}
+          {canCancelInstead ? " — to stop a job but keep its history, cancel it instead." : "."}
         </p>
+        <p>Are you sure you want to delete it?</p>
         <div className="row-actions">
+          {/*
+            Named for the outcome, not the mechanism. "Cancel" is the wrong word
+            in a dialog about a job that can itself be *canceled* — it reads as
+            "cancel the job" rather than "back out of this".
+          */}
           <button type="button" ref={cancelRef} onClick={onCancel}>
-            Cancel
+            No, exit
           </button>
           <button type="button" className="danger" onClick={onConfirm}>
-            Delete job
+            Yes, delete it
           </button>
         </div>
       </div>

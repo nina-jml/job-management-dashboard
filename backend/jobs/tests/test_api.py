@@ -1,4 +1,4 @@
-"""Slice 1 API coverage — the list endpoint and the shared error shape."""
+"""Step 1 API coverage — the list endpoint and the shared error shape."""
 
 import pytest
 from rest_framework.test import APIClient
@@ -39,7 +39,7 @@ def test_list_serves_current_status_from_the_projection(client):
         "current_status_at",
         "created_at",
         "updated_at",
-        # Slice 3: lets the UI disable illegal options rather than let a user
+        # Step 3: lets the UI disable illegal options rather than let a user
         # pick something the server will reject.
         "allowed_transitions",
         "can_retry",

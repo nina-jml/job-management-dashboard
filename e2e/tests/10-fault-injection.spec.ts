@@ -4,12 +4,12 @@ import type { Page, Route } from "@playwright/test";
 import { uniquePrefix, type Job } from "./helpers";
 
 /**
- * Slice 10 — the fault-injection pass.
+ * Step 10 — the fault-injection pass.
  *
  * Test code only. Not to be confused with the production *sweeper* the README
  * describes, which is a scheduled reconciler and was deliberately not built.
  *
- * This slice deliberately does **not** re-test "500 on each verb": that already
+ * This step deliberately does **not** re-test "500 on each verb": that already
  * exists where each verb lives — GET list in `05`, POST in `06`, PATCH in `07`,
  * DELETE in `08` — and repeating it here would be theatre rather than coverage.
  * What is here is the ground none of those touch:
@@ -19,7 +19,7 @@ import { uniquePrefix, type Job } from "./helpers";
  *   3. a dropped connection mid-mutation (E9 only covered the list)
  *   4. slow responses as a visible state rather than an apparent freeze
  *
- * Error handling is built into each slice's definition of done; this pass
+ * Error handling is built into each step's definition of done; this pass
  * proves it holds, it is not where it gets written.
  */
 
@@ -153,14 +153,14 @@ test.describe("recovery after a failed mutation", () => {
     await failOnce(page, `**/api/jobs/${job.id}/`, "DELETE", (route) => route.fulfill(SERVER_ERROR));
 
     await row(page, job.id).getByRole("button", { name: /^Delete/ }).click();
-    await page.getByRole("button", { name: "Delete job" }).click();
+    await page.getByRole("button", { name: "Yes, delete it" }).click();
 
     await expect(page.getByRole("alert")).toBeVisible();
     await expect(row(page, job.id)).toBeVisible();
 
     await page.getByRole("button", { name: "Dismiss" }).click();
     await row(page, job.id).getByRole("button", { name: /^Delete/ }).click();
-    await page.getByRole("button", { name: "Delete job" }).click();
+    await page.getByRole("button", { name: "Yes, delete it" }).click();
 
     await expect(row(page, job.id)).toHaveCount(0);
     expect((await request.get(`/api/jobs/${job.id}/`)).status()).toBe(404);
@@ -236,7 +236,7 @@ test.describe("slow responses are a state, not a freeze", () => {
     });
 
     await row(page, job.id).getByRole("button", { name: /^Delete/ }).click();
-    await page.getByRole("button", { name: "Delete job" }).click();
+    await page.getByRole("button", { name: "Yes, delete it" }).click();
 
     // The row is removed optimistically, so the dialog closes immediately and
     // the *row* carries the in-flight state — there is nothing left to confirm.

@@ -1,5 +1,5 @@
 /*
- * Ported from docs/mockup/dashboard-mockup.html, the design signed off at slice
+ * Ported from docs/mockup/dashboard-mockup.html, the design signed off at step
  * 1.5. Tokens, status colours and the row grid are carried over verbatim so the
  * shipped UI matches what was reviewed; the mockup's own document chrome (the
  * gallery, the review notes) is dropped.
@@ -31,7 +31,7 @@
     --st-running:      #0b6a8d;   --st-running-bg:   #d9eff7;
     --st-completed:    #1b6640;   --st-completed-bg: #d8f0e2;
     --st-failed:       #9c2937;   --st-failed-bg:    #fbe0e3;
-    --st-cancelled:    #55606e;   --st-cancelled-bg: #e5e8ec;
+    --st-canceled:    #55606e;   --st-canceled-bg: #e5e8ec;
 
     --sans: ui-sans-serif, -apple-system, "Segoe UI Variable Text", "Segoe UI",
             Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -60,7 +60,7 @@
       --st-running:      #5fc9ea;  --st-running-bg:   #0d2c37;
       --st-completed:    #62cb8c;  --st-completed-bg: #10301d;
       --st-failed:       #f2818d;  --st-failed-bg:    #37171c;
-      --st-cancelled:    #a5b0bd;  --st-cancelled-bg: #232a34;
+      --st-canceled:    #a5b0bd;  --st-canceled-bg: #232a34;
 
       --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 6px 20px rgb(0 0 0 / 0.3);
     }
@@ -75,7 +75,7 @@
     --st-running: #5fc9ea;   --st-running-bg: #0d2c37;
     --st-completed: #62cb8c; --st-completed-bg: #10301d;
     --st-failed: #f2818d;    --st-failed-bg: #37171c;
-    --st-cancelled: #a5b0bd; --st-cancelled-bg: #232a34;
+    --st-canceled: #a5b0bd; --st-canceled-bg: #232a34;
     --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 6px 20px rgb(0 0 0 / 0.3);
   }
 
@@ -88,7 +88,7 @@
     --st-running: #0b6a8d;   --st-running-bg: #d9eff7;
     --st-completed: #1b6640; --st-completed-bg: #d8f0e2;
     --st-failed: #9c2937;    --st-failed-bg: #fbe0e3;
-    --st-cancelled: #55606e; --st-cancelled-bg: #e5e8ec;
+    --st-canceled: #55606e; --st-canceled-bg: #e5e8ec;
     --shadow: 0 1px 2px rgb(15 22 32 / 0.06), 0 6px 20px rgb(15 22 32 / 0.05);
   }
 
@@ -312,7 +312,7 @@
   .status[data-status="RUNNING"]   { color: var(--st-running);   background: var(--st-running-bg); }
   .status[data-status="COMPLETED"] { color: var(--st-completed); background: var(--st-completed-bg); }
   .status[data-status="FAILED"]    { color: var(--st-failed);    background: var(--st-failed-bg); }
-  .status[data-status="CANCELLED"] { color: var(--st-cancelled); background: var(--st-cancelled-bg); }
+  .status[data-status="CANCELED"] { color: var(--st-canceled); background: var(--st-canceled-bg); }
 
   .name { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; }
   .name b { font-weight: 550; font-size: 0.95rem; overflow-wrap: anywhere; }

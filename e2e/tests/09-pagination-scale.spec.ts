@@ -4,7 +4,7 @@ import type { APIRequestContext, Page } from "@playwright/test";
 import { listJobs, toPath, uniquePrefix, type Job, type Page as ApiPage } from "./helpers";
 
 /**
- * Slice 9 — pagination at scale.
+ * Step 9 — pagination at scale.
  *
  * TEST_PLAN cases F1, F2, F5, F6, F8, F9. F3/F3a–F3c (the status filter) are
  * covered where the control lives, in `05-job-list-ui`, and are not duplicated

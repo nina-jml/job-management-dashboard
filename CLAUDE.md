@@ -1,7 +1,7 @@
 # Working agreements
 
 Rescale EM take-home. Django + Postgres + React/TS job dashboard, containerized,
-gated by `make test`. Read `docs/PLAN.md` for the slice order and
+gated by `make test`. Read `docs/PLAN.md` for the step order and
 `docs/TEST_PLAN.md` for the case matrix before starting work.
 
 ## Non-negotiables
@@ -16,45 +16,45 @@ gated by `make test`. Read `docs/PLAN.md` for the slice order and
 - **Every base image tag is pinned.** Verify `--platform linux/amd64` builds when the
   build surface changes.
 - **No untested endpoint is reachable.** `JobViewSet` is composed from explicit DRF
-  mixins so each verb ships with the slice whose spec covers it.
+  mixins so each verb ships with the step whose spec covers it.
 
-## Per-slice loop
+## Per-step loop
 
-Each slice is independently shippable and independently green. In order, every time:
+Each step is independently shippable and independently green. In order, every time:
 
-1. Build the slice.
+1. Build the step.
 2. **T1** — `make test-spec SPEC=<name>` while iterating (seconds; specs are mounted,
    so no rebuild). `make test-backend` for backend-only work.
-3. **T2** — `make test` at the close of every slice.
+3. **T2** — `make test` at the close of every step.
 4. **T3** — `make clean && make build && make test` from pruned Docker, an amd64
    build check, then `make up` and eyeball the database through a GUI client on
-   the URL it prints (`make db-url`). Slices **0, 4, 7, 11**, *and* any slice
+   the URL it prints (`make db-url`). Steps **0, 4, 7, 11**, *and* any step
    touching Docker, compose, the Makefile, or dependencies — that class of change
    passes warm and fails cold.
-5. **Log the time**: `./scripts/timelog.sh start "<slice>"` / `stop "<note>"`.
+5. **Log the time**: `./scripts/timelog.sh start "<step>"` / `stop "<note>"`.
    The README has to report a real figure, so it is logged as work happens, never
    reconstructed at the end.
-6. **Commit** — one commit per slice, explaining *why* rather than restating the diff.
+6. **Commit** — one commit per step, explaining *why* rather than restating the diff.
 
-Do not start a slice until the previous one's validation passes.
+Do not start a step until the previous one's validation passes.
 
 ## Review touchpoints
 
 Nina reviews at **larger touchpoints**, not every commit — code review and push happen there; between
-them the loop above runs at speed (small tests, quick iterations, a commit per slice).
+them the loop above runs at speed (small tests, quick iterations, a commit per step).
 
-The touchpoints are the **T3 slices**, which is not a coincidence: they are the points where a coherent
+The touchpoints are the **T3 steps**, which is not a coincidence: they are the points where a coherent
 piece of work is finished and cold-verified.
 
 | Touchpoint | What is up for review |
 |---|---|
-| slice 1.5 | design + test plan ✅ signed off |
-| **slice 4** | the whole backend ✅ done — API, state machine, cascade |
-| slice 7 | the UI through the required critical flow |
-| slice 11 | delivery: README, writeups, final cold gate |
+| step 1.5 | design + test plan ✅ signed off |
+| **step 4** | the whole backend ✅ done — API, state machine, cascade |
+| step 7 | the UI through the required critical flow |
+| step 11 | delivery: README, writeups, final cold gate |
 
 At a touchpoint: make sure T3 is green, summarize what changed since the last one, and **stop** rather
-than rolling into the next slice. Between touchpoints, keep moving — do not wait for review to continue.
+than rolling into the next step. Between touchpoints, keep moving — do not wait for review to continue.
 
 ## Design decisions already settled
 

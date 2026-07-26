@@ -8,10 +8,10 @@ interface Props {
   job: Job;
   expanded: boolean;
   onToggleHistory: () => void;
-  /** Slice 7 wires these; the row renders read-only until then. */
+  /** Step 7 wires these; the row renders read-only until then. */
   onStatusChange?: (status: StatusType) => void;
   onRetry?: () => void;
-  /** Slice 8. Opens the confirmation dialog — it never deletes directly. */
+  /** Step 8. Opens the confirmation dialog — it never deletes directly. */
   onDelete?: () => void;
   isSaving?: boolean;
   isDeleting?: boolean;
@@ -92,7 +92,7 @@ export function JobRow({
       <span className="actions">
         {editing ? (
           // Deliberately not labelled "Cancel": the select beside it contains
-          // "Cancelled", and a harmless action must not look destructive.
+          // "Canceled", and a harmless action must not look destructive.
           <button
             type="button"
             className="ghost"

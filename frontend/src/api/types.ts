@@ -1,15 +1,16 @@
 /** Mirrors the DRF serializers. Kept in one place so drift is a compile error. */
 
-export const STATUS_TYPES = ["PENDING", "RUNNING", "COMPLETED", "FAILED", "CANCELLED"] as const;
+export const STATUS_TYPES = ["PENDING", "RUNNING", "COMPLETED", "FAILED", "CANCELED"] as const;
 
 export type StatusType = (typeof STATUS_TYPES)[number];
 
+/** Display text. The only place the user-facing spelling lives. */
 export const STATUS_LABELS: Record<StatusType, string> = {
   PENDING: "Pending",
   RUNNING: "Running",
   COMPLETED: "Completed",
   FAILED: "Failed",
-  CANCELLED: "Cancelled",
+  CANCELED: "Canceled",
 };
 
 export interface Job {

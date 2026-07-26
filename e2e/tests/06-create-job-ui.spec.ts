@@ -4,7 +4,7 @@ import type { Page } from "@playwright/test";
 import { history, uniquePrefix } from "./helpers";
 
 /**
- * Slice 6 — the create form.
+ * Step 6 — the create form.
  *
  * TEST_PLAN cases B1 (created job appears without a refresh), B2 and B3
  * (client-side validation fires no request), plus the failure path where the

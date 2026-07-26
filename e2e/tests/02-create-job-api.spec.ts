@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 import { listJobs, uniquePrefix, type Job } from "./helpers";
 
 /**
- * Slice 2 — POST /api/jobs/.
+ * Step 2 — POST /api/jobs/.
  *
  * TEST_PLAN cases B1 (create yields PENDING), B2/B3/B4 (name validation),
  * B6 (unicode and markup survive intact), B7 (duplicate names allowed).

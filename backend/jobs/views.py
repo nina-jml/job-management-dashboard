@@ -40,7 +40,7 @@ class JobViewSet(
     """Jobs: list, retrieve, create, update, destroy, plus status history.
 
     Composed from explicit mixins rather than `ModelViewSet` so each verb
-    arrived with the slice whose spec covers it. An untested endpoint was never
+    arrived with the step whose spec covers it. An untested endpoint was never
     reachable.
 
     DELETE returns 204 and cascades to the job's `JobStatus` rows. The cascade
