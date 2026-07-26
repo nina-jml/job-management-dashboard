@@ -18,7 +18,8 @@ Do not edit by hand — edit the ledger instead.
 | 2026-07-25 | 23:34 | 23:50 | 0h 16m | step 9 — scale: pagination at 250k — step 9 — pagination at 250k; 125 e2e green, latency measured |
 | 2026-07-25 | 23:51 | 00:00 | 0h 09m | step 10 — fault-injection pass — step 10 — fault-injection pass; 135 e2e green |
 | 2026-07-26 | 00:09 | 00:24 | 0h 14m | step 10.5 — code review fixes — 8 findings incl. F8 deleting other specs' rows and D5 not testing its own rollback; sorting/counts writeups; 137 e2e green (start reconstructed) |
+| 2026-07-26 | 15:12 | 15:30 | 0h 18m | step 10.6 — dialog copy, CANCELED spelling, slice→step — step 9.5 — search: pg_trgm + GIN index, debounced; 144 e2e green |
 
-**Total logged: 3h 52m**
+**Total logged: 4h 10m**
 
 This total is the figure reported in `README.md` as time spent on the assignment.

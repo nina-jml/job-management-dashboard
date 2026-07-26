@@ -99,6 +99,20 @@ class JobViewSet(
             # stable — a repeated value must not turn into a longer IN list.
             queryset = queryset.filter(current_status__in=list(dict.fromkeys(statuses)))
 
+        # `?search=` matches anywhere in the name, case-insensitively, across the
+        # whole table. Narrowing the loaded page in the browser instead would
+        # mean a job matching on page 400 simply does not appear and the user
+        # concludes it does not exist — a wrong answer delivered quickly.
+        #
+        # `icontains` compiles to `ILIKE '%term%'`, which a btree cannot serve at
+        # all. Migration 0004 adds a GIN trigram index for exactly this shape.
+        #
+        # Whitespace-only is treated as absent rather than as a match-everything
+        # term, so a stray space in the box does not look like a broken filter.
+        search = self.request.query_params.get("search", "").strip()
+        if search:
+            queryset = queryset.filter(name__icontains=search)
+
         return queryset
 
     @action(detail=True, methods=["get"], url_path="statuses")

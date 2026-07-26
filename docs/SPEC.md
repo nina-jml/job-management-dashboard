@@ -192,7 +192,8 @@ an identical timestamp must still have a stable order or keyset pagination can s
 Django REST Framework, `ModelViewSet`-shaped, JSON only.
 
 ### `GET /api/jobs/`
-List jobs, newest first, **cursor-paginated**. `status` is applied **server-side, across the whole table**
+List jobs, newest first, **cursor-paginated**. `status` and `search` are applied **server-side, across the
+whole table**
 — never to the loaded page.
 
 That distinction is the difference between a working feature and a misleading one. Narrowing a loaded page
@@ -201,7 +202,7 @@ exist. At the scale this design targets, client-side narrowing is not a cheaper 
 is a wrong answer delivered quickly.
 
 ```
-GET /api/jobs/?status=RUNNING&status=FAILED&cursor=<opaque>&page_size=25
+GET /api/jobs/?status=RUNNING&status=FAILED&search=fluid&cursor=<opaque>&page_size=25
 ```
 
 `status` repeats to select several at once, and the values are OR-ed. Repetition rather than a
@@ -211,22 +212,33 @@ default, so neither end needs a parsing rule. Omitting the parameter means unfil
 never a silently empty result. `IN` over the leading column of `(current_status, created_at, id)`
 stays a set of index range seeks, so selecting four statuses costs about what selecting one does.
 
-**Search by name is designed and deliberately not built** (see PLAN.md step 9). It is not a text box:
-`name ILIKE '%combustor%'` **cannot use a btree index** — a leading wildcard forces a sequential scan,
-exactly the query shape that falls over on a multi-million-row table. Doing it honestly needs a trigram
-index:
+`search` matches anywhere in the name, case-insensitively, and is applied the same way — server-side over
+the whole table. It is **not** a text box over the loaded rows: at this scale the match is usually not on
+the page already fetched, so narrowing client-side returns nothing and the user concludes the job does not
+exist.
+
+`name ILIKE '%combustor%'` **cannot use a btree index** — a leading wildcard leaves no prefix to seek on,
+so Postgres falls back to a sequential scan, the one query shape this design avoids everywhere else. So
+the feature comes with an index built for it (`0004_search_trgm`):
 
 ```sql
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
 CREATE INDEX job_name_trgm_idx ON jobs_job USING gin (name gin_trgm_ops);
 ```
 
-`pg_trgm` ships with the official `postgres:16` image, so it is a migration (`CreateExtension` +
-`AddIndex`) rather than a deployment prerequisite — and stated honestly, a *highly unselective* term still
-has to sort a large candidate set, so trigram makes substring search viable rather than free. It was cut
-because the assignment does not ask for it and an unindexed version would contradict the very performance
-claim the scale step exists to make. The status filter already demonstrates the server-side-narrowing
-property.
+`pg_trgm` ships with the official `postgres:16` image, so this is a migration rather than a deployment
+prerequisite — which is the whole reason it is affordable here.
+
+Stated honestly, the costs: a GIN index is larger than a btree and adds write amplification on every
+insert and every name change, and a *highly unselective* term still has to sort a large candidate set.
+Trigram makes substring search viable, not free.
+
+Search is debounced at 300ms in the client, so a burst of typing is one query rather than one per
+keystroke — each of which would be a trigram scan the next character immediately makes irrelevant. A
+whitespace-only term is trimmed to nothing on both ends and treated as no filter, so a stray space does
+not look like a filter that matches nothing.
+
+Search and `status` compose as AND. Both narrow; neither replaces the other.
 
 ```json
 {

@@ -1,5 +1,6 @@
 import { useState } from "react";
 
+import { useDebounced } from "./hooks/useDebounced";
 import { useJobs } from "./hooks/useJobs";
 import {
   statusErrorMessage,
@@ -16,10 +17,15 @@ import { ApiError } from "./api/client";
 
 export function App() {
   const [statuses, setStatuses] = useState<StatusType[]>([]);
+  const [searchInput, setSearchInput] = useState("");
+
+  // The field updates on every keystroke; only the query waits. Debouncing the
+  // displayed value instead would make the box feel broken.
+  const search = useDebounced(searchInput, 300);
 
   // Filtering is a different query key, so it round-trips to the server rather
   // than narrowing the rows already loaded (SPEC §2).
-  const filters = { statuses };
+  const filters = { statuses, search };
   const { data, isPending, error, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } =
     useJobs(filters);
 
@@ -38,7 +44,9 @@ export function App() {
   const [pendingDelete, setPendingDelete] = useState<Job | null>(null);
 
   const jobs = data?.pages.flatMap((page) => page.results) ?? [];
-  const isFiltered = statuses.length > 0;
+  // Either narrowing counts: the empty state has to say "nothing matched" rather
+  // than "no jobs yet" when a search is the reason the list is short.
+  const isFiltered = statuses.length > 0 || search.trim().length > 0;
 
   // Selecting is a toggle in both directions: a chip that is on turns off, and
   // turning the last one off is how you get back to everything. A one-way
@@ -94,6 +102,17 @@ export function App() {
                 </button>
               ))}
             </div>
+          </div>
+
+          <div className="field">
+            <label htmlFor="job-search">Search</label>
+            <input
+              id="job-search"
+              type="search"
+              placeholder="Name contains…"
+              value={searchInput}
+              onChange={(event) => setSearchInput(event.target.value)}
+            />
           </div>
 
           <CreateJobForm

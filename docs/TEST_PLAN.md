@@ -25,7 +25,7 @@ Step detail lives in [PLAN.md](./PLAN.md).
 | 6 | UI: create form + client-side validation | `06-create-job-ui` | B1, B6 | B2, B3, B4, B5 | T2 | ✅ done |
 | 7 | ⭐ UI: status update — **the prompt's required critical flow** | `07-update-status-ui` | C1, C2, C12, C15 | C9 | **T3** | ✅ done |
 | 8 | UI: delete (in-app confirm, never `window.confirm`), plus the two `client.ts` failure branches | `08-delete-job-ui` | D1, D6 | D5, E9, E10 | T2 | ✅ done |
-| 9 | Scale: load-more, status filter, 250k seeded | `09-pagination-scale` | F1–F3, F6–F9 | F5 | T2 | ✅ done |
+| 9 | Scale: load-more, status filter, 250k seeded, then search | `09-pagination-scale` | F1–F4, F6–F12 | F5 | T2 | ✅ done |
 | 10 | Fault-injection pass: history failures, mutation recovery, aborted mutations, slow responses | `10-fault-injection` | — ‡ | the modes not already covered | T2 | ✅ done |
 | 11 | README, performance + prompt-engineering writeups, final tidy | full suite | A1–A4 | — | **T3 ×2** | pending |
 
@@ -38,13 +38,13 @@ Steps 0–4 deliver a complete, demonstrable backend before any UI exists; step 
 where both the design and this plan are signed off, reviewed while 2–4 continue. If time runs short the fallback is a smaller UI, never a
 broken `make test`.
 
-**Coverage as of step 10 (every build step complete):** 135 E2E specs and 43 backend unit tests
+**Coverage as of step 9.5 (every build step complete, search added back):** 144 E2E specs and 43 backend unit tests
 passing; T3 cold gate green from pruned Docker at step 7, suite re-runnable without `make clean`, and
 all three images build on `linux/amd64`. The final T3 ×2 is step 11's.
 
-Covered: A1–A4, B1–B7, C1–C17, D1–D6, E1, E3–E10, F1–F3, F3a–F3c, F5–F9 — every case in this matrix
-except the two struck below. F4 and F10 are struck: search is out of scope (see PLAN.md step 9). F7 is
-covered by out-of-band measurement rather than by a spec, for the reason given in its row.
+Covered: A1–A4, B1–B7, C1–C17, D1–D6, E1, E3–E10, F1–F12, F3a–F3c — every case in this matrix,
+including F4 and F10, which were struck when search was cut from scope and restored when it came back.
+F7 is covered by out-of-band measurement rather than by a spec, for the reason given in its row.
 
 ---
 
@@ -85,7 +85,7 @@ is exactly the failure the evaluator's one-shot `make test` would surface.
 
 ## 3. Case matrix
 
-`+` positive · `−` negative. **48 cases, 17 negative.** Each ID maps to an assertion in the named spec file.
+`+` positive · `−` negative. **61 cases, 21 negative.** Each ID maps to an assertion in the named spec file.
 
 ### A · Infrastructure gate — `00-smoke` + manual
 
@@ -194,8 +194,10 @@ constraint (see SPEC.md §2).
 | F3a | + | Select a second status | list widens to the union | `?status=A&status=B`; a job in neither state stays excluded, so this is a union and not a widening to everything |
 | F3b | + | Deselect a selected status | that status drops out of the filter | the chip releases; deselecting the last one returns to unfiltered without touching "All" |
 | F3c | − | Unknown status value | 400 in the standard error shape | naming the bad value — returning an empty list would read as "no jobs match" rather than "that isn't a status" |
-| ~~F4~~ | | ~~Type a search burst — debounced~~ | **dropped: search is out of scope** | the whole-table-narrowing property F10 would have proved is already proved by F3a, which asserts a filtered row set the loaded page could not have produced |
-| ~~F10~~ | | ~~Search a term whose only match is far outside the first page~~ | **dropped: search is out of scope** | building it honestly needs a `pg_trgm` migration and a GIN index — `ILIKE '%…%'` has a leading wildcard and cannot use a btree. An unindexed substring scan at 250k rows would contradict the performance claim this group exists to make |
+| F4 | + | Type a search burst | debounced | requests ≪ keystrokes. Without it every character is a separate trigram scan the next keystroke immediately makes irrelevant |
+| F10 | + | Search a term whose only match is far outside the first page | the match is returned | **the assertion that proves search is whole-table, not page-local.** Bury the target under 40 newer jobs so it is off page 1, assert it is absent, then search and assert it appears. A client-side narrowing returns nothing here, which reads to the user as "that job does not exist" |
+| F11 | + | Whitespace-only search | list unchanged | trimmed on both client and server, so a stray space is an absent filter rather than a filter matching nothing |
+| F12 | + | Search plus a status filter | both narrowings apply | AND, not one replacing the other |
 | F5 | − | Tampered / invalid cursor | 400 | graceful UI error, no crash |
 | F6 | + | Job created mid-pagination | walk stays consistent | no dupes/skips from the shifting head |
 | F7 | + | 250k rows seeded | page latency ≈ flat vs 100 rows | **measured out-of-band, not in `make test`** — seeding 250k takes ~1m50s and the gate is the one command the graders run once. Numbers in the README: keyset seek 0.101 ms vs `OFFSET 200000` 39.703 ms on the same page, and 10.6 → 19.0 ms end-to-end for a 2,500× larger table. The spec proves the *property* the numbers evidence — the walk stays correct under deletion (F8, F9) |

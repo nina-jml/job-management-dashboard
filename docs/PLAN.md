@@ -232,13 +232,31 @@ that already shipped in step 5. F8/F9 mutate the list *during* a walk — deleti
 is the case that breaks offset pagination and that keyset pagination is immune to.
  Virtualize if rendered row count warrants it. F7's measured numbers go in the README.
 
-**Search is out of scope** (cases F4 and F10 dropped). The assignment never asks for it, and building it
-properly is not a text box: it needs a `pg_trgm` extension migration and a GIN index, because
-`name ILIKE '%…%'` has a leading wildcard and cannot use a btree — the exact query shape that falls over
-at the scale this step exists to demonstrate. Doing it badly would be worse than not doing it, since an
-unindexed substring scan at 250k rows contradicts the performance claim the step is making. The analysis
-stays in the README as designed-not-built; the status filter already proves the server-side-narrowing
-point that search would have re-proved.
+### Step 9.5 — Search by name
+**S: M** · **Spec:** `09-pagination-scale` (F4, F10, F11, F12) · **Validation: T2 + index verification**
+
+Cut from step 9 for time, then added back: at large job counts it is the control that makes the list
+usable, and the status filter is not a substitute — you cannot find "the combustor run from Tuesday" with
+five categorical chips.
+
+It is not a text box. `name ILIKE '%term%'` has a leading wildcard, so a btree cannot serve it at all and
+Postgres falls back to a sequential scan — the exact query shape everything else here avoids. Migration
+`0004_search_trgm` enables `pg_trgm` (which ships with the `postgres:16` image, so it is a migration
+rather than a deployment prerequisite) and adds a GIN trigram index over `name`.
+
+- server-side across the whole table, never over the loaded page — F10 buries the target under 40 newer
+  jobs so a page-local implementation provably fails
+- debounced at 300ms, so a burst of typing is not a request per keystroke (F4)
+- whitespace-only trimmed on both ends to an absent filter, not a filter matching nothing (F11)
+- composes with the status filter as AND (F12)
+
+The costs are named rather than hidden: a GIN index is larger than a btree and adds write amplification on
+insert and on any name change, and a highly unselective term still has to sort a large candidate set.
+Trigram makes substring search viable, not free.
+
+*Consequence for the footer:* an exact "showing x of y" is now firmly out, not merely unbuilt. A total for
+a search result cannot come from status counters — it needs a `COUNT(*)` over a trigram match on every
+keystroke, which is the hot-path count cursor pagination exists to avoid.
 
 ### Step 10 — Fault-injection pass
 **S: S** · **Spec:** `10-fault-injection` · **Cases:** the failure modes not already covered ·

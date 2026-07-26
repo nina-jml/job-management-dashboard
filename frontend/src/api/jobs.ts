@@ -10,12 +10,17 @@ export interface JobFilters {
    * ignore.
    */
   statuses?: StatusType[];
+  /** Substring match on the name, server-side across the whole table. */
+  search?: string;
 }
 
 function query(filters: JobFilters, pageSize: number): string {
   const params = new URLSearchParams();
   // Repeated, one per selection: `?status=RUNNING&status=FAILED`.
   for (const status of filters.statuses ?? []) params.append("status", status);
+  // Trimmed so a box holding only spaces is an absent filter rather than a
+  // request the server has to reason about.
+  if (filters.search?.trim()) params.set("search", filters.search.trim());
   params.set("page_size", String(pageSize));
   return params.toString();
 }

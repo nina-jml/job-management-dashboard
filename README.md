@@ -3,7 +3,7 @@
 A dashboard for viewing, creating and managing computational jobs. Django + PostgreSQL behind a
 React/TypeScript frontend, containerized, with a Playwright end-to-end suite.
 
-> **Status:** every build step is complete and green — 137 E2E specs, 43 backend unit tests.
+> **Status:** every build step is complete and green — 144 E2E specs, 43 backend unit tests.
 > See [What's built](#whats-built).
 
 ---
@@ -74,11 +74,11 @@ with the spec that proves it; full matrix in [`docs/TEST_PLAN.md`](docs/TEST_PLA
 | 6 | UI: create form + validation | `06-create-job-ui` | ✅ |
 | 7 | ⭐ UI: status update — the critical flow | `07-update-status-ui` | ✅ |
 | 8 | UI: delete + in-app confirm, and the `client.ts` failure branches | `08-delete-job-ui` | ✅ |
-| 9 | Scale: pagination and filter at 250k rows | `09-pagination-scale` | ✅ |
+| 9 | Scale: pagination and filter at 250k rows, then search | `09-pagination-scale` | ✅ |
 | 10 | Fault-injection pass | `10-fault-injection` | ✅ |
 | 11 | README, writeups, final cold gate | full suite | ⏳ |
 
-Currently green: **137 E2E specs, 43 backend unit tests.**
+Currently green: **144 E2E specs, 43 backend unit tests.**
 
 ---
 
@@ -168,7 +168,7 @@ history worth auditing.
 
 | | |
 |---|---|
-| `GET /api/jobs/` | List, newest first, cursor-paginated. `?status=` (repeatable, OR-ed) is applied server-side across the whole table |
+| `GET /api/jobs/` | List, newest first, cursor-paginated. `?status=` (repeatable, OR-ed) and `?search=` are applied server-side across the whole table |
 | `POST /api/jobs/` | Create. The job and its initial `PENDING` status are written in one transaction |
 | `GET /api/jobs/<id>/` | Retrieve |
 | `PATCH /api/jobs/<id>/` | Rename and/or change status. `status` is a write-only instruction to append to the log |
@@ -258,14 +258,43 @@ does not exist: a wrong answer delivered quickly. The filter is repeatable and O
 (`?status=RUNNING&status=FAILED`), and `IN` over the leading column of the composite index stays a set
 of range seeks, so selecting four statuses costs about what selecting one does.
 
-**Search by name: designed, deliberately not built.** It was scoped out — the assignment does not ask
-for it, and it is not a text box. `name ILIKE '%combustor%'` **cannot use a btree index**: a leading
-wildcard forces a sequential scan, which is precisely the query shape that falls over at the scale this
-section is about. Doing it honestly means a `pg_trgm` extension migration and a GIN trigram index
-(`pg_trgm` ships with the `postgres:16` image, so it is a migration rather than a deployment
-prerequisite) — and even then, a highly unselective term still has to sort a large candidate set, so
-trigram makes substring search viable rather than free. An unindexed version would have contradicted the
-performance claim it was meant to support, so the analysis is here and the feature is not.
+**Search by name is indexed for the query it actually runs.** `name ILIKE '%combustor%'` **cannot use a
+btree index**: a leading wildcard leaves no prefix to seek on, so Postgres falls back to a sequential scan
+— precisely the shape that falls over at the scale this section is about. So search ships with a GIN
+trigram index built for it (`0004_search_trgm`), and `pg_trgm` comes with the `postgres:16` image, making
+it a migration rather than a deployment prerequisite.
+
+It was cut for time earlier in the build and added back, because at large job counts it is the control
+that makes the list usable — five categorical chips cannot find "the combustor run from Tuesday". The
+version that shipped is the indexed one; an unindexed substring scan would have contradicted the very
+claim this section makes.
+
+Debounced at 300ms, so a burst of typing is one query rather than one per keystroke, each of which would
+be a trigram scan the next character immediately makes irrelevant.
+
+The costs, named rather than hidden: a GIN index is larger than a btree and adds write amplification on
+every insert and every name change, and a highly unselective term still has to sort a large candidate set.
+Trigram makes substring search viable, not free.
+
+**Measured at 250,000 rows**, and the result was more interesting than "index good". Same query, same data,
+with the indexes available and then with them disabled:
+
+| Term | Indexed | Index disabled | Plan chosen |
+|---|---|---|---|
+| `%Combustion Optimization #1234%` — 1 match | **39.7 ms** | 171.2 ms | Bitmap Index Scan on `job_name_trgm_idx` |
+| `%Combustion%` — ~17,800 matches | **0.42 ms** | 163.2 ms | Index Scan on `job_created_desc_idx`, filtering |
+
+The planner picks a *different* index for each, and both beat the sequential scan by a wide margin —
+but for opposite reasons. A **rare** term means the trigram index earns its place: nothing else can find
+one row in a quarter of a million without reading them all. A **common** term means the trigram index is
+not even used — walking the existing `created_at` ordering index and filtering satisfies `LIMIT 25` after a
+few dozen rows, long before a bitmap over 17,800 matches would have finished.
+
+So the unselective case, the one usually cited as trigram's weakness, is the fast one here. That is a
+consequence of pagination rather than of the index: the query only ever needs the first 25 matches, and
+common terms hand those over immediately. The selective case is the slower of the two at 39.7 ms, because a
+rare term forces most of the GIN index to be read — still four times faster than the scan it replaces, and
+the case that would otherwise be unusable.
 
 **Sorting by column: declined, and the reason is the interesting part.** It looks like the smallest
 of the features left out and is actually the largest, because the cursor encodes a position *in a
@@ -310,13 +339,14 @@ maintained in `record_status()`, the total for any status selection is arithmeti
 no count, no scan. That design is written up under
 [counts by status](#counts-by-status--designed-deliberately-not-built).
 
-It stops being cheap the moment search exists. No counter can answer "how many names match
-`%combustor%`"; that needs a real `COUNT(*)` over a trigram match, on every keystroke, on the hot
-path. The escapes are a capped count ("25 of 1000+") or an approximation from `pg_class.reltuples`,
-and both are less honest than the number the footer shows now.
+That stopped being available the moment search shipped. No counter can answer "how many names match
+`%combustor%`"; that needs a real `COUNT(*)` over a trigram match, on every keystroke, on the hot path.
+The escapes are a capped count ("25 of 1000+") or an approximation from `pg_class.reltuples`, and both are
+less honest than the number the footer shows now.
 
-So the three omissions are not independent: search and an exact total pull against each other, and
-picking either constrains the other. Left out together, deliberately.
+So this is a decision search *made*, not one taken alongside it. The two pull against each other and
+search is the more useful half: a total tells you how much you did not look at, while search gets you to
+the row you wanted. Given one, the footer reporting what is loaded is the truthful option.
 
 ### Counts by status — designed, deliberately not built
 

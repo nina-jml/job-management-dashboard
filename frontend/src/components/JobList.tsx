@@ -66,7 +66,7 @@ export function JobList({
         <b>{isFiltered ? "No jobs match those filters" : "No jobs yet"}</b>
         <p>
           {isFiltered
-            ? "Release a status chip, or pick All to see everything."
+            ? "Clear the search, or release a status chip, to see everything."
             : "Create your first job using the field above."}
         </p>
       </div>

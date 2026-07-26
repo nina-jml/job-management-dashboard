@@ -254,6 +254,91 @@ test.describe("pagination at scale", () => {
     expect(await page.locator(".rows .row").count()).toBe(before);
   });
 
+  test("finds a job that is nowhere near the first page (F10)", async ({ page, request }) => {
+    const needle = `${uniquePrefix("f10")}Combustor Liner Fatigue`;
+    const target = (await (
+      await request.post("/api/jobs/", { data: { name: needle } })
+    ).json()) as Job;
+
+    // Bury it: 40 newer jobs, so at page_size 25 the target is off the first
+    // page entirely. This is the assertion that separates a real search from a
+    // client-side narrowing of loaded rows — the latter returns nothing here,
+    // which reads to the user as "that job does not exist".
+    await seedJobs(request, uniquePrefix("f10-noise"), 40);
+
+    await page.goto("/");
+    await expect(page.locator(".rows .row").first()).toBeVisible();
+    await expect(row(page, target.id)).toHaveCount(0);
+
+    await page.getByLabel("Search").fill("Combustor Liner Fatigue");
+
+    await expect(row(page, target.id)).toBeVisible();
+    // And only matches come back.
+    const names = await page
+      .locator(".rows .row .name b")
+      .evaluateAll((nodes) => nodes.map((n) => n.textContent ?? ""));
+    expect(names.every((name) => name.includes("Combustor Liner Fatigue"))).toBe(true);
+  });
+
+  test("debounces typing rather than firing per keystroke (F4)", async ({ page }) => {
+    await page.goto("/");
+    await expect(page.locator(".rows .row").first()).toBeVisible();
+
+    const searches: string[] = [];
+    page.on("request", (request) => {
+      if (request.url().includes("search=")) searches.push(request.url());
+    });
+
+    // Typed as a burst. Without debouncing this is one request per character,
+    // each one a trigram scan the last keystroke immediately makes irrelevant.
+    await page.getByLabel("Search").pressSequentially("Transonic", { delay: 30 });
+
+    await expect
+      .poll(() => searches.length, { timeout: 3000 })
+      .toBeGreaterThan(0);
+    // Settle, then confirm the count stayed far below the keystroke count.
+    await expect(page.locator(".rows, .empty").first()).toBeVisible();
+    expect(searches.length).toBeLessThan("Transonic".length);
+  });
+
+  test("a whitespace-only search is not a filter", async ({ page, request }) => {
+    const job = (await (
+      await request.post("/api/jobs/", { data: { name: `${uniquePrefix("blank")}job` } })
+    ).json()) as Job;
+
+    await page.goto("/");
+    await expect(row(page, job.id)).toBeVisible();
+
+    await page.getByLabel("Search").fill("   ");
+
+    // Trimmed to nothing on both sides, so the list is unchanged rather than
+    // empty — a stray space must not look like a broken filter.
+    await expect(row(page, job.id)).toBeVisible();
+  });
+
+  test("search and status filter compose", async ({ page, request }) => {
+    const prefix = uniquePrefix("compose");
+    const running = (await (
+      await request.post("/api/jobs/", { data: { name: `${prefix}Widget Running` } })
+    ).json()) as Job;
+    const pending = (await (
+      await request.post("/api/jobs/", { data: { name: `${prefix}Widget Pending` } })
+    ).json()) as Job;
+    await request.patch(`/api/jobs/${running.id}/`, { data: { status: "RUNNING" } });
+
+    await page.goto("/");
+    await expect(page.locator(".rows .row").first()).toBeVisible();
+
+    await page.getByLabel("Search").fill(`${prefix}Widget`);
+    await expect(row(page, running.id)).toBeVisible();
+    await expect(row(page, pending.id)).toBeVisible();
+
+    // Both narrowings apply together — AND, not one replacing the other.
+    await page.getByRole("button", { name: "Running", exact: true }).click();
+    await expect(row(page, running.id)).toBeVisible();
+    await expect(row(page, pending.id)).toHaveCount(0);
+  });
+
   test("the footer reports what is loaded, never a total", async ({ page }) => {
     await page.goto("/");
     await expect(page.locator(".rows .row").first()).toBeVisible();
