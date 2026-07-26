@@ -24,6 +24,27 @@ REPORT="$ROOT/docs/TIME_LOG.md"
 now_epoch() { date +%s; }
 now_iso()   { date -u +"%Y-%m-%dT%H:%M:%SZ"; }
 
+# Zone the *report* is rendered in. The ledger keeps UTC, which is the right
+# storage format — unambiguous and immune to DST. But rendering UTC to a human
+# is actively misleading: a session worked on the evening of the 25th showed up
+# as "2026-07-26 00:09", wrong by a whole day. Override with REPORT_TZ.
+REPORT_TZ="${REPORT_TZ:-America/Los_Angeles}"
+
+# Epoch -> "YYYY-MM-DD HH:MM" in REPORT_TZ.
+#
+# BSD date (macOS) reads an epoch with -r; GNU date wants -d @EPOCH, and treats
+# -r as "reference file" so it fails through to the fallback. The ledger stores
+# the epoch alongside the ISO string precisely so this never parses a string
+# back — which is the operation the two implementations disagree about.
+local_stamp() {
+  TZ="$REPORT_TZ" date -r "$1" +"%Y-%m-%d %H:%M" 2>/dev/null \
+    || TZ="$REPORT_TZ" date -d "@$1" +"%Y-%m-%d %H:%M"
+}
+
+zone_abbrev() {
+  TZ="$REPORT_TZ" date -r "$1" +%Z 2>/dev/null || TZ="$REPORT_TZ" date -d "@$1" +%Z
+}
+
 # Seconds -> "2h 35m"
 human() {
   local s=$1
@@ -101,21 +122,29 @@ cmd_report() {
     echo "Rendered from \`docs/time_log.tsv\` by \`scripts/timelog.sh report\` (or \`make time\`)."
     echo "Do not edit by hand — edit the ledger instead."
     echo
+    echo "Times are **$(zone_abbrev "$(now_epoch)")** (\`$REPORT_TZ\`). The ledger stores UTC;"
+    echo "only this rendering is local."
+    echo
     echo "| Date | Start | End | Duration | Work |"
     echo "|---|---|---|---|---|"
-    awk -F'\t' 'NR>1 {
-      dur = $2 - $1
-      printf "| %s | %s | %s | %dh %02dm | %s |\n", \
-        substr($3,1,10), substr($3,12,5), substr($4,12,5), \
-        dur/3600, (dur%3600)/60, $5
-    }' "$LEDGER"
+    local s_epoch e_epoch s_iso e_iso label dur s_stamp e_stamp
+    while IFS=$'\t' read -r s_epoch e_epoch s_iso e_iso label; do
+      [ "$s_epoch" = "start_epoch" ] && continue
+      [ -z "$s_epoch" ] && continue
+      dur=$((e_epoch - s_epoch))
+      s_stamp="$(local_stamp "$s_epoch")"
+      e_stamp="$(local_stamp "$e_epoch")"
+      printf '| %s | %s | %s | %s | %s |\n' \
+        "${s_stamp%% *}" "${s_stamp##* }" "${e_stamp##* }" "$(human "$dur")" "$label"
+    done <"$LEDGER"
 
     if [ -f "$ACTIVE" ]; then
-      local a_epoch a_iso a_label a_elapsed
+      local a_epoch a_iso a_label a_elapsed a_stamp
       IFS=$'\t' read -r a_epoch a_iso a_label <"$ACTIVE"
       a_elapsed=$(($(now_epoch) - a_epoch))
+      a_stamp="$(local_stamp "$a_epoch")"
       printf '| %s | %s | — | **%s (active)** | %s |\n' \
-        "${a_iso:0:10}" "${a_iso:11:5}" "$(human "$a_elapsed")" "$a_label"
+        "${a_stamp%% *}" "${a_stamp##* }" "$(human "$a_elapsed")" "$a_label"
     fi
 
     echo

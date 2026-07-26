@@ -707,16 +707,36 @@
         <p class="plate-note">An in-app dialog, never <code>window.confirm</code> — a native dialog
           blocks the event loop and would hang the Playwright suite. It names the job and states the
           consequence for the status history.</p>
-        <div class="frame" style="padding:1.5rem; display:grid; place-items:center; background:var(--surface-alt);">
+        <p class="plate-note"><b>Revised after build review.</b> The buttons were
+          <code>Cancel</code> / <code>Delete job</code>; "Cancel" reads as "cancel the job" in a dialog
+          about a job that can itself be canceled, so they now name the outcome. The question is asked
+          outright rather than left to be inferred from a pair of buttons. And the "cancel it instead"
+          hint is shown <b>only when canceling is reachable</b> — offering it on a job that has already
+          finished points at a control that is not on screen.</p>
+        <div class="frame" style="padding:1.5rem; display:grid; place-items:center; background:var(--surface-alt); gap:1.5rem;">
+          <div class="dialog" style="box-shadow:none;">
+            <h3>Delete this job?</h3>
+            <div class="job-ref">#3284917 · Transonic Wing Sweep — Mach 0.85</div>
+            <p>Its status history is deleted with it, including the record of how long it ran.
+              This can't be undone — to stop a job but keep its history, cancel it instead.</p>
+            <p>Are you sure you want to delete it?</p>
+            <div class="row-actions">
+              <button>No, exit</button>
+              <button class="danger">Yes, delete it</button>
+            </div>
+          </div>
+          <p class="plate-note" style="margin:0;">A <b>running</b> job, above — canceling is reachable, so
+            it is offered. A <b>failed</b> or <b>completed</b> job, below — it is not, so the hint is
+            dropped and the rest is identical.</p>
           <div class="dialog" style="box-shadow:none;">
             <h3>Delete this job?</h3>
             <div class="job-ref">#3284912 · Crash Pulse — Frontal Offset 40%</div>
-            <p>Its four status entries will be deleted too, including the record of how
-              long it ran. This can't be undone — to stop a job but keep its history, cancel
-              it instead.</p>
+            <p>Its status history is deleted with it, including the record of how long it ran.
+              This can't be undone.</p>
+            <p>Are you sure you want to delete it?</p>
             <div class="row-actions">
-              <button>Cancel</button>
-              <button class="danger">Delete job</button>
+              <button>No, exit</button>
+              <button class="danger">Yes, delete it</button>
             </div>
           </div>
         </div>

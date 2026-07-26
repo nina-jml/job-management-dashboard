@@ -12,4 +12,4 @@ start_epoch	end_epoch	start_iso	end_iso	label
 1785022465	1785023454	2026-07-25T23:34:25Z	2026-07-25T23:50:54Z	step 9 — scale: pagination at 250k — step 9 — pagination at 250k; 125 e2e green, latency measured
 1785023461	1785024043	2026-07-25T23:51:01Z	2026-07-26T00:00:43Z	step 10 — fault-injection pass — step 10 — fault-injection pass; 135 e2e green
 1785024560	1785025440	2026-07-26T00:09:20Z	2026-07-26T00:24:00Z	step 10.5 — code review fixes — 8 findings incl. F8 deleting other specs' rows and D5 not testing its own rollback; sorting/counts writeups; 137 e2e green (start reconstructed)
-1785078742	1785079841	2026-07-26T15:12:22Z	2026-07-26T15:30:41Z	step 10.6 — dialog copy, CANCELED spelling, slice→step — step 9.5 — search: pg_trgm + GIN index, debounced; 144 e2e green
+1785078742	1785079841	2026-07-26T15:12:22Z	2026-07-26T15:30:41Z	steps 10.6 + 9.5 — dialog copy, CANCELED respelling with data migration, slice→step rename, then search (pg_trgm + GIN, debounced); 144 e2e green

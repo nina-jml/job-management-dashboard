@@ -10,11 +10,23 @@ interface Props {
   isFiltered: boolean;
   /** Set when the list query failed — "no rows" then means unknown, not none. */
   isError?: boolean;
+  /** Which narrowings are active, so the empty state names the right control. */
+  hasSearch?: boolean;
+  hasStatusFilter?: boolean;
   onStatusChange?: (job: Job, status: StatusType) => void;
   onRetry?: (job: Job) => void;
   onDelete?: (job: Job) => void;
   savingIds?: ReadonlySet<number>;
   deletingIds?: ReadonlySet<number>;
+}
+
+/** Which controls to point at, given which ones are actually narrowing. */
+function clearHint(hasSearch: boolean, hasStatusFilter: boolean): string {
+  if (hasSearch && hasStatusFilter) {
+    return "Clear the search, or pick All, to see everything.";
+  }
+  if (hasSearch) return "Clear the search to see everything.";
+  return "Pick All, or release the status chip, to see everything.";
 }
 
 /**
@@ -45,6 +57,8 @@ export function JobList({
   isLoading,
   isFiltered,
   isError = false,
+  hasSearch = false,
+  hasStatusFilter = false,
   onStatusChange,
   onRetry,
   onDelete,
@@ -64,11 +78,12 @@ export function JobList({
     return (
       <div className="empty">
         <b>{isFiltered ? "No jobs match those filters" : "No jobs yet"}</b>
-        <p>
-          {isFiltered
-            ? "Clear the search, or release a status chip, to see everything."
-            : "Create your first job using the field above."}
-        </p>
+        {/*
+          Names only the narrowings actually in effect. Telling someone to clear
+          a search they never typed sends them looking for a control they are not
+          using, which is worse than saying nothing.
+        */}
+        <p>{isFiltered ? clearHint(hasSearch, hasStatusFilter) : "Create your first job using the field above."}</p>
       </div>
     );
   }

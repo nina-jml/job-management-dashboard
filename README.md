@@ -276,25 +276,31 @@ The costs, named rather than hidden: a GIN index is larger than a btree and adds
 every insert and every name change, and a highly unselective term still has to sort a large candidate set.
 Trigram makes substring search viable, not free.
 
-**Measured at 250,000 rows**, and the result was more interesting than "index good". Same query, same data,
-with the indexes available and then with them disabled:
+**The index is on `UPPER(name::text)`, not on `name`** — because that is what Django compiles
+`name__icontains` to on PostgreSQL. An index on the bare column cannot serve a predicate whose left side
+is a function call: it would exist, look correct, pay the full GIN write cost on every insert and rename,
+and leave the search as the sequential scan it was meant to prevent. Quiet, expensive, and easy to ship.
+
+**Measured at 250,000 rows, through the ORM's own query** — `QuerySet.explain(analyze=True)` rather than
+hand-written SQL, which is the only way to know the application's query uses the index rather than one that
+merely resembles it:
 
 | Term | Indexed | Index disabled | Plan chosen |
 |---|---|---|---|
-| `%Combustion Optimization #1234%` — 1 match | **39.7 ms** | 171.2 ms | Bitmap Index Scan on `job_name_trgm_idx` |
-| `%Combustion%` — ~17,800 matches | **0.42 ms** | 163.2 ms | Index Scan on `job_created_desc_idx`, filtering |
+| `Combustion Optimization #1234` — 1 match | **30.6 ms** | 116.5 ms | Bitmap Index Scan on `job_name_trgm_idx` |
+| `Combustion` — ~18,000 matches | **0.304 ms** | 138.6 ms | Index Scan on `job_created_desc_idx`, filtering |
 
-The planner picks a *different* index for each, and both beat the sequential scan by a wide margin —
-but for opposite reasons. A **rare** term means the trigram index earns its place: nothing else can find
-one row in a quarter of a million without reading them all. A **common** term means the trigram index is
-not even used — walking the existing `created_at` ordering index and filtering satisfies `LIMIT 25` after a
-few dozen rows, long before a bitmap over 17,800 matches would have finished.
+The planner picks a *different* index for each, and both beat the sequential scan by a wide margin — but
+for opposite reasons. A **rare** term is where the trigram index earns its place: nothing else finds one
+row in a quarter of a million without reading them all. A **common** term does not use the trigram index at
+all — walking the existing `created_at` ordering index and filtering satisfies `LIMIT 25` within a few
+dozen rows, long before a bitmap over 18,000 matches would have finished.
 
-So the unselective case, the one usually cited as trigram's weakness, is the fast one here. That is a
-consequence of pagination rather than of the index: the query only ever needs the first 25 matches, and
-common terms hand those over immediately. The selective case is the slower of the two at 39.7 ms, because a
-rare term forces most of the GIN index to be read — still four times faster than the scan it replaces, and
-the case that would otherwise be unusable.
+So the unselective case, usually cited as trigram's weakness, is the fast one here. That is a consequence
+of pagination rather than of the index: the query only ever needs the first 25 matches, and common terms
+hand those over immediately. The selective case is the slower of the two at 30.6 ms, because a rare term
+forces most of the GIN index to be read — still ~4× faster than the scan it replaces, and the case that
+would otherwise be unusable.
 
 **Sorting by column: declined, and the reason is the interesting part.** It looks like the smallest
 of the features left out and is actually the largest, because the cursor encodes a position *in a
@@ -525,18 +531,19 @@ and architecture decisions were made during design.
 
 ## Time spent
 
-**3h 52m**, tracked as the work happened rather than reconstructed afterwards. `scripts/timelog.sh`
+**4h 10m**, tracked as the work happened rather than reconstructed afterwards. `scripts/timelog.sh`
 opens and closes each session; `make time` renders the ledger to
-[`docs/TIME_LOG.md`](docs/TIME_LOG.md).
+[`docs/TIME_LOG.md`](docs/TIME_LOG.md), in local time — the ledger itself stores UTC.
 
 | Where it went | Time | |
 |---|---|---|
-| Planning — spec, step plan, test plan, time tracker | 25m | 11% |
-| Backend — models, list, create, PATCH + state machine, delete + cascade | 41m | 18% |
-| `CANCELED` — added mid-build after a design conversation | 11m | 5% |
-| Frontend — job list, create form, status update, delete | 1h 25m | 37% |
-| Scale and fault injection — 250k measurement, failure paths | 25m | 11% |
-| Review fixes — two rounds, 19 findings | 39m | 17% |
+| Planning — spec, step plan, test plan, time tracker | 25m | 10% |
+| Backend — models, list, create, PATCH + state machine, delete + cascade | 41m | 16% |
+| `CANCELED` — added mid-build after a design conversation | 11m | 4% |
+| Frontend — job list, create form, status update, delete | 1h 25m | 34% |
+| Scale and fault injection — 250k measurement, failure paths | 25m | 10% |
+| Review fixes — two rounds, 19 findings | 39m | 16% |
+| Late feedback — dialog copy, respelling, terminology, search | 18m | 7% |
 | Delivery — README, writeups, cold gate | *in progress* | |
 
 Two things that figure does *not* include, deliberately: the wall-clock cost of Docker builds and

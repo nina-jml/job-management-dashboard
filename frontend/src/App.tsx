@@ -21,7 +21,12 @@ export function App() {
 
   // The field updates on every keystroke; only the query waits. Debouncing the
   // displayed value instead would make the box feel broken.
-  const search = useDebounced(searchInput, 300);
+  //
+  // Trimmed *before* it reaches the query key. `""`, `"   "` and `"combustor "`
+  // all produce the same URL, so leaving them distinct gave each its own cache
+  // entry: typing a single space after loading three pages would blow the list
+  // away, show skeletons, and refetch page 1 for a response already in cache.
+  const search = useDebounced(searchInput, 300).trim();
 
   // Filtering is a different query key, so it round-trips to the server rather
   // than narrowing the rows already loaded (SPEC §2).
@@ -46,7 +51,7 @@ export function App() {
   const jobs = data?.pages.flatMap((page) => page.results) ?? [];
   // Either narrowing counts: the empty state has to say "nothing matched" rather
   // than "no jobs yet" when a search is the reason the list is short.
-  const isFiltered = statuses.length > 0 || search.trim().length > 0;
+  const isFiltered = statuses.length > 0 || search.length > 0;
 
   // Selecting is a toggle in both directions: a chip that is on turns off, and
   // turning the last one off is how you get back to everything. A one-way
@@ -85,7 +90,11 @@ export function App() {
               <button
                 type="button"
                 className="chip"
-                aria-pressed={!isFiltered}
+                // Tracks only the statuses, because that is all it clears.
+                // Tying it to "is anything filtering" made it read un-pressed
+                // while a search was active — advertising "click me to clear"
+                // on a button that had nothing to clear.
+                aria-pressed={statuses.length === 0}
                 onClick={() => setStatuses([])}
               >
                 All
@@ -155,6 +164,8 @@ export function App() {
           isLoading={isPending}
           isFiltered={isFiltered}
           isError={Boolean(error)}
+          hasSearch={search.length > 0}
+          hasStatusFilter={statuses.length > 0}
           savingIds={savingIds}
           deletingIds={deletingIds}
           onStatusChange={(job, status) => void changeStatus(job.id, status)}

@@ -113,6 +113,11 @@ test.describe("recovery after a failed mutation", () => {
     // Rolled back — the badge must not claim a state the server refused.
     await expect(row(page, job.id).locator(".status")).toHaveText(/Pending/);
 
+    // Settled, not merely rolled back — same reasoning as the delete case: the
+    // row is replaced when the reconciling refetch lands, so acting before then
+    // races it.
+    await expect(row(page, job.id).getByRole("button", { name: /Edit status/ })).toBeEnabled();
+
     // The fault is spent. The same action now has to work, and the error has to
     // go: a banner that outlives the failure it describes is its own bug.
     await page.getByRole("button", { name: "Dismiss" }).click();
@@ -157,6 +162,19 @@ test.describe("recovery after a failed mutation", () => {
 
     await expect(page.getByRole("alert")).toBeVisible();
     await expect(row(page, job.id)).toBeVisible();
+
+    // Wait for the row to *settle*, not merely to reappear. The rollback puts it
+    // back before `useDeleteJob`'s awaited invalidation has refetched, and the
+    // row is replaced when that lands — so starting the second attempt on the
+    // strength of "visible" alone races the refetch and can act on a node about
+    // to be detached. An enabled Delete button is the observable signal that
+    // `deletingIds` has cleared and reconciliation is done.
+    //
+    // Matched on the prefix rather than `/^Delete$/`: the accessible name comes
+    // from `aria-label="Delete <job name>"`, so an exact match never resolves —
+    // which is how the first version of this assertion managed to fail against a
+    // perfectly healthy button.
+    await expect(row(page, job.id).getByRole("button", { name: /^Delete/ })).toBeEnabled();
 
     await page.getByRole("button", { name: "Dismiss" }).click();
     await row(page, job.id).getByRole("button", { name: /^Delete/ }).click();

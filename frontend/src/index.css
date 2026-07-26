@@ -4,6 +4,11 @@
  * shipped UI matches what was reviewed; the mockup's own document chrome (the
  * gallery, the review notes) is dropped.
  *
+ * Where build review changed a decision, the mockup was updated to match rather
+ * than left to rot — the delete dialog's copy and buttons, for instance. A
+ * signed-off design that no longer describes the product is worse than no
+ * mockup, because it is the thing a reader trusts.
+ *
  * Components are styled through the tokens only — never inside a media query —
  * so the viewer's theme toggle can override the OS preference in both
  * directions.

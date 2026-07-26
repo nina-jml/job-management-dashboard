@@ -11,7 +11,6 @@ compares against `current_status_at` rather than `updated_at`) is in
 docs/OPEN_QUESTIONS.md Q2.
 """
 
-from django.contrib.postgres.indexes import GinIndex
 from django.db import models
 from django.utils import timezone
 
@@ -65,17 +64,21 @@ class Job(models.Model):
                 fields=["current_status", "-created_at", "-id"],
                 name="job_status_created_idx",
             ),
-            # Substring search on the name. A btree cannot serve
-            # `name ILIKE '%term%'` at all — the leading wildcard makes it a
-            # sequential scan — so this is a GIN index over trigrams, which can.
-            # It costs write amplification on insert and update in exchange, and
-            # a highly unselective term still has to sort a large candidate set:
-            # trigram makes substring search viable, not free.
-            GinIndex(
-                fields=["name"],
-                name="job_name_trgm_idx",
-                opclasses=["gin_trgm_ops"],
-            ),
+            # The trigram index serving `?search=` is deliberately *not*
+            # declared here. It lives in migration 0004 as explicit DDL, for two
+            # reasons both worth knowing:
+            #
+            # 1. It has to be built on `UPPER(name::text)`, not on `name`,
+            #    because that is what Django compiles `name__icontains` to on
+            #    PostgreSQL. An index on the bare column cannot serve a
+            #    predicate whose left side is a function call: it would pay the
+            #    full GIN write cost on every insert and every rename while the
+            #    search stayed a sequential scan — precisely what the index
+            #    exists to prevent.
+            # 2. `GinIndex(OpClass(Upper("name"), name="gin_trgm_ops"))` renders
+            #    the operator class *inside* the expression parentheses, which
+            #    Postgres rejects. Hand-written DDL is the version that both
+            #    works and shows a reader exactly what was created.
         ]
 
     def __str__(self) -> str:

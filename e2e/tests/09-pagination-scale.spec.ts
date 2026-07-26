@@ -289,16 +289,24 @@ test.describe("pagination at scale", () => {
       if (request.url().includes("search=")) searches.push(request.url());
     });
 
-    // Typed as a burst. Without debouncing this is one request per character,
-    // each one a trigram scan the last keystroke immediately makes irrelevant.
-    await page.getByLabel("Search").pressSequentially("Transonic", { delay: 30 });
+    // Deliberately longer than one 300ms debounce window: 20 characters at 40ms
+    // is ~800ms of typing, so an implementation that fires per keystroke and one
+    // that debounces are separated by an order of magnitude rather than by one.
+    // The earlier version typed 9 characters inside a single window, which only
+    // distinguished the two while the whole burst fit — on a loaded machine the
+    // gaps stretch past 300ms and the assertion sits on its own boundary.
+    const term = "Transonic Wing Sweep";
+    await page.getByLabel("Search").pressSequentially(term, { delay: 40 });
 
-    await expect
-      .poll(() => searches.length, { timeout: 3000 })
-      .toBeGreaterThan(0);
-    // Settle, then confirm the count stayed far below the keystroke count.
-    await expect(page.locator(".rows, .empty").first()).toBeVisible();
-    expect(searches.length).toBeLessThan("Transonic".length);
+    // Wait for the search to actually land, not merely for rows to exist — the
+    // pre-search list already satisfies that and would let this pass early.
+    await page.waitForResponse(
+      (response) => response.url().includes("search=") && response.status() === 200,
+    );
+
+    // One request for the burst, plus at most one more if a gap happened to
+    // straddle a window boundary. Nowhere near 20.
+    expect(searches.length).toBeLessThanOrEqual(3);
   });
 
   test("a whitespace-only search is not a filter", async ({ page, request }) => {

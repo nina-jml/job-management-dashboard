@@ -28,7 +28,7 @@ export interface Job {
    * disables whatever this list omits.
    */
   allowed_transitions: StatusType[];
-  /** True for FAILED and CANCELLED — work that did not finish (OPEN_QUESTIONS Q10). */
+  /** True for FAILED and CANCELED — work that did not finish (OPEN_QUESTIONS Q10). */
   can_retry: boolean;
 }
 

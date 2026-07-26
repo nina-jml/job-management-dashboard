@@ -233,7 +233,7 @@ is the case that breaks offset pagination and that keyset pagination is immune t
  Virtualize if rendered row count warrants it. F7's measured numbers go in the README.
 
 ### Step 9.5 — Search by name
-**S: M** · **Spec:** `09-pagination-scale` (F4, F10, F11, F12) · **Validation: T2 + index verification**
+**S: M** · **Spec:** `09-pagination-scale` (F4, F10, F11, F12) · **Validation: T2 + index verification through the ORM**
 
 Cut from step 9 for time, then added back: at large job counts it is the control that makes the list
 usable, and the status filter is not a substitute — you cannot find "the combustor run from Tuesday" with
@@ -242,7 +242,10 @@ five categorical chips.
 It is not a text box. `name ILIKE '%term%'` has a leading wildcard, so a btree cannot serve it at all and
 Postgres falls back to a sequential scan — the exact query shape everything else here avoids. Migration
 `0004_search_trgm` enables `pg_trgm` (which ships with the `postgres:16` image, so it is a migration
-rather than a deployment prerequisite) and adds a GIN trigram index over `name`.
+rather than a deployment prerequisite) and adds a GIN trigram index over **`UPPER(name::text)`** — the
+expression Django actually emits for `icontains`. Indexing the bare column instead is the quiet failure:
+the index exists, hand-written `ILIKE` even appears to use it, and the application's query still scans.
+Verified with `QuerySet.explain()` on the ORM's own query rather than on SQL written by hand.
 
 - server-side across the whole table, never over the loaded page — F10 buries the target under 40 newer
   jobs so a page-local implementation provably fails
