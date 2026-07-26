@@ -188,6 +188,57 @@ test.describe("update job status", () => {
     await expect(row(page, job.id).locator(".status")).toHaveText(/Pending/);
   });
 
+  test("re-run flips the badge without waiting for the server", async ({ page, request }) => {
+    const job = await makeJob(request, "rerun-fast");
+    await request.patch(`/api/jobs/${job.id}/`, { data: { status: "FAILED" } });
+
+    await page.goto("/");
+    await expect(row(page, job.id).locator(".status")).toHaveText(/Failed/);
+
+    // Hold the PATCH open, so the badge moving can only be the optimistic
+    // write and never the server's answer.
+    await page.route(`**/api/jobs/${job.id}/`, async (route) => {
+      if (route.request().method() !== "PATCH") return route.continue();
+      await new Promise((resolve) => setTimeout(resolve, 3000));
+      await route.continue();
+    });
+
+    await row(page, job.id).getByRole("button", { name: /Re-run/ }).click();
+
+    // Optimistic means immediate. A budget rather than the default 10s, because
+    // "eventually correct" is exactly what an optimistic update is not for.
+    await expect(row(page, job.id).locator(".status")).toHaveText(/Pending/, { timeout: 200 });
+  });
+
+  test("re-run stays immediate while a list refetch is in flight", async ({ page, request }) => {
+    const failed = await makeJob(request, "rerun-contended");
+    const other = await makeJob(request, "rerun-neighbour");
+    await request.patch(`/api/jobs/${failed.id}/`, { data: { status: "FAILED" } });
+
+    await page.goto("/");
+    await expect(row(page, failed.id).locator(".status")).toHaveText(/Failed/);
+
+    // Registered after the first load, so only the *refetch* is held.
+    await page.route("**/api/jobs/?*", async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 3000));
+      await route.continue();
+    });
+    await page.route(`**/api/jobs/${failed.id}/`, async (route) => {
+      if (route.request().method() !== "PATCH") return route.continue();
+      await new Promise((resolve) => setTimeout(resolve, 3000));
+      await route.continue();
+    });
+
+    // Changing a neighbour invalidates the list, so a refetch is now in flight
+    // and stalled. This is the ordinary case, not a contrived one: every
+    // settled mutation starts one, and clicking two rows in a row is normal.
+    await setStatus(page, other.id, "Running");
+    await row(page, failed.id).getByRole("button", { name: /Re-run/ }).click();
+
+    // The optimistic write must not be queued behind an unrelated request.
+    await expect(row(page, failed.id).locator(".status")).toHaveText(/Pending/, { timeout: 200 });
+  });
+
   test("updates without a console error", async ({ page, request }) => {
     const job = await makeJob(request, "console");
     const errors: string[] = [];
