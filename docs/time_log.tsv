@@ -13,3 +13,4 @@ start_epoch	end_epoch	start_iso	end_iso	label
 1785023461	1785024043	2026-07-25T23:51:01Z	2026-07-26T00:00:43Z	step 10 — fault-injection pass — step 10 — fault-injection pass; 135 e2e green
 1785024560	1785025440	2026-07-26T00:09:20Z	2026-07-26T00:24:00Z	step 10.5 — code review fixes — 8 findings incl. F8 deleting other specs' rows and D5 not testing its own rollback; sorting/counts writeups; 137 e2e green (start reconstructed)
 1785078742	1785079841	2026-07-26T15:12:22Z	2026-07-26T15:30:41Z	steps 10.6 + 9.5 — dialog copy, CANCELED respelling with data migration, slice→step rename, then search (pg_trgm + GIN, debounced); 144 e2e green
+1785169688	1785171700	2026-07-27T16:28:08Z	2026-07-27T17:01:40Z	step 11 prep — clean-all, digest pins, shm_size, docs reorg, component READMEs — clean-all, digest pins, shm_size, docs reorg, component READMEs; cold T3 green in 26m37s, 144 e2e

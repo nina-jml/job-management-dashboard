@@ -2,7 +2,7 @@
 #
 # timelog.sh — minimal time tracker for this project.
 #
-#   ./scripts/timelog.sh start "slice 0 — walking skeleton"
+#   ./scripts/timelog.sh start "step 0 — walking skeleton"
 #   ./scripts/timelog.sh stop  "cold gate green"
 #   ./scripts/timelog.sh status
 #   ./scripts/timelog.sh report

@@ -22,7 +22,8 @@ only this rendering is local.
 | 2026-07-25 | 16:51 | 17:00 | 0h 09m | step 10 — fault-injection pass — step 10 — fault-injection pass; 135 e2e green |
 | 2026-07-25 | 17:09 | 17:24 | 0h 14m | step 10.5 — code review fixes — 8 findings incl. F8 deleting other specs' rows and D5 not testing its own rollback; sorting/counts writeups; 137 e2e green (start reconstructed) |
 | 2026-07-26 | 08:12 | 08:30 | 0h 18m | steps 10.6 + 9.5 — dialog copy, CANCELED respelling with data migration, slice→step rename, then search (pg_trgm + GIN, debounced); 144 e2e green |
+| 2026-07-27 | 09:28 | 10:01 | 0h 33m | step 11 prep — clean-all, digest pins, shm_size, docs reorg, component READMEs — clean-all, digest pins, shm_size, docs reorg, component READMEs; cold T3 green in 26m37s, 144 e2e |
 
-**Total logged: 4h 10m**
+**Total logged: 4h 43m**
 
 This total is the figure reported in `README.md` as time spent on the assignment.

@@ -108,7 +108,7 @@ steps 1–9 holds under 500s, aborts, and slow responses — not the place where
 |---|---|---|---|
 | **T1 — lightweight** | `make test-spec SPEC=<name>` (one spec, running stack, no rebuild) · `make test-backend` | seconds | after every meaningful change, inside a step |
 | **T2 — suite** | `make test` (rebuild + full Playwright suite) | ~1–2 min | close of **every** step |
-| **T3 — cold gate** | `make clean && make build && make test` from pruned Docker + `--platform linux/amd64` check | several min | steps **0, 4, 7, 11**, and any step touching Docker/compose/Makefile/dependencies |
+| **T3 — cold gate** | `make clean-all && make build && make test` + `--platform linux/amd64` check | several min | steps **0, 4, 7, 11**, and any step touching Docker/compose/Makefile/dependencies |
 
 ---
 

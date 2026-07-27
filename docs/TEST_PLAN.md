@@ -73,7 +73,7 @@ up after itself. The suite must pass twice in a row without `make clean` (case A
 |---|---|---|---|
 | **T1 — lightweight** | `make test-spec SPEC=03-update-job-api` — one spec against the already-running stack, no rebuild. Plus `make test-backend` during backend steps. | seconds | after every meaningful change, inside a step |
 | **T2 — suite** | `make test` — rebuild + full Playwright suite | ~1–2 min | at the close of **every** step; catches cross-step regressions |
-| **T3 — cold gate** | `make clean && make build && make test` from pruned Docker; a `--platform linux/amd64` build; then `make up` and eyeball the database through a GUI client on the URL it prints | several min | steps **0, 4, 7, 11**, and any step touching Docker, compose, the Makefile, or dependencies |
+| **T3 — cold gate** | `make clean-all && make build && make test`; a `--platform linux/amd64` build; then `make up` and eyeball the database through a GUI client on the URL it prints | several min | steps **0, 4, 7, 11**, and any step touching Docker, compose, the Makefile, or dependencies |
 
 T1→T2 is a **scope** axis: one spec versus the whole suite. T2→T3 is **not** — they run identical
 assertions. What changes is the starting state, so T3 validates the *build and provision path* rather than
@@ -94,7 +94,7 @@ it is the evaluation not starting.
 
 | ID | ± | Action | Expected behaviour | Validation |
 |---|---|---|---|---|
-| A1 | + | `make clean && make test` on pruned Docker | full suite passes | the evaluator's exact path |
+| A1 | + | `make clean-all && make test` | full suite passes | the evaluator's exact path — `clean` alone keeps the base images and the BuildKit cache, so it rebuilds far warmer than a first-time clone |
 | A2 | + | Stack startup | tests wait for `/api/health/` | no race with Postgres init |
 | A3 | + | Re-run suite without `clean` | passes again | isolation holds; no leftover-state dependency |
 | A4 | + | Build `--platform linux/amd64` | succeeds | prompt targets "modern Linux or Mac" |

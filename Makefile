@@ -63,6 +63,24 @@ clean: ## Remove containers, networks, volumes and locally built images
 	@rm -rf e2e/playwright-report e2e/test-results
 	@echo "▸ clean slate"
 
+clean-all: clean ## Also drop pulled base images and the build cache — a genuinely cold start
+	# `make clean` uses --rmi local, which removes the images this project built
+	# but keeps the base images it pulled *and* the BuildKit cache. That is the
+	# right default for day-to-day work and the wrong one for verifying the
+	# evaluator's experience: a rebuild after `clean` still serves the expensive
+	# `playwright install --with-deps chromium` layer from cache, so it finishes
+	# in a fraction of the time a first-time build takes.
+	#
+	# This is the T3 command. It leaves nothing behind, so `make build` has to
+	# pull and compile everything exactly as it would on a machine that has
+	# never seen this project.
+	-docker image rm -f \
+		$$(awk '/^FROM /{print $$2} /^ *image: /{print $$2}' \
+			frontend/Dockerfile backend/Dockerfile e2e/Dockerfile docker-compose.yml \
+			| sort -u) 2>/dev/null
+	docker builder prune --all --force
+	@echo "▸ cold slate — base images and build cache gone"
+
 db-url: ## Print the Postgres connection string for a GUI client
 	@echo "  ▸ db   postgresql://$${POSTGRES_USER:-jobs}:$${POSTGRES_PASSWORD:-jobs}@127.0.0.1:$(POSTGRES_HOST_PORT)/$${POSTGRES_DB:-jobs}"
 

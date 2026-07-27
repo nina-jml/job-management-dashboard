@@ -1,0 +1,383 @@
+Commands:
+  attach      Attach local standard input, output, and error streams to a running container
+  commit      Create a new image from a container's changes
+  cp          Copy files/folders between a container and the local filesystem
+  create      Create a new container
+  diff        Inspect changes to files or directories on a container's filesystem
+  events      Get real time events from the server
+  export      Export a container's filesystem as a tar archive
+  history     Show the history of an image
+  import      Import the contents from a tarball to create a filesystem image
+  inspect     Return low-level information on Docker objects
+  kill        Kill one or more running containers
+  load        Load an image from a tar archive or STDIN
+  logs        Fetch the logs of a container
+  pause       Pause all processes within one or more containers
+  port        List port mappings or a specific mapping for the container
+  rename      Rename a container
+  restart     Restart one or more containers
+  rm          Remove one or more containers
+  rmi         Remove one or more images
+  save        Save one or more images to a tar archive (streamed to STDOUT by default)
+  start       Start one or more stopped containers
+  stats       Display a live stream of container(s) resource usage statistics
+  stop        Stop one or more running containers
+  tag         Create a tag TARGET_IMAGE that refers to SOURCE_IMAGE
+  top         Display the running processes of a container
+  unpause     Unpause all processes within one or more containers
+  update      Update configuration of one or more containers
+  wait        Block until one or more containers stop, then print their exit codes
+
+Global Options:
+      --config string      Location of client config files (default "/Users/nina/.docker")
+  -c, --context string     Name of the context to use to connect to the daemon (overrides DOCKER_HOST env var and default context set with "docker context use")
+  -D, --debug              Enable debug mode
+  -H, --host string        Daemon socket to connect to
+  -l, --log-level string   Set the logging level ("debug", "info", "warn", "error", "fatal") (default "info")
+      --tls                Use TLS; implied by --tlsverify
+      --tlscacert string   Trust certs signed only by this CA (default "/Users/nina/.docker/ca.pem")
+      --tlscert string     Path to TLS certificate file (default "/Users/nina/.docker/cert.pem")
+      --tlskey string      Path to TLS key file (default "/Users/nina/.docker/key.pem")
+      --tlsverify          Use TLS and verify the remote
+  -v, --version            Print version information and quit
+
+Run 'docker COMMAND --help' for more information on a command.
+
+For more help on how to use Docker, head to https://docs.docker.com/go/guides/
+[nina:...ts/job-management-dashboard]$ make clean                                                                                                                                                                    (main) 
+docker compose down --volumes --remove-orphans --rmi local
+failed to connect to the docker API at unix:///Users/nina/.orbstack/run/docker.sock; check if the path is correct and if the daemon is running: dial unix /Users/nina/.orbstack/run/docker.sock: connect: no such file or directory
+make: *** [clean] Error 1
+[nina:...ts/job-management-dashboard]$ make cldean                                                                                                                                                                   (main) 
+make: *** No rule to make target `cldean'.  Stop.
+[nina:...ts/job-management-dashboard]$ make clean                                                                                                                                                                    (main) 
+docker compose down --volumes --remove-orphans --rmi local
+[+] down 8/8
+ ✔ Container job-management-dashboard-frontend-1  Removed                                                                                                                                                                0.2s
+ ✔ Container job-management-dashboard-backend-1   Removed                                                                                                                                                                0.1s
+ ✔ Container job-management-dashboard-db-1        Removed                                                                                                                                                                0.1s
+ ✔ Image job-management-dashboard-backend:latest  Removed                                                                                                                                                                0.9s
+ ✔ Image job-management-dashboard-e2e:latest      Removed                                                                                                                                                                0.9s
+ ✔ Image job-management-dashboard-frontend:latest Removed                                                                                                                                                                1.0s
+ ✔ Network job-management-dashboard_default       Removed                                                                                                                                                                0.1s
+ ✔ Volume job-management-dashboard_pgdata         Removed                                                                                                                                                                0.1s
+▸ clean slate
+[nina:...ts/job-management-dashboard]$ make test                                                                                                                                                                     (main) 
+docker compose up -d --build --wait db backend frontend
+[+] Building 126.6s (29/29) FINISHED                                                                                                                                                                                         
+ => [internal] load local bake definitions                                                                                                                                                                              0.0s
+ => => reading from stdin 1.11kB                                                                                                                                                                                        0.0s
+ => [backend internal] load build definition from Dockerfile                                                                                                                                                            0.2s
+ => => transferring dockerfile: 609B                                                                                                                                                                                    0.0s
+ => [frontend internal] load build definition from Dockerfile                                                                                                                                                           0.2s
+ => => transferring dockerfile: 559B                                                                                                                                                                                    0.0s
+ => [backend internal] load metadata for docker.io/library/python:3.12-slim-bookworm                                                                                                                                    3.8s
+ => [frontend internal] load metadata for docker.io/library/node:22-bookworm-slim                                                                                                                                       0.1s
+ => [frontend internal] load metadata for docker.io/library/nginx:1.27-alpine                                                                                                                                           0.1s
+ => [frontend internal] load .dockerignore                                                                                                                                                                              0.0s
+ => => transferring context: 70B                                                                                                                                                                                        0.0s
+ => [frontend build 1/6] FROM docker.io/library/node:22-bookworm-slim@sha256:6c74791e557ce11fc957704f6d4fe134a7bc8d6f5ca4403205b2966bd488f6b3                                                                           1.3s
+ => => resolve docker.io/library/node:22-bookworm-slim@sha256:6c74791e557ce11fc957704f6d4fe134a7bc8d6f5ca4403205b2966bd488f6b3                                                                                          0.2s
+ => [frontend internal] load build context                                                                                                                                                                              0.3s
+ => => transferring context: 131.53kB                                                                                                                                                                                   0.0s
+ => [frontend stage-1 1/3] FROM docker.io/library/nginx:1.27-alpine@sha256:65645c7bb6a0661892a8b03b89d0743208a18dd2f3f17a54ef4b76fb8e2f2a10                                                                             1.7s
+ => => resolve docker.io/library/nginx:1.27-alpine@sha256:65645c7bb6a0661892a8b03b89d0743208a18dd2f3f17a54ef4b76fb8e2f2a10                                                                                              0.3s
+ => [frontend build 2/6] WORKDIR /app                                                                                                                                                                                   2.2s
+ => [frontend build 3/6] COPY package.json package-lock.json* ./                                                                                                                                                        0.2s
+ => [backend internal] load .dockerignore                                                                                                                                                                               0.1s
+ => => transferring context: 89B                                                                                                                                                                                        0.0s
+ => [backend 1/6] FROM docker.io/library/python:3.12-slim-bookworm@sha256:d50fb7611f86d04a3b0471b46d7557818d88983fc3136726336b2a4c657aa30b                                                                             48.9s
+ => => resolve docker.io/library/python:3.12-slim-bookworm@sha256:d50fb7611f86d04a3b0471b46d7557818d88983fc3136726336b2a4c657aa30b                                                                                      0.1s
+ => => sha256:278c43479e93864332983d99faf4c21bec1c9b5275e193e1323206cccec888e8 13.67MB / 13.67MB                                                                                                                       47.8s
+ => => sha256:b7e97db3511b734f0730a7f3463aaa2199624896a51294e231a742039c1c4086 249B / 249B                                                                                                                              1.4s
+ => => sha256:91b8d4ab0a8cb4e27109badf9069959686507d54115420b7b9bb2ed6169e6477 3.52MB / 3.52MB                                                                                                                         25.1s
+ => => extracting sha256:91b8d4ab0a8cb4e27109badf9069959686507d54115420b7b9bb2ed6169e6477                                                                                                                               0.3s
+ => => extracting sha256:278c43479e93864332983d99faf4c21bec1c9b5275e193e1323206cccec888e8                                                                                                                               0.6s
+ => => extracting sha256:b7e97db3511b734f0730a7f3463aaa2199624896a51294e231a742039c1c4086                                                                                                                               0.0s
+ => [backend internal] load build context                                                                                                                                                                               0.2s
+ => => transferring context: 68.12kB                                                                                                                                                                                    0.0s
+ => [frontend build 4/6] RUN npm ci 2>/dev/null || npm install                                                                                                                                                         32.3s
+ => [frontend build 5/6] COPY . .                                                                                                                                                                                       0.2s
+ => [frontend build 6/6] RUN npm run build                                                                                                                                                                              7.2s
+ => [frontend stage-1 2/3] COPY --from=build /app/dist /usr/share/nginx/html                                                                                                                                            0.1s
+ => [frontend stage-1 3/3] COPY nginx.conf /etc/nginx/conf.d/default.conf                                                                                                                                               0.2s
+ => [frontend] exporting to image                                                                                                                                                                                       1.0s
+ => => exporting layers                                                                                                                                                                                                 0.5s
+ => => exporting manifest sha256:71c72319901a22f90a48bbb3b978e7ac5dea1b5c3e7307f6d76849e9f2d06101                                                                                                                       0.0s
+ => => exporting config sha256:15a9fc1c1ae5c721faed89f9dd62b868d017ff363a18d138cbeb599fcd830f55                                                                                                                         0.0s
+ => => exporting attestation manifest sha256:6ffd7f0428b98b2f9dd6f549252a7c6c4666b9d857def7661a0ad317b565bfec                                                                                                           0.1s
+ => => exporting manifest list sha256:8515dbcddf448cf146af417cf7b00049968c6d3c550da6046c8e1e33fc7f029c                                                                                                                  0.0s
+ => => naming to docker.io/library/job-management-dashboard-frontend:latest                                                                                                                                             0.0s
+ => => unpacking to docker.io/library/job-management-dashboard-frontend:latest                                                                                                                                          0.2s
+ => [frontend] resolving provenance for metadata file                                                                                                                                                                   0.0s
+ => [backend 2/6] WORKDIR /app                                                                                                                                                                                          0.6s
+ => [backend 3/6] COPY requirements.txt requirements-dev.txt ./                                                                                                                                                         0.1s
+ => [backend 4/6] RUN pip install --no-cache-dir -r requirements-dev.txt                                                                                                                                               63.9s
+ => [backend 5/6] COPY . .                                                                                                                                                                                              0.2s
+ => [backend 6/6] RUN chmod +x /app/entrypoint.sh                                                                                                                                                                       0.4s
+ => [backend] exporting to image                                                                                                                                                                                        6.5s
+ => => exporting layers                                                                                                                                                                                                 3.9s
+ => => exporting manifest sha256:fe7ee41573d449582f6fffa2ec0d138b359a697e9ef2f5246768f628248b5256                                                                                                                       0.0s
+ => => exporting config sha256:cf39108ad2732c649cc349f270a1b40a5fc85859e18bc44ac483094195488225                                                                                                                         0.0s
+ => => exporting attestation manifest sha256:e236d0c1bbd10a1c5cf4b94f5d683b14db693b6bf45719434d05b456d52c78c2                                                                                                           0.0s
+ => => exporting manifest list sha256:ee0da8590f1757880251a620551b47de480a73ad8b1dc3df5a72591db95b1d58                                                                                                                  0.0s
+ => => naming to docker.io/library/job-management-dashboard-backend:latest                                                                                                                                              0.0s
+ => => unpacking to docker.io/library/job-management-dashboard-backend:latest                                                                                                                                           2.3s
+ => [backend] resolving provenance for metadata file                                                                                                                                                                    0.0s
+[+] up 7/7
+ ✔ Image job-management-dashboard-backend        Built                                                                                                                                                                 126.8s
+ ✔ Image job-management-dashboard-frontend       Built                                                                                                                                                                 126.8s
+ ✔ Network job-management-dashboard_default      Created                                                                                                                                                                 0.1s
+ ✔ Volume job-management-dashboard_pgdata        Created                                                                                                                                                                 0.0s
+ ✔ Container job-management-dashboard-db-1       Healthy                                                                                                                                                                19.3s
+ ✔ Container job-management-dashboard-backend-1  Healthy                                                                                                                                                                18.0s
+ ✔ Container job-management-dashboard-frontend-1 Healthy                                                                                                                                                                22.6s
+▸ seeding baseline test data (30 jobs; existing jobs are cleared)
+docker compose exec -T backend python manage.py seed_jobs --count 30 --clear --seed 42
+Cleared 0 rows.
+  … 30/30
+Seeded 30 jobs.
+docker compose run --rm --build e2e
+[+] Building 3.9s (29/29) FINISHED                                                                                                                                                                                           
+ => [internal] load local bake definitions                                                                                                                                                                              0.0s
+ => => reading from stdin 1.11kB                                                                                                                                                                                        0.0s
+ => [backend internal] load build definition from Dockerfile                                                                                                                                                            0.1s
+ => => transferring dockerfile: 609B                                                                                                                                                                                    0.0s
+ => [frontend internal] load build definition from Dockerfile                                                                                                                                                           0.1s
+ => => transferring dockerfile: 559B                                                                                                                                                                                    0.0s
+ => [frontend internal] load metadata for docker.io/library/nginx:1.27-alpine                                                                                                                                           0.1s
+ => [frontend internal] load metadata for docker.io/library/node:22-bookworm-slim                                                                                                                                       0.1s
+ => [backend internal] load metadata for docker.io/library/python:3.12-slim-bookworm                                                                                                                                    0.9s
+ => [frontend internal] load .dockerignore                                                                                                                                                                              0.0s
+ => => transferring context: 70B                                                                                                                                                                                        0.0s
+ => [frontend build 1/6] FROM docker.io/library/node:22-bookworm-slim@sha256:6c74791e557ce11fc957704f6d4fe134a7bc8d6f5ca4403205b2966bd488f6b3                                                                           0.1s
+ => => resolve docker.io/library/node:22-bookworm-slim@sha256:6c74791e557ce11fc957704f6d4fe134a7bc8d6f5ca4403205b2966bd488f6b3                                                                                          0.1s
+ => [frontend internal] load build context                                                                                                                                                                              0.0s
+ => => transferring context: 1.13kB                                                                                                                                                                                     0.0s
+ => [frontend stage-1 1/3] FROM docker.io/library/nginx:1.27-alpine@sha256:65645c7bb6a0661892a8b03b89d0743208a18dd2f3f17a54ef4b76fb8e2f2a10                                                                             0.2s
+ => => resolve docker.io/library/nginx:1.27-alpine@sha256:65645c7bb6a0661892a8b03b89d0743208a18dd2f3f17a54ef4b76fb8e2f2a10                                                                                              0.1s
+ => CACHED [frontend build 2/6] WORKDIR /app                                                                                                                                                                            0.0s
+ => CACHED [frontend build 3/6] COPY package.json package-lock.json* ./                                                                                                                                                 0.0s
+ => CACHED [frontend build 4/6] RUN npm ci 2>/dev/null || npm install                                                                                                                                                   0.0s
+ => CACHED [frontend build 5/6] COPY . .                                                                                                                                                                                0.0s
+ => CACHED [frontend build 6/6] RUN npm run build                                                                                                                                                                       0.0s
+ => CACHED [frontend stage-1 2/3] COPY --from=build /app/dist /usr/share/nginx/html                                                                                                                                     0.0s
+ => CACHED [frontend stage-1 3/3] COPY nginx.conf /etc/nginx/conf.d/default.conf                                                                                                                                        0.0s
+ => [frontend] exporting to image                                                                                                                                                                                       0.3s
+ => => exporting layers                                                                                                                                                                                                 0.0s
+ => => exporting manifest sha256:71c72319901a22f90a48bbb3b978e7ac5dea1b5c3e7307f6d76849e9f2d06101                                                                                                                       0.0s
+ => => exporting config sha256:15a9fc1c1ae5c721faed89f9dd62b868d017ff363a18d138cbeb599fcd830f55                                                                                                                         0.0s
+ => => exporting attestation manifest sha256:82c21c59fa0512153e55909a66f97e34796fce6d02b9b21821eba015df569df3                                                                                                           0.1s
+ => => exporting manifest list sha256:c8e20880012811c256fbd5b134ef068c57eac8a36310dd74d71cc6737a0d8c28                                                                                                                  0.0s
+ => => naming to docker.io/library/job-management-dashboard-frontend:latest                                                                                                                                             0.0s
+ => => unpacking to docker.io/library/job-management-dashboard-frontend:latest                                                                                                                                          0.0s
+ => [backend internal] load .dockerignore                                                                                                                                                                               0.3s
+ => => transferring context: 89B                                                                                                                                                                                        0.0s
+ => [backend 1/6] FROM docker.io/library/python:3.12-slim-bookworm@sha256:d50fb7611f86d04a3b0471b46d7557818d88983fc3136726336b2a4c657aa30b                                                                              0.1s
+ => => resolve docker.io/library/python:3.12-slim-bookworm@sha256:d50fb7611f86d04a3b0471b46d7557818d88983fc3136726336b2a4c657aa30b                                                                                      0.1s
+ => [backend internal] load build context                                                                                                                                                                               0.1s
+ => => transferring context: 1.60kB                                                                                                                                                                                     0.0s
+ => CACHED [backend 2/6] WORKDIR /app                                                                                                                                                                                   0.0s
+ => CACHED [backend 3/6] COPY requirements.txt requirements-dev.txt ./                                                                                                                                                  0.0s
+ => CACHED [backend 4/6] RUN pip install --no-cache-dir -r requirements-dev.txt                                                                                                                                         0.0s
+ => CACHED [backend 5/6] COPY . .                                                                                                                                                                                       0.0s
+ => CACHED [backend 6/6] RUN chmod +x /app/entrypoint.sh                                                                                                                                                                0.0s
+ => [backend] exporting to image                                                                                                                                                                                        0.7s
+ => => exporting layers                                                                                                                                                                                                 0.0s
+ => => exporting manifest sha256:fe7ee41573d449582f6fffa2ec0d138b359a697e9ef2f5246768f628248b5256                                                                                                                       0.0s
+ => => exporting config sha256:cf39108ad2732c649cc349f270a1b40a5fc85859e18bc44ac483094195488225                                                                                                                         0.0s
+ => => exporting attestation manifest sha256:bbb5424af5733ad6d6972c0fd2f2af8ad1e0791d6e8b60199488b24ee1a6bbd7                                                                                                           0.2s
+ => => exporting manifest list sha256:328995b64834272119e3093151800edd0b6e768cee269503a72d21745847fe12                                                                                                                  0.1s
+ => => naming to docker.io/library/job-management-dashboard-backend:latest                                                                                                                                              0.0s
+ => => unpacking to docker.io/library/job-management-dashboard-backend:latest                                                                                                                                           0.1s
+ => [frontend] resolving provenance for metadata file                                                                                                                                                                   0.1s
+ => [backend] resolving provenance for metadata file                                                                                                                                                                    0.0s
+[+]  5/5t 5/55
+ ✔ Image job-management-dashboard-backend        Built                                                                                                                                                                   4.1s
+ ✔ Image job-management-dashboard-frontend       Built                                                                                                                                                                   4.1s
+ ✔ Container job-management-dashboard-db-1       Healthy                                                                                                                                                                 3.1s
+ ✔ Container job-management-dashboard-backend-1  Healthy                                                                                                                                                                 9.5s
+ ✔ Container job-management-dashboard-frontend-1 Started                                                                                                                                                                 8.3s
+Image job-management-dashboard-e2e Building 
+Image job-management-dashboard-frontend Building 
+Image job-management-dashboard-backend Building 
+[+] Building 642.0s (13/13) FINISHED                                                                                                                                                                                         
+ => [internal] load local bake definitions                                                                                                                                                                              0.0s
+ => => reading from stdin 1.56kB                                                                                                                                                                                        0.0s
+ => [internal] load build definition from Dockerfile                                                                                                                                                                    0.1s
+ => => transferring dockerfile: 762B                                                                                                                                                                                    0.0s
+ => [internal] load metadata for docker.io/library/node:22-bookworm                                                                                                                                                     1.4s
+ => [internal] load .dockerignore                                                                                                                                                                                       0.2s
+ => => transferring context: 84B                                                                                                                                                                                        0.0s
+ => [1/6] FROM docker.io/library/node:22-bookworm@sha256:5647be709086c696ff32edaaf1c70cd26d1da6ab2b39c32f3c7b4c4a31957e37                                                                                               0.2s
+ => => resolve docker.io/library/node:22-bookworm@sha256:5647be709086c696ff32edaaf1c70cd26d1da6ab2b39c32f3c7b4c4a31957e37                                                                                               0.1s
+ => [internal] load build context                                                                                                                                                                                       0.1s
+ => => transferring context: 748B                                                                                                                                                                                       0.0s
+ => CACHED [2/6] WORKDIR /e2e                                                                                                                                                                                           0.0s
+ => CACHED [3/6] COPY package.json package-lock.json* ./                                                                                                                                                                0.0s
+ => CACHED [4/6] RUN npm ci 2>/dev/null || npm install                                                                                                                                                                  0.0s
+ => [5/6] RUN npx playwright install --with-deps chromium                                                                                                                                                             539.7s
+ => [6/6] COPY . .                                                                                                                                                                                                      0.4s 
+ => exporting to image                                                                                                                                                                                                 98.2s 
+ => => exporting layers                                                                                                                                                                                                75.3s 
+ => => exporting manifest sha256:f17a01e5d479a4673b8090f2a9228a7259b39e4b479e8528af64300187764c83                                                                                                                       0.2s 
+ => => exporting config sha256:24b914641f9250735edf84c968f7edc1483f2edaf511dd7424ed964d7ea539f6                                                                                                                         0.1s 
+ => => exporting attestation manifest sha256:a58540c379061fd4ad9c9204479a5ac81fedee89b4c34a8c08f750d46a51f853                                                                                                           0.2s 
+ => => exporting manifest list sha256:fe41b0c9911b68333907d170ce0837b8b060f8b549252bcc9c45d5eb5b838067                                                                                                                  0.1s
+ => => naming to docker.io/library/job-management-dashboard-e2e:latest                                                                                                                                                  0.0s
+ => => unpacking to docker.io/library/job-management-dashboard-e2e:latest                                                                                                                                              22.3s
+ => resolving provenance for metadata file                                                                                                                                                                              0.1s
+Image job-management-dashboard-e2e Built 
+Container job-management-dashboard-frontend-1 Waiting 
+Container job-management-dashboard-frontend-1 Healthy 
+Container job-management-dashboard-e2e-run-8ceb77fba2ba Creating 
+Container job-management-dashboard-e2e-run-8ceb77fba2ba Created 
+
+Running 144 tests using 2 workers
+
+  ✓  1 [chromium] › 00-smoke.spec.ts:11:7 › smoke › health endpoint reports the API and database are up (353ms)
+  ✓  2 [chromium] › 00-smoke.spec.ts:18:7 › smoke › health is reachable through the nginx proxy, not just directly (761ms)
+  ✓  3 [chromium] › 00-smoke.spec.ts:25:7 › smoke › the app shell renders without console errors (1.5s)
+  ✓  4 [chromium] › 00-smoke.spec.ts:40:7 › smoke › unknown client-side routes fall back to the app, not a 404 (1.5s)
+  ✓  5 [chromium] › 01-jobs-list-api.spec.ts:23:7 › GET /api/jobs/ › returns a cursor-paginated envelope (259ms)
+  ✓  6 [chromium] › 01-jobs-list-api.spec.ts:39:7 › GET /api/jobs/ › every job carries its current status and timestamps (E1) (352ms)
+  ✓  7 [chromium] › 01-jobs-list-api.spec.ts:55:7 › GET /api/jobs/ › orders newest first, with a total ordering (E2) (232ms)
+  ✓  8 [chromium] › 01-jobs-list-api.spec.ts:72:7 › GET /api/jobs/ › ordering is stable across identical requests (E2) (129ms)
+  ✓  9 [chromium] › 01-jobs-list-api.spec.ts:79:7 › GET /api/jobs/ › honours page_size and pages forward without overlap (105ms)
+  ✓  10 [chromium] › 01-jobs-list-api.spec.ts:96:7 › GET /api/jobs/ › caps page_size so a client cannot ask for the whole table (76ms)
+  ✓  11 [chromium] › 01-jobs-list-api.spec.ts:103:7 › GET /api/jobs/ › retrieving a single job returns the same representation (96ms)
+  ✓  12 [chromium] › 01-jobs-list-api.spec.ts:112:7 › GET /api/jobs/ › an unknown job id returns a 404 in the standard error shape (88ms)
+  ✓  13 [chromium] › 01-jobs-list-api.spec.ts:147:7 › GET /api/jobs/?status= › a single status narrows to that status (685ms)
+  ✓  14 [chromium] › 01-jobs-list-api.spec.ts:158:7 › GET /api/jobs/?status= › repeating the parameter returns the union (454ms)
+  ✓  15 [chromium] › 01-jobs-list-api.spec.ts:173:7 › GET /api/jobs/?status= › a repeated value behaves like selecting it once (505ms)
+  ✓  16 [chromium] › 01-jobs-list-api.spec.ts:184:7 › GET /api/jobs/?status= › an empty value is no filter rather than no results (379ms)
+  ✓  17 [chromium] › 01-jobs-list-api.spec.ts:195:7 › GET /api/jobs/?status= › an unknown status is a 400, not an empty list (72ms)
+  ✓  18 [chromium] › 01-jobs-list-api.spec.ts:206:7 › GET /api/jobs/?status= › does not narrow detail routes (402ms)
+  ✓  19 [chromium] › 01-jobs-list-api.spec.ts:225:7 › GET /api/jobs/?status= › the history endpoint ignores a status filter it does not have (341ms)
+  ✓  20 [chromium] › 01-jobs-list-api.spec.ts:234:7 › GET /api/jobs/?status= › one bad value among good ones still fails, and names it (54ms)
+  ✓  21 [chromium] › 02-create-job-api.spec.ts:15:7 › POST /api/jobs/ › creates a job with an automatic PENDING status (B1) (113ms)
+  ✓  22 [chromium] › 02-create-job-api.spec.ts:31:7 › POST /api/jobs/ › the new job appears in the list immediately (B1) (130ms)
+  ✓  23 [chromium] › 02-create-job-api.spec.ts:43:7 › POST /api/jobs/ › rejects an empty name (B2) (71ms)
+  ✓  24 [chromium] › 02-create-job-api.spec.ts:52:7 › POST /api/jobs/ › rejects a whitespace-only name (B3) (70ms)
+  ✓  25 [chromium] › 02-create-job-api.spec.ts:60:7 › POST /api/jobs/ › rejects a missing name field (B2) (58ms)
+  ✓  26 [chromium] › 02-create-job-api.spec.ts:67:7 › POST /api/jobs/ › rejects a name longer than 200 characters (B4) (54ms)
+  ✓  27 [chromium] › 02-create-job-api.spec.ts:74:7 › POST /api/jobs/ › accepts a name of exactly 200 characters (B4 boundary) (73ms)
+  ✓  28 [chromium] › 02-create-job-api.spec.ts:84:7 › POST /api/jobs/ › stores unicode, emoji and markup verbatim (B6) (136ms)
+  ✓  29 [chromium] › 02-create-job-api.spec.ts:96:7 › POST /api/jobs/ › trims surrounding whitespace from an otherwise valid name (88ms)
+  ✓  30 [chromium] › 02-create-job-api.spec.ts:105:7 › POST /api/jobs/ › allows two jobs with identical names (B7) (145ms)
+  ✓  31 [chromium] › 02-create-job-api.spec.ts:121:7 › POST /api/jobs/ › ignores client-supplied status and timestamps (63ms)
+  ✓  32 [chromium] › 03-update-job-api.spec.ts:48:7 › PATCH /api/jobs/<id>/ › PENDING to RUNNING advances the projection and both timestamps (C1) (167ms)
+  ✓  33 [chromium] › 03-update-job-api.spec.ts:70:7 › PATCH /api/jobs/<id>/ › the whole lifecycle is reachable, ending terminal (C2) (368ms)
+  ✓  34 [chromium] › 03-update-job-api.spec.ts:88:7 › PATCH /api/jobs/<id>/ › rejects a backwards transition out of COMPLETED (C3) (280ms)
+  ✓  35 [chromium] › 03-update-job-api.spec.ts:104:7 › PATCH /api/jobs/<id>/ › rejects skipping RUNNING on the way to COMPLETED (C4) (129ms)
+  ✓  36 [chromium] › 03-update-job-api.spec.ts:116:7 › PATCH /api/jobs/<id>/ › re-runs a failed job back to PENDING (C5) (292ms)
+  ✓  37 [chromium] › 03-update-job-api.spec.ts:129:7 › PATCH /api/jobs/<id>/ › re-applying the current status is an idempotent no-op (C6) (233ms)
+  ✓  38 [chromium] › 03-update-job-api.spec.ts:144:7 › PATCH /api/jobs/<id>/ › rejects an unknown status value (C7) (189ms)
+  ✓  39 [chromium] › 03-update-job-api.spec.ts:156:7 › PATCH /api/jobs/<id>/ › returns 404 for a nonexistent job (C8) (85ms)
+  ✓  40 [chromium] › 03-update-job-api.spec.ts:163:7 › PATCH /api/jobs/<id>/ › a rename moves updated_at but not current_status_at (C10) (142ms)
+  ✓  41 [chromium] › 03-update-job-api.spec.ts:179:7 › PATCH /api/jobs/<id>/ › a later status event still lands after a rename (C10 regression) (224ms)
+  ✓  42 [chromium] › 03-update-job-api.spec.ts:191:7 › PATCH /api/jobs/<id>/ › a rename and a status change in one request both apply (156ms)
+  ✓  43 [chromium] › 03-update-job-api.spec.ts:203:7 › PATCH /api/jobs/<id>/ › concurrent status changes serialize without a lost update (C11) (258ms)
+  ✓  44 [chromium] › 03-update-job-api.spec.ts:222:7 › PATCH /api/jobs/<id>/ › refuses to re-run a completed job (C13) (322ms)
+  ✓  45 [chromium] › 03-update-job-api.spec.ts:237:7 › PATCH /api/jobs/<id>/ › advertises the transitions the UI may offer (C12 backing data) (208ms)
+  ✓  46 [chromium] › 03-update-job-api.spec.ts:250:7 › PATCH /api/jobs/<id>/ › PUT is not allowed — updates are partial by design (96ms)
+  ✓  47 [chromium] › 03-update-job-api.spec.ts:258:7 › PATCH /api/jobs/<id>/ › cancels a queued job before it ever starts (C14) (143ms)
+  ✓  48 [chromium] › 03-update-job-api.spec.ts:271:7 › PATCH /api/jobs/<id>/ › cancels a running job (C15) (185ms)
+  ✓  49 [chromium] › 03-update-job-api.spec.ts:280:7 › PATCH /api/jobs/<id>/ › re-runs a cancelled job (C16) (255ms)
+  ✓  50 [chromium] › 03-update-job-api.spec.ts:301:7 › PATCH /api/jobs/<id>/ › refuses to cancel a completed job (C17) (202ms)
+  ✓  51 [chromium] › 03-update-job-api.spec.ts:315:7 › PATCH /api/jobs/<id>/ › refuses to cancel a failed job (C17) (194ms)
+  ✓  52 [chromium] › 04-delete-job-api.spec.ts:27:7 › DELETE /api/jobs/<id>/ › deletes a job and it stays deleted (D1) (189ms)
+  ✓  53 [chromium] › 04-delete-job-api.spec.ts:42:7 › DELETE /api/jobs/<id>/ › the status history is unreachable afterwards (D2) (411ms)
+  ✓  54 [chromium] › 04-delete-job-api.spec.ts:55:7 › DELETE /api/jobs/<id>/ › returns 404 for a job that does not exist (D4) (167ms)
+  ✓  55 [chromium] › 04-delete-job-api.spec.ts:62:7 › DELETE /api/jobs/<id>/ › deleting twice returns 404 the second time (D4) (162ms)
+  ✓  56 [chromium] › 04-delete-job-api.spec.ts:69:7 › DELETE /api/jobs/<id>/ › deleting one job leaves its neighbours untouched (239ms)
+  ✓  57 [chromium] › 04-delete-job-api.spec.ts:82:7 › GET /api/jobs/<id>/statuses/ › a new job has exactly one PENDING entry (111ms)
+  ✓  58 [chromium] › 04-delete-job-api.spec.ts:91:7 › GET /api/jobs/<id>/statuses/ › the log is append-only — earlier entries survive a change (178ms)
+  ✓  59 [chromium] › 04-delete-job-api.spec.ts:106:7 › GET /api/jobs/<id>/statuses/ › a re-run keeps the failure on the record (288ms)
+  ✓  60 [chromium] › 04-delete-job-api.spec.ts:122:7 › GET /api/jobs/<id>/statuses/ › an idempotent no-op appends nothing (C6) (208ms)
+  ✓  61 [chromium] › 04-delete-job-api.spec.ts:132:7 › GET /api/jobs/<id>/statuses/ › a rename appends nothing (C10) (157ms)
+  ✓  62 [chromium] › 04-delete-job-api.spec.ts:141:7 › GET /api/jobs/<id>/statuses/ › a rejected transition appends nothing (C3) (279ms)
+  ✓  63 [chromium] › 04-delete-job-api.spec.ts:154:7 › GET /api/jobs/<id>/statuses/ › entries carry an id, a status and a timestamp (158ms)
+  ✓  64 [chromium] › 04-delete-job-api.spec.ts:163:7 › GET /api/jobs/<id>/statuses/ › history is cursor-paginated like the job list (244ms)
+  ✓  65 [chromium] › 04-delete-job-api.spec.ts:177:7 › GET /api/jobs/<id>/statuses/ › returns 404 for a job that does not exist (49ms)
+  ✓  66 [chromium] › 05-job-list-ui.spec.ts:30:7 › job list › renders each job with its name and current status (E1) (1.9s)
+  ✓  67 [chromium] › 05-job-list-ui.spec.ts:44:7 › job list › shows the job id in its own column (2.0s)
+  ✓  68 [chromium] › 05-job-list-ui.spec.ts:56:7 › job list › matches the API payload exactly (E1) (1.2s)
+  ✓  69 [chromium] › 05-job-list-ui.spec.ts:76:7 › job list › renders an empty state, not a spinner or a blank page (E3) (831ms)
+  ✓  70 [chromium] › 05-job-list-ui.spec.ts:91:7 › job list › expands a job's status history (E6) (2.8s)
+  ✓  71 [chromium] › 05-job-list-ui.spec.ts:107:7 › job list › collapses the history again (3.0s)
+  ✓  72 [chromium] › 05-job-list-ui.spec.ts:120:7 › job list › filters by status server-side (E3 backing) (3.2s)
+  ✓  73 [chromium] › 05-job-list-ui.spec.ts:144:7 › job list › selects several statuses at once (4.1s)
+  ✓  74 [chromium] › 05-job-list-ui.spec.ts:189:7 › job list › deselects a status, and the last one clears back to All (6.7s)
+  ✓  75 [chromium] › 05-job-list-ui.spec.ts:219:7 › job list › All clears an existing selection (6.0s)
+  ✓  76 [chromium] › 05-job-list-ui.spec.ts:244:7 › job list › loading skeletons do not answer to the row selector (1.4s)
+  ✓  77 [chromium] › 05-job-list-ui.spec.ts:267:7 › job list › a failed list never claims there are no jobs (2.2s)
+  ✓  78 [chromium] › 05-job-list-ui.spec.ts:285:7 › job list › a truncated history reports what is loaded, not a total (1.8s)
+  ✓  79 [chromium] › 05-job-list-ui.spec.ts:311:7 › job list › shows an error banner and stays interactive when the list fails (E4) (3.1s)
+  ✓  80 [chromium] › 05-job-list-ui.spec.ts:328:7 › job list › recovers when the failure clears (E5) (4.1s)
+  ✓  81 [chromium] › 05-job-list-ui.spec.ts:353:7 › job list › renders without console errors (1.9s)
+  ✓  82 [chromium] › 06-create-job-ui.spec.ts:27:7 › create job › creates a job and shows it without a refresh (B1) (3.4s)
+  ✓  83 [chromium] › 06-create-job-ui.spec.ts:44:7 › create job › clears the input after a successful create (B1) (2.6s)
+  ✓  84 [chromium] › 06-create-job-ui.spec.ts:52:7 › create job › the new job starts with exactly one PENDING entry (B1) (2.0s)
+  ✓  85 [chromium] › 06-create-job-ui.spec.ts:70:7 › create job › rejects an empty name without calling the API (B2) (1.4s)
+  ✓  86 [chromium] › 06-create-job-ui.spec.ts:82:7 › create job › rejects a whitespace-only name without calling the API (B3) (1.6s)
+  ✓  87 [chromium] › 06-create-job-ui.spec.ts:93:7 › create job › rejects an over-long name without calling the API (B4) (1.8s)
+  ✓  88 [chromium] › 06-create-job-ui.spec.ts:104:7 › create job › clears the validation message once typing resumes (2.8s)
+  ✓  89 [chromium] › 06-create-job-ui.spec.ts:114:7 › create job › keeps the typed name when the server rejects the create (B5) (35.4s)
+  ✓  90 [chromium] › 06-create-job-ui.spec.ts:136:7 › create job › shows a server field error beside the input, not in the page banner (51.4s)
+  ✓  91 [chromium] › 06-create-job-ui.spec.ts:157:7 › create job › stores unicode and markup verbatim, rendered as text (B6) (30.3s)
+  ✓  92 [chromium] › 06-create-job-ui.spec.ts:174:7 › create job › accepts a name the server counts as under the limit (13.1s)
+  ✓  93 [chromium] › 06-create-job-ui.spec.ts:190:7 › create job › a server field error clears once the name is edited (24.0s)
+  ✓  94 [chromium] › 07-update-status-ui.spec.ts:31:7 › update job status › ⭐ create → PENDING → RUNNING, and it persists (C1) (23.6s)
+  ✓  95 [chromium] › 07-update-status-ui.spec.ts:60:7 › update job status › walks the full lifecycle, every state reachable (C2) (8.7s)
+  ✓  96 [chromium] › 07-update-status-ui.spec.ts:79:7 › update job status › cancels a running job (C15) (7.1s)
+  ✓  97 [chromium] › 07-update-status-ui.spec.ts:92:7 › update job status › offers only legal transitions, from the server (C12) (4.9s)
+  ✓  98 [chromium] › 07-update-status-ui.spec.ts:105:7 › update job status › a completed job offers no status control at all (C12) (5.0s)
+  ✓  99 [chromium] › 07-update-status-ui.spec.ts:117:7 › update job status › the status change lands in the job's history (5.4s)
+  ✓  100 [chromium] › 07-update-status-ui.spec.ts:138:7 › update job status › rolls the badge back when the server refuses (C9) (5.2s)
+  ✓  101 [chromium] › 07-update-status-ui.spec.ts:161:7 › update job status › an illegal transition rejected by the server also rolls back (3.3s)
+  ✓  102 [chromium] › 07-update-status-ui.spec.ts:177:7 › update job status › leaves the status untouched when the editor is dismissed (3.6s)
+  ✓  103 [chromium] › 07-update-status-ui.spec.ts:191:7 › update job status › re-run flips the badge without waiting for the server (2.1s)
+  ✓  104 [chromium] › 07-update-status-ui.spec.ts:213:7 › update job status › re-run stays immediate while a list refetch is in flight (2.8s)
+  ✓  105 [chromium] › 07-update-status-ui.spec.ts:242:7 › update job status › updates without a console error (2.5s)
+  ✓  106 [chromium] › 07-update-status-ui.spec.ts:255:7 › update job status › still updates after a history panel has been opened (4.2s)
+  ✓  107 [chromium] › 07-update-status-ui.spec.ts:283:7 › update job status › the row stays busy until the server's answer lands (4.2s)
+  ✓  108 [chromium] › 07-update-status-ui.spec.ts:310:7 › update job status › a second change does not swallow the first's error (5.8s)
+  ✓  109 [chromium] › 07-update-status-ui.spec.ts:343:7 › update job status › acting on a job deleted elsewhere does not resurrect it (4.4s)
+  ✓  110 [chromium] › 08-delete-job-ui.spec.ts:37:7 › delete a job › confirms, then the row disappears and stays gone (D1) (4.1s)
+  ✓  111 [chromium] › 08-delete-job-ui.spec.ts:61:7 › delete a job › never opens a native dialog (3.3s)
+  ✓  112 [chromium] › 08-delete-job-ui.spec.ts:83:7 › delete a job › suggests canceling only when canceling is possible (3.7s)
+  ✓  113 [chromium] › 08-delete-job-ui.spec.ts:106:7 › delete a job › backing out deletes nothing (3.3s)
+  ✓  114 [chromium] › 08-delete-job-ui.spec.ts:120:7 › delete a job › dismisses on Escape without deleting (2.0s)
+  ✓  115 [chromium] › 08-delete-job-ui.spec.ts:133:7 › delete a job › Escape still works after focus leaves the buttons (1.7s)
+  ✓  116 [chromium] › 08-delete-job-ui.spec.ts:152:7 › delete a job › keeps Tab inside the dialog (2.4s)
+  ✓  117 [chromium] › 08-delete-job-ui.spec.ts:171:7 › delete a job › restores the row when the delete fails (D5) (2.3s)
+  ✓  118 [chromium] › 08-delete-job-ui.spec.ts:211:7 › delete a job › leaves another row's expanded timeline alone (D6) (2.2s)
+  ✓  119 [chromium] › 08-delete-job-ui.spec.ts:231:7 › delete a job › a job deleted elsewhere is not an error (D1 corollary) (2.2s)
+  ✓  120 [chromium] › 08-delete-job-ui.spec.ts:257:7 › network-level failures › an unreachable server offers a retry (E9) (2.7s)
+  ✓  121 [chromium] › 08-delete-job-ui.spec.ts:271:7 › network-level failures › a non-JSON error body reads as an error, not a parser crash (E10) (2.8s)
+  ✓  122 [chromium] › 09-pagination-scale.spec.ts:70:7 › pagination at scale › first render requests exactly one page (F1) (1.0s)
+  ✓  123 [chromium] › 09-pagination-scale.spec.ts:85:7 › pagination at scale › load more appends the next page without duplicating rows (F2) (1.6s)
+  ✓  124 [chromium] › 09-pagination-scale.spec.ts:105:7 › pagination at scale › a full walk repeats no id and skips none (F2) (1.6s)
+  ✓  125 [chromium] › 09-pagination-scale.spec.ts:135:7 › pagination at scale › deleting rows already returned does not disturb the walk (F8) (1.8s)
+  ✓  126 [chromium] › 09-pagination-scale.spec.ts:179:7 › pagination at scale › deleting a row not yet fetched drops only that row (F9) (1.5s)
+  ✓  127 [chromium] › 09-pagination-scale.spec.ts:205:7 › pagination at scale › a job created mid-walk does not corrupt the walk (F6) (1.5s)
+  ✓  128 [chromium] › 09-pagination-scale.spec.ts:225:7 › pagination at scale › a tampered cursor is a 400, not a crash (F5) (64ms)
+  ✓  129 [chromium] › 09-pagination-scale.spec.ts:234:7 › pagination at scale › a failed load-more surfaces an error and keeps the loaded rows (F5) (3.0s)
+  ✓  130 [chromium] › 09-pagination-scale.spec.ts:257:7 › pagination at scale › finds a job that is nowhere near the first page (F10) (4.1s)
+  ✓  131 [chromium] › 09-pagination-scale.spec.ts:283:7 › pagination at scale › debounces typing rather than firing per keystroke (F4) (3.4s)
+  ✓  132 [chromium] › 09-pagination-scale.spec.ts:312:7 › pagination at scale › a whitespace-only search is not a filter (1.7s)
+  ✓  133 [chromium] › 09-pagination-scale.spec.ts:327:7 › pagination at scale › search and status filter compose (2.6s)
+  ✓  134 [chromium] › 09-pagination-scale.spec.ts:350:7 › pagination at scale › the footer reports what is loaded, never a total (1.4s)
+  ✓  135 [chromium] › 10-fault-injection.spec.ts:73:7 › the history endpoint failing › a 500 on the timeline is reported, and the row stays usable (3.9s)
+  ✓  136 [chromium] › 10-fault-injection.spec.ts:88:7 › the history endpoint failing › an aborted timeline request fails the same way (3.7s)
+  ✓  137 [chromium] › 10-fault-injection.spec.ts:104:7 › recovery after a failed mutation › a status change succeeds on the second attempt (4.2s)
+  ✓  138 [chromium] › 10-fault-injection.spec.ts:133:7 › recovery after a failed mutation › a create succeeds on the second attempt, keeping the typed name (3.5s)
+  ✓  139 [chromium] › 10-fault-injection.spec.ts:153:7 › recovery after a failed mutation › a delete succeeds on the second attempt (4.9s)
+  ✓  140 [chromium] › 10-fault-injection.spec.ts:189:7 › a dropped connection mid-mutation › an aborted status change rolls back and says the server was unreachable (3.5s)
+  ✓  141 [chromium] › 10-fault-injection.spec.ts:207:7 › a dropped connection mid-mutation › an aborted create keeps what was typed (2.7s)
+  ✓  142 [chromium] › 10-fault-injection.spec.ts:223:7 › slow responses are a state, not a freeze › a slow create disables the form and says it is working (4.9s)
+  ✓  143 [chromium] › 10-fault-injection.spec.ts:245:7 › slow responses are a state, not a freeze › a slow delete removes the row without waiting for the server (4.0s)
+  ✓  144 [chromium] › 10-fault-injection.spec.ts:265:7 › slow responses are a state, not a freeze › a slow list shows skeletons and leaves the toolbar usable (999ms)
+
+  144 passed (3.7m)

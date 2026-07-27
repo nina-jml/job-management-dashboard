@@ -7,13 +7,20 @@ name: job-management-dashboard
 
 services:
   db:
-    image: postgres:16-alpine
+    image: postgres:16-alpine@sha256:57c72fd2a128e416c7fcc499958864df5301e940bca0a56f58fddf30ffc07777
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-jobs}
       POSTGRES_USER: ${POSTGRES_USER:-jobs}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-jobs}
     volumes:
       - pgdata:/var/lib/postgresql/data
+    # Docker's default /dev/shm is 64MB. Postgres uses shared memory for
+    # parallel query workers and large sorts, and the 250k-row seed plus the
+    # scale spec's walks are exactly the workload that reaches for it. At the
+    # default the planner's behaviour depends on how much shared memory happens
+    # to be free — which is a source of run-to-run variance in a suite whose
+    # whole value is being reproducible.
+    shm_size: 1gb
     healthcheck:
       # Everything downstream gates on this. Without it the stack starts before
       # Postgres finishes initializing and the suite fails intermittently —
@@ -63,6 +70,13 @@ services:
     build:
       context: ./e2e
     profiles: ["test"]  # never started by `make up`; run on demand
+    # Chromium writes its renderer shared-memory segments to /dev/shm, and
+    # Docker's 64MB default is the classic cause of tabs dying mid-test with
+    # "Target crashed" — a failure that looks like a flaky app and is neither.
+    # The usual workaround is --disable-dev-shm-usage, which changes the
+    # browser's behaviour to suit the harness; giving it the memory instead
+    # keeps the browser under test the same one a user runs.
+    shm_size: 1gb
     environment:
       E2E_BASE_URL: http://frontend
       CI: ${CI:-1}
