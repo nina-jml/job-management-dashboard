@@ -59,8 +59,12 @@ down: ## Stop and remove containers and networks (keeps the database volume)
 	$(COMPOSE) down --remove-orphans
 
 clean: ## Remove containers, networks, volumes and locally built images
+	# On Linux the e2e service runs as root, so its bind-mounted playwright-report/
+	# and test-results/ land in the working tree root-owned; a host-side rm then
+	# hits "Permission denied". Deleting them from inside a container matches the
+	# privileges that created them. See docs/OPEN_QUESTIONS.md §3.
+	docker run --rm -v "$(CURDIR)/e2e:/work" alpine sh -c 'rm -rf /work/playwright-report /work/test-results'
 	$(COMPOSE) down --volumes --remove-orphans --rmi local
-	@rm -rf e2e/playwright-report e2e/test-results
 	@echo "▸ clean slate"
 
 clean-all: clean ## Also drop pulled base images and the build cache — a genuinely cold start

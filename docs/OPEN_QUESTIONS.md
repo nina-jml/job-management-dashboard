@@ -209,3 +209,25 @@ terminal, so there is never more than one way out of a given state.
 | Tests racing Postgres initialization — the classic intermittent CI failure. | `GET /api/health/` checks the DB connection; compose healthchecks and `make test` both gate on it. TEST_PLAN case A2. |
 | E2E state leaking between runs, making the suite pass once and fail on re-run. | Every spec namespaces its fixtures with a run-unique prefix and scopes assertions to them. TEST_PLAN case A3. |
 | Apple Silicon build that doesn't work on the evaluator's amd64 Linux. | Explicit `--platform linux/amd64` build check at steps 0 and 11. TEST_PLAN case A4. |
+
+### Root-owned e2e artifacts on Linux
+
+On Linux, bind mounts pass UIDs through untranslated. The e2e container runs as root,
+so Playwright's `playwright-report/` and `test-results/` land in the working tree owned
+by root. macOS does not show this — Docker Desktop's file sharing remaps ownership to the
+host user.
+
+**What ships.** `make clean` deletes those two paths from inside a throwaway container
+(`docker run --rm -v "$(CURDIR)/e2e:/work" alpine …`), so cleanup runs with the same
+privileges that created them. No `sudo` on either platform.
+
+**Why this is a mitigation, not a fix.** It deletes the root-owned files rather than
+avoiding creating them. Between runs they still sit root-owned in the working tree, where
+they can block an editor or a git operation.
+
+**The fuller fix, not implemented.** Run the e2e service as the invoking user —
+`user: "${HOST_UID}:${HOST_GID}"` in compose, with the Makefile passing `id -u` / `id -g`.
+That additionally requires moving the Playwright browser cache off `/root`
+(`ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright` before the install step in `e2e/Dockerfile`,
+world-readable), because a non-root user cannot read `/root/.cache/ms-playwright`. Not done:
+it needs verification on a Linux host, which was out of budget.
