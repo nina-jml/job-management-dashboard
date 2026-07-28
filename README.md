@@ -229,14 +229,15 @@ Almost all the code was written by the agent based on conversations with me, exc
 
 | | Session | What it covers |
 |---|---|---|
-| 0 | [morning](docs/transcripts/ai-session-transcript-0-2026-07-25-morning.txt) | Spec, step plan and test plan; steps 0–4, the backend |
-| 1 | [midday](docs/transcripts/ai-session-transcript-1-2026-07-25-midday.txt) | Steps 5–7, the UI through the required critical flow |
-| 2 | [afternoon](docs/transcripts/ai-session-transcript-2-2026-07-25-afternoon.txt) | Steps 8–10, two code-review rounds, the scope cuts |
-| 3 | [forked session](docs/transcripts/ai-session-transcript-3-2026-07-25-forked-session.txt) | A branch off the main thread |
-| 4 | [delivery](docs/transcripts/ai-session-transcript-4-2026-07-27-delivery.txt) | Step 11 delivery — Linux `make clean` fix, `npm ci` lockfile pinning, README arch diagram and time writeup |
+| 0 | [midday](docs/transcripts/ai-session-transcript-0-2026-07-25-midday.txt) | Spec, step plan and test plan; steps 0–7 — the backend and the UI through the required critical flow |
+| 1 | [afternoon](docs/transcripts/ai-session-transcript-1-2026-07-25-afternoon.txt) | Steps 8–10, two code-review rounds, the scope cuts |
+| 2 | [forked session](docs/transcripts/ai-session-transcript-2-2026-07-25-forked-session.txt) | A branch off the main thread |
+| 3 | [delivery](docs/transcripts/ai-session-transcript-3-2026-07-27-delivery.txt) | Step 11 delivery — Linux `make clean` fix, `npm ci` lockfile pinning, README arch diagram and time writeup |
 
-Session 1 was recovered from Claude Code's local session log after a `/clear` — those live in
-`~/.claude/projects/` and are not deleted by clearing the context.
+Session 0 (midday) is the full session recovered from Claude Code's local session log after a
+`/clear` — those live in `~/.claude/projects/` and are not deleted by clearing the context. It
+starts at the first prompt, so it already contains the early planning and backend work; a separate
+live-terminal export of that same stretch was redundant, so it was dropped.
 
 ---
 
