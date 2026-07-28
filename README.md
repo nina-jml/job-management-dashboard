@@ -233,6 +233,7 @@ Almost all the code was written by the agent based on conversations with me, exc
 | 1 | [midday](docs/transcripts/ai-session-transcript-1-2026-07-25-midday.txt) | Steps 5–7, the UI through the required critical flow |
 | 2 | [afternoon](docs/transcripts/ai-session-transcript-2-2026-07-25-afternoon.txt) | Steps 8–10, two code-review rounds, the scope cuts |
 | 3 | [forked session](docs/transcripts/ai-session-transcript-3-2026-07-25-forked-session.txt) | A branch off the main thread |
+| 4 | [delivery](docs/transcripts/ai-session-transcript-4-2026-07-27-delivery.txt) | Step 11 delivery — Linux `make clean` fix, `npm ci` lockfile pinning, README arch diagram and time writeup |
 
 Session 1 was recovered from Claude Code's local session log after a `/clear` — those live in
 `~/.claude/projects/` and are not deleted by clearing the context.
