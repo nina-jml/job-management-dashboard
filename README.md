@@ -178,6 +178,10 @@ library, no test-only code path in the app.
 E2E runs against a real Postgres, so no spec assumes an empty database; each namespaces its
 fixtures with a run-unique prefix, which is what makes the suite re-runnable without `make clean`.
 
+The gate leaves your working tree untouched: `make test` keeps Playwright's report inside the
+throwaway container rather than bind-mounting it — on Linux that would land root-owned — so a
+clone → `make test` → `rm -rf` stays clean ([why](docs/OPEN_QUESTIONS.md#root-owned-e2e-artifacts-on-linux)).
+
 The full case matrix is in **[docs/TEST_PLAN.md](docs/TEST_PLAN.md)** - these are the 61 distinct scenarios I planned for in the test plan (21 of them negative); 144 is the number of actual Playwright assertions that collectively prove them (most cases need more than one assertion to be considered actually verified.)
 
 ---
