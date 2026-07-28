@@ -8,8 +8,8 @@ FROM node:22-bookworm@sha256:5647be709086c696ff32edaaf1c70cd26d1da6ab2b39c32f3c7
 
 WORKDIR /e2e
 
-COPY package.json package-lock.json* ./
-RUN npm ci 2>/dev/null || npm install
+COPY package.json package-lock.json ./
+RUN npm ci
 
 # Chromium only. Cross-browser adds minutes of image build and test time for
 # very little signal on a prototype (documented in TEST_PLAN.md §5).
