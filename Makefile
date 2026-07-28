@@ -12,7 +12,7 @@ SEED_COUNT ?= 30
 SEED_ARGS  ?= --count $(SEED_COUNT) --clear --seed 42
 
 .DEFAULT_GOAL := help
-.PHONY: help build up stop down clean test test-spec test-report test-backend test-all seed logs ps shell db-url psql time
+.PHONY: help build up stop down clean test test-spec test-backend test-all seed logs ps shell db-url psql time
 
 help: ## Show available commands
 	@grep -hE '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -32,7 +32,12 @@ test: ## Run the Playwright E2E suite (builds and starts the stack first)
 	$(COMPOSE) up -d --build --wait $(APP_SERVICES)
 	@echo "▸ seeding baseline test data ($(SEED_COUNT) jobs; existing jobs are cleared)"
 	$(COMPOSE) exec -T backend python manage.py seed_jobs $(SEED_ARGS)
-	$(COMPOSE) run --rm --build e2e
+	# Run the suite, hand its report back to you (the container writes it as root;
+	# on Linux bind mounts pass that UID through), then exit with the suite's own
+	# status so a red run still fails the gate. chown is a no-op on macOS.
+	@rc=0; $(COMPOSE) run --rm --build e2e || rc=$$?; \
+		docker run --rm -v "$(CURDIR)/e2e:/work" alpine chown -R "$$(id -u):$$(id -g)" /work/playwright-report /work/test-results >/dev/null 2>&1 || true; \
+		exit $$rc
 
 test-spec: ## Run one spec against the running stack, e.g. make test-spec SPEC=01-jobs-list-api
 	@test -n "$(SPEC)" || { echo "usage: make test-spec SPEC=<spec-name>"; exit 2; }
@@ -40,24 +45,6 @@ test-spec: ## Run one spec against the running stack, e.g. make test-spec SPEC=0
 	# the base config and drop the host ports `make up` published. `make test`
 	# uses the base config on purpose and will drop them — run `make up` after.
 	$(COMPOSE_DEV) run --rm e2e npx playwright test $(SPEC)
-
-test-report: ## Full E2E suite via the dev overlay; writes the HTML report to e2e/playwright-report/
-	# Same suite as `make test`, but through the dev overlay so the report and
-	# result artifacts are bind-mounted to the host for inspection. The `-` on the
-	# run keeps the report path printing even when specs fail — which is exactly
-	# when you want it.
-	$(COMPOSE_DEV) up -d --build --wait $(APP_SERVICES)
-	@echo "▸ seeding baseline test data ($(SEED_COUNT) jobs; existing jobs are cleared)"
-	$(COMPOSE_DEV) exec -T backend python manage.py seed_jobs $(SEED_ARGS)
-	-$(COMPOSE_DEV) run --rm --build e2e
-	# The e2e container runs as root, so on Linux the report it just wrote is
-	# root-owned. chown it back to the invoking user (from inside a container, so no
-	# sudo) — now you can open and `rm` the report like any file you made, without
-	# needing `make clean`. No-op on macOS, where Docker Desktop already remaps.
-	-docker run --rm -v "$(CURDIR)/e2e:/work" alpine chown -R "$$(id -u):$$(id -g)" /work/playwright-report /work/test-results
-	@echo ""
-	@echo "  ▸ HTML report  e2e/playwright-report/index.html"
-	@echo "  ▸ view         npx playwright show-report e2e/playwright-report"
 
 test-backend: ## Run backend unit tests (pytest-django), outside the make test gate
 	$(COMPOSE) up -d --wait db
@@ -77,12 +64,11 @@ down: ## Stop and remove containers and networks (keeps the database volume)
 	$(COMPOSE) down --remove-orphans
 
 clean: ## Remove containers, networks, volumes and locally built images
-	# `make test-spec` runs the e2e container through the dev overlay, which
-	# bind-mounts playwright-report/ and test-results/. That container runs as root,
-	# so on Linux those land in the working tree root-owned and a host-side rm hits
-	# "Permission denied". Delete them from inside a container, matching the
-	# privileges that created them. (`make test` doesn't mount them at all; `make
-	# test-report` chowns them back to you.) See docs/OPEN_QUESTIONS.md §3.
+	# `make test-spec` runs the e2e container as root and, unlike `make test`, does
+	# not chown its output, so on Linux playwright-report/ and test-results/ can be
+	# left root-owned and a host-side rm would hit "Permission denied". Delete them
+	# from inside a container, matching the privileges that created them. See
+	# docs/OPEN_QUESTIONS.md §3.
 	docker run --rm -v "$(CURDIR)/e2e:/work" alpine sh -c 'rm -rf /work/playwright-report /work/test-results'
 	$(COMPOSE) down --volumes --remove-orphans --rmi local
 	@echo "▸ clean slate"

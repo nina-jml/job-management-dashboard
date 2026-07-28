@@ -212,25 +212,26 @@ terminal, so there is never more than one way out of a given state.
 
 ### Root-owned e2e artifacts on Linux
 
-On Linux, bind mounts pass UIDs through untranslated. The e2e container runs as root, so any
-directory it bind-mounts back to the host lands in the working tree owned by root, and the
-invoking user then cannot delete it. macOS hides this: Docker Desktop's file sharing remaps
-ownership to the host user. The failure mode that matters is a grader's: `make test`, then
-`rm -rf` the checkout to clean up, and the delete stops on "Permission denied".
+On Linux, bind mounts pass UIDs through untranslated. The e2e container runs as root, so the
+`playwright-report/` and `test-results/` it writes to the bind-mounted working tree are owned by
+root — and the invoking user then cannot delete them. macOS hides this: Docker Desktop's file
+sharing remaps ownership to the host user. The failure mode that matters is a grader's: `make
+test`, then `rm -rf` the checkout to clean up, and the delete stops on "Permission denied".
 
-**What ships.** The gate compose (`docker-compose.yml`) does **not** bind-mount Playwright's
-`playwright-report/` or `test-results/`, so `make test` writes the report inside the throwaway
-e2e container and leaves nothing root-owned in the working tree — a fresh clone → `make test`
-→ `rm -rf` just works. The gate needs only the pass/fail the `list` reporter prints to stdout.
-For local debugging, `docker-compose.dev.yml` (overlaid by `make up` / `make test-spec`) mounts
-them back, and `make clean` deletes any such dev-run leftovers from inside a container
-(`docker run --rm -v "$(CURDIR)/e2e:/work" alpine …`), so no `sudo` is needed on either platform.
+**What ships.** The reports stay bind-mounted — a failing run's HTML report and traces are worth
+having on the host — and `make test` chowns `playwright-report/` and `test-results/` back to the
+invoking user after the run, from inside a container (`docker run --rm -v "$(CURDIR)/e2e:/work"
+alpine chown …`), so no `sudo` on either platform. The run captures the suite's exit code and
+re-exits with it, so the chown never masks a red run. A fresh clone → `make test` → `rm -rf` then
+just works, and you keep the report. The chown is a no-op on macOS.
 
-**The alternative, not taken.** Keep the reports on the host for the gate too, but run the e2e
-service as the invoking user — `user: "${HOST_UID}:${HOST_GID}"`, the Makefile passing `id -u` /
-`id -g`, plus moving the Playwright browser cache off `/root`
+`make test-spec` (the fast single-spec loop) deliberately skips the chown to stay quick, so it can
+still leave root-owned artifacts on Linux; `make clean` deletes those from inside a container the
+same way, again without `sudo`.
+
+**The alternative, not taken.** Run the e2e service as the invoking user from the start —
+`user: "${HOST_UID}:${HOST_GID}"`, plus moving the Playwright browser cache off `/root`
 (`ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright`, world-readable) since a non-root user cannot read
-`/root/.cache/ms-playwright`. That is the "correct" fix *if* host-side gate reports were required,
-but it trades a reliable gate for one whose success depends on uid-mapping quirks (HOME, cache
-paths) that vary across hosts. For a gate whose whole value is reproducibility, not creating the
-artifacts is the safer call.
+`/root/.cache/ms-playwright`. That avoids creating the files root-owned at all, but makes the gate's
+success depend on uid-mapping quirks (HOME, cache paths) that vary across hosts. A post-run chown
+leaves the container itself unchanged and keeps the gate simple, so it was the safer call.
