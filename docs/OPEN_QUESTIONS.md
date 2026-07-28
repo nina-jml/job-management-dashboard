@@ -212,22 +212,25 @@ terminal, so there is never more than one way out of a given state.
 
 ### Root-owned e2e artifacts on Linux
 
-On Linux, bind mounts pass UIDs through untranslated. The e2e container runs as root,
-so Playwright's `playwright-report/` and `test-results/` land in the working tree owned
-by root. macOS does not show this — Docker Desktop's file sharing remaps ownership to the
-host user.
+On Linux, bind mounts pass UIDs through untranslated. The e2e container runs as root, so any
+directory it bind-mounts back to the host lands in the working tree owned by root, and the
+invoking user then cannot delete it. macOS hides this: Docker Desktop's file sharing remaps
+ownership to the host user. The failure mode that matters is a grader's: `make test`, then
+`rm -rf` the checkout to clean up, and the delete stops on "Permission denied".
 
-**What ships.** `make clean` deletes those two paths from inside a throwaway container
-(`docker run --rm -v "$(CURDIR)/e2e:/work" alpine …`), so cleanup runs with the same
-privileges that created them. No `sudo` on either platform.
+**What ships.** The gate compose (`docker-compose.yml`) does **not** bind-mount Playwright's
+`playwright-report/` or `test-results/`, so `make test` writes the report inside the throwaway
+e2e container and leaves nothing root-owned in the working tree — a fresh clone → `make test`
+→ `rm -rf` just works. The gate needs only the pass/fail the `list` reporter prints to stdout.
+For local debugging, `docker-compose.dev.yml` (overlaid by `make up` / `make test-spec`) mounts
+them back, and `make clean` deletes any such dev-run leftovers from inside a container
+(`docker run --rm -v "$(CURDIR)/e2e:/work" alpine …`), so no `sudo` is needed on either platform.
 
-**Why this is a mitigation, not a fix.** It deletes the root-owned files rather than
-avoiding creating them. Between runs they still sit root-owned in the working tree, where
-they can block an editor or a git operation.
-
-**The fuller fix, not implemented.** Run the e2e service as the invoking user —
-`user: "${HOST_UID}:${HOST_GID}"` in compose, with the Makefile passing `id -u` / `id -g`.
-That additionally requires moving the Playwright browser cache off `/root`
-(`ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright` before the install step in `e2e/Dockerfile`,
-world-readable), because a non-root user cannot read `/root/.cache/ms-playwright`. Not done:
-it needs verification on a Linux host, which was out of budget.
+**The alternative, not taken.** Keep the reports on the host for the gate too, but run the e2e
+service as the invoking user — `user: "${HOST_UID}:${HOST_GID}"`, the Makefile passing `id -u` /
+`id -g`, plus moving the Playwright browser cache off `/root`
+(`ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright`, world-readable) since a non-root user cannot read
+`/root/.cache/ms-playwright`. That is the "correct" fix *if* host-side gate reports were required,
+but it trades a reliable gate for one whose success depends on uid-mapping quirks (HOME, cache
+paths) that vary across hosts. For a gate whose whole value is reproducibility, not creating the
+artifacts is the safer call.

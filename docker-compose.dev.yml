@@ -27,3 +27,13 @@ services:
       # local Postgres on the default port, and this should not collide with it.
       # Override with POSTGRES_HOST_PORT if 55432 is taken too.
       - "127.0.0.1:${POSTGRES_HOST_PORT:-55432}:5432"
+
+  e2e:
+    # Local-only: surface Playwright's report and results on the host so a
+    # failure is inspectable after the container exits (used by `make test-spec`
+    # and any dev run through this overlay). Left out of the gate compose on
+    # purpose — running as root, these land root-owned on Linux; see the note in
+    # docker-compose.yml. `make clean` deletes any leftovers from a container.
+    volumes:
+      - ./e2e/playwright-report:/e2e/playwright-report
+      - ./e2e/test-results:/e2e/test-results

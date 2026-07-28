@@ -89,10 +89,15 @@ services:
       # `make test-spec` a seconds-long check (TEST_PLAN tier T1). The image
       # still contains them, so the mount only ever shadows identical content.
       - ./e2e/tests:/e2e/tests
-      # Reports land on the host so failures are inspectable after the
-      # container exits.
-      - ./e2e/playwright-report:/e2e/playwright-report
-      - ./e2e/test-results:/e2e/test-results
+      # The report/result artifacts are deliberately NOT bind-mounted in the
+      # gate. The e2e container runs as root, and on Linux a bind mount drops
+      # root-owned playwright-report/ and test-results/ into the working tree
+      # that the invoking user then cannot delete — so `make test` followed by
+      # `rm -rf` of the checkout fails with "Permission denied" (OPEN_QUESTIONS
+      # §3). The gate only needs the pass/fail the `list` reporter prints to
+      # stdout, so the report stays inside the throwaway container. `make up` /
+      # `make test-spec` overlay docker-compose.dev.yml, which mounts them back
+      # for local inspection.
 
 volumes:
   pgdata:
