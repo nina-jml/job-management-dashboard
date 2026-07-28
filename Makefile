@@ -12,7 +12,7 @@ SEED_COUNT ?= 30
 SEED_ARGS  ?= --count $(SEED_COUNT) --clear --seed 42
 
 .DEFAULT_GOAL := help
-.PHONY: help build up stop down clean test test-spec test-backend test-all seed logs ps shell db-url psql time
+.PHONY: help build up stop down clean test test-spec test-report test-backend test-all seed logs ps shell db-url psql time
 
 help: ## Show available commands
 	@grep -hE '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -41,6 +41,21 @@ test-spec: ## Run one spec against the running stack, e.g. make test-spec SPEC=0
 	# uses the base config on purpose and will drop them — run `make up` after.
 	$(COMPOSE_DEV) run --rm e2e npx playwright test $(SPEC)
 
+test-report: ## Full E2E suite via the dev overlay; writes the HTML report to e2e/playwright-report/
+	# Same suite as `make test`, but through the dev overlay so the report and
+	# result artifacts are bind-mounted to the host for inspection. The `-` on the
+	# run keeps the report path printing even when specs fail — which is exactly
+	# when you want it. On Linux these artifacts are root-owned; `make clean` removes
+	# them.
+	$(COMPOSE_DEV) up -d --build --wait $(APP_SERVICES)
+	@echo "▸ seeding baseline test data ($(SEED_COUNT) jobs; existing jobs are cleared)"
+	$(COMPOSE_DEV) exec -T backend python manage.py seed_jobs $(SEED_ARGS)
+	-$(COMPOSE_DEV) run --rm --build e2e
+	@echo ""
+	@echo "  ▸ HTML report  e2e/playwright-report/index.html"
+	@echo "  ▸ view         npx playwright show-report e2e/playwright-report"
+	@echo "  ▸ cleanup      make clean   (artifacts are root-owned on Linux)"
+
 test-backend: ## Run backend unit tests (pytest-django), outside the make test gate
 	$(COMPOSE) up -d --wait db
 	# --build so the image carries the code being tested. Backend source is not
@@ -59,10 +74,12 @@ down: ## Stop and remove containers and networks (keeps the database volume)
 	$(COMPOSE) down --remove-orphans
 
 clean: ## Remove containers, networks, volumes and locally built images
-	# On Linux the e2e service runs as root, so its bind-mounted playwright-report/
-	# and test-results/ land in the working tree root-owned; a host-side rm then
-	# hits "Permission denied". Deleting them from inside a container matches the
-	# privileges that created them. See docs/OPEN_QUESTIONS.md §3.
+	# `make test-spec` and `make test-report` run the e2e container through the dev
+	# overlay, which bind-mounts playwright-report/ and test-results/. That
+	# container runs as root, so on Linux those land in the working tree root-owned
+	# and a host-side rm hits "Permission denied". Delete them from inside a
+	# container, matching the privileges that created them. (The gate, `make test`,
+	# does not mount them at all.) See docs/OPEN_QUESTIONS.md §3.
 	docker run --rm -v "$(CURDIR)/e2e:/work" alpine sh -c 'rm -rf /work/playwright-report /work/test-results'
 	$(COMPOSE) down --volumes --remove-orphans --rmi local
 	@echo "▸ clean slate"
