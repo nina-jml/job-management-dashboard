@@ -330,7 +330,7 @@
 ⏺ You'd like to clarify something first — go ahead. What would you like to know
   or add about the time-log section (or any of the other tasks)?
 
-✻ Cooked for 4m 54s
+✻ Churned for 4m 54s
 
 ❯ Are you reading the latest version? That's not what I see                     
 
@@ -835,7 +835,7 @@
   me to commit those too, run the background build, or restore that
   Planning-docs link?
 
-✻ Sautéed for 13m 6s
+✻ Cooked for 13m 6s
 
 ❯ OK I did a last read and made final edits. I think we're good! Please do a    
   last proofread and commit/push it. Thanks so much!                            
@@ -978,4 +978,1437 @@
 
   Congrats on wrapping it up — thanks for the clear direction throughout.
 
-✻ Sautéed for 1m 50s
+✻ Cogitated for 1m 50s
+
+❯ /export                                                                       
+  ⎿  Conversation exported to: /Users/nina/projects/job-management-dashboard/202
+     6-07-27-232933-local-command-caveatcaveat-the-messages-below.txt
+
+❯ OK I also just exported the transcript - can you rename it and add it to the  
+  docs as well? then we can make the final commit/push. Thank you!!             
+
+⏺ On it — this session is the step-11 delivery work, so it's a genuine new
+  Session 4 (2026-07-27). Let me move it and add the row.
+
+  Ran 1 shell command (ctrl+o to expand)
+
+⏺ Update(README.md)
+  ⎿  Added 1 line
+      233  | 1 | [midday](docs/transcripts/ai-session-transcript-1-2026-0
+           7-25-midday.txt) | Steps 5–7, the UI through the required crit
+           ical flow |
+      234  | 2 | [afternoon](docs/transcripts/ai-session-transcript-2-202
+           6-07-25-afternoon.txt) | Steps 8–10, two code-review rounds, t
+           he scope cuts |
+      235  | 3 | [forked session](docs/transcripts/ai-session-transcript-
+           3-2026-07-25-forked-session.txt) | A branch off the main threa
+           d |
+      236 +| 4 | [delivery](docs/transcripts/ai-session-transcript-4-2026
+          +-07-27-delivery.txt) | Step 11 delivery — Linux `make clean` f
+          +ix, `npm ci` lockfile pinning, README arch diagram and time wr
+          +iteup |                                                       
+      237  
+      238  Session 1 was recovered from Claude Code's local session log a
+           fter a `/clear` — those live in
+      239  `~/.claude/projects/` and are not deleted by clearing the cont
+           ext.
+
+⏺ Row added. Committing and pushing:
+
+  Pushed to main (ctrl+o to expand)
+
+⏺ Done and pushed — 7927167..c04ccc9, working tree clean and up to date with
+  origin/main.
+
+  - Moved the export to
+  docs/transcripts/ai-session-transcript-4-2026-07-27-delivery.txt
+  - Added it as Session 4 in the transcripts table (the step-11 delivery work)
+  - Committed (c04ccc9) and pushed
+
+  That's everything wrapped up. Congrats on shipping it — good luck with the
+  review! 🎉
+
+✻ Cooked for 49s
+
+※ recap: Finalized the job-dashboard take-home for delivery: infra fixes, README polish, and transcripts are all committed and pushed to origin/main. Everything's done and the working tree is clean, so no next action is pending unless you want further changes. (disable recaps in /config)
+
+❯ Ah I am noticing in the transcripts that there's some overlap in the chats,   
+  especially with the morning and midday. Could the morning one just be         
+  replaced by midday? Why are they both there?                                  
+
+⏺ Good catch — let me actually look at what's in each before recommending
+  anything, rather than guess. Let me compare the two files' boundaries and
+  check whether midday is a superset of morning.
+
+  Ran 1 shell command (ctrl+o to expand)
+
+⏺ The two are in different formats — telling. Morning is a live terminal (TUI)
+  export; midday starts with # Session: job-scheduler and timestamped
+  USER/assistant blocks, which is the recovered-from-local-session-log format
+  (the README even notes Session 1 was recovered after a /clear). And midday
+  opens with the very first prompt of the whole project (spec, test plan,
+  slices) — the same starting point as morning. Let me confirm midday actually
+  spans steps 0→7 (superset of morning's 0→4) before recommending.
+
+  Ran 1 shell command (ctrl+o to expand)
+
+⏺ That confirms it. Here's what's going on — they're the same session captured 
+  twice, not two different sessions:
+
+  - Morning (session 0) is a live terminal export — you can see the Claude Code
+  TUI banner and Churned for 34m 5s. Its own last line says "worth exporting 
+  before the context gets cleared." So you exported it, then ran /clear.
+  - Midday (session 1) is the full session recovered from the local log
+  afterward (that's the # Session: format, and the README note already says it
+  was "recovered after a /clear"). A recovered log starts at the very first
+  prompt — which is why it opens with the identical take-home prompt morning
+  does, and then runs all the way through slice 7.
+
+  So midday isn't a sibling of morning — it's a superset. The slice counts bear
+  it out: midday covers slices 0→7 (0:10, 1:13, 2:14, 3:6, 4:15, 5:17, 6:3,
+  7:7), while morning only substantively covers the early planning/backend part
+  before the clear. Everything in morning is inside midday; the only thing
+  unique to morning is the raw-terminal rendering (collapsed tool calls, the
+  Churned line), not any conversation content.
+
+  So yes — morning can be dropped with no loss of substance. One quick decision
+  on how to leave the numbering:
+
+⏺ User answered Claude's questions:
+  ⎿  · Midday is the full recovered log that already contains the morning 
+     material (spec/plan → slice 7). How do you want to resolve the overlap? → 
+     Drop morning + renumber 0–3
+
+⏺ Renumbering to 0–3 it is. Let me first find every reference to these
+  transcript filenames/session numbers across the repo so no link dangles after
+  the rename.
+
+  Ran 1 shell command (ctrl+o to expand)
+
+⏺ All references live in README.md (the table + the recovery note; the "Saturday
+  morning" at line 252 is unrelated prose). Doing the renames:
+
+  Ran 1 shell command (ctrl+o to expand)
+⏺ Now updating the README table and the recovery note:
+
+⏺ Update(README.md)
+  ⎿  Added 4 lines, removed 5 lines
+      229  
+      230  | | Session | What it covers |
+      231  |---|---|---|
+      232 -| 0 | [morning](docs/transcripts/ai-session-transcript-0-2026-
+          -07-25-morning.txt) | Spec, step plan and test plan; steps 0–4,
+          - the backend |                                                
+      233 -| 1 | [midday](docs/transcripts/ai-session-transcript-1-2026-0
+          -7-25-midday.txt) | Steps 5–7, the UI through the required crit
+          -ical flow |                                                   
+      234 -| 2 | [afternoon](docs/transcripts/ai-session-transcript-2-202
+          -6-07-25-afternoon.txt) | Steps 8–10, two code-review rounds, t
+          -he scope cuts |                                               
+      235 -| 3 | [forked session](docs/transcripts/ai-session-transcript-
+          -3-2026-07-25-forked-session.txt) | A branch off the main threa
+          -d |                                                           
+      236 -| 4 | [delivery](docs/transcripts/ai-session-transcript-4-2026
+          --07-27-delivery.txt) | Step 11 delivery — Linux `make clean` f
+          -ix, `npm ci` lockfile pinning, README arch diagram and time wr
+          -iteup |                                                       
+      232 +| 0 | [midday](docs/transcripts/ai-session-transcript-0-2026-0
+          +7-25-midday.txt) | Spec, step plan and test plan; steps 0–7 — 
+          +the backend and the UI through the required critical flow |   
+      233 +| 1 | [afternoon](docs/transcripts/ai-session-transcript-1-202
+          +6-07-25-afternoon.txt) | Steps 8–10, two code-review rounds, t
+          +he scope cuts |                                               
+      234 +| 2 | [forked session](docs/transcripts/ai-session-transcript-
+          +2-2026-07-25-forked-session.txt) | A branch off the main threa
+          +d |                                                           
+      235 +| 3 | [delivery](docs/transcripts/ai-session-transcript-3-2026
+          +-07-27-delivery.txt) | Step 11 delivery — Linux `make clean` f
+          +ix, `npm ci` lockfile pinning, README arch diagram and time wr
+          +iteup |                                                       
+      236  
+      237  Session 1 was recovered from Claude Code's local session log a
+           fter a `/clear` — those live in
+      238  `~/.claude/projects/` and are not deleted by clearing the cont
+           ext.
+
+⏺ Update(README.md)
+  ⎿  Added 4 lines, removed 2 lines
+      234  | 2 | [forked session](docs/transcripts/ai-session-transcript-
+           2-2026-07-25-forked-session.txt) | A branch off the main threa
+           d |
+      235  | 3 | [delivery](docs/transcripts/ai-session-transcript-3-2026
+           -07-27-delivery.txt) | Step 11 delivery — Linux `make clean` f
+           ix, `npm ci` lockfile pinning, README arch diagram and time wr
+           iteup |
+      236  
+      237 -Session 1 was recovered from Claude Code's local session log a
+          -fter a `/clear` — those live in                               
+      238 -`~/.claude/projects/` and are not deleted by clearing the cont
+          -ext.                                                          
+      237 +Session 0 (midday) is the full session recovered from Claude C
+          +ode's local session log after a                               
+      238 +`/clear` — those live in `~/.claude/projects/` and are not del
+          +eted by clearing the context. It                              
+      239 +starts at the first prompt, so it already contains the early p
+          +lanning and backend work; a separate                          
+      240 +live-terminal export of that same stretch was redundant, so it
+          + was dropped.                                                 
+      241  
+      242  ---
+      243  
+
+⏺ Let me verify every transcript link resolves to a file on disk before
+  committing:
+
+  Ran 1 shell command (ctrl+o to expand)
+
+❯ I ran into something else - it built on my machine, but instead of make clean 
+  I did a manual deletion of the directory and got an error from being unable   
+  to remove the files in e2e. Now they're stuck on my linux machine because     
+  everything else was deleted                                                   
+
+⏺ First — let's unstick your Linux machine. This is exactly the
+  root-owned-artifacts bug from Task 1: the e2e container ran as root, so
+  e2e/playwright-report/ and e2e/test-results/ are owned by root and your user
+  can't rm them.
+
+  Run one of these from the repo root on the Linux box:
+
+  # No sudo — delete them from inside a container (same mechanism as the make 
+  clean fix):
+  docker run --rm -v "$PWD/e2e:/work" alpine sh -c 'rm -rf 
+  /work/playwright-report /work/test-results'
+
+  # …or, if you have sudo, simplest:
+  sudo rm -rf e2e/playwright-report e2e/test-results
+
+  Either clears the stuck files. After that, if you want the rest of e2e/ gone
+  too, a normal rm -rf e2e will work since what remains is owned by you.
+
+  Going forward this won't recur on that machine once it has pulled main: make 
+  clean now does the container-side delete for you (no sudo). That's the whole
+  point of commit 61e5658 — and your run is the real-world confirmation of the
+  bug the Mac couldn't reproduce. (The fuller user:-mapping fix in
+  OPEN_QUESTIONS §3 would stop them being created root-owned at all; this
+  mitigation just deletes them safely.)
+
+  Now let me land the transcript renumbering. Verified all four links resolve
+  and no stale refs remain — committing and pushing:
+
+  Pushed to main (ctrl+o to expand)
+
+❯ I'm afraid a grader will run into this and it'll be a bad look                
+
+⏺ Let me reassure you with the actual grader-facing picture, then give you a
+  real fix — but first let me check a couple of facts so my advice is grounded.
+
+  Ran 1 shell command (ctrl+o to expand)
+
+❯ right, but I didn't run make clean. i just ran make test, and then I went to  
+  delete the whole directory as a clean-up since it's my work computer... and   
+  those files got stuck                                                         
+
+❯ I did pull the latest on that test                                            
+
+⏺ That's the crucial detail — you ran make test, then rm -rf the directory, and
+  it choked. That's precisely the path a grader takes: clone → make test →
+  delete the folder. make clean never enters the picture, so the mitigation I
+  shipped doesn't protect them. You're right to want this gone at the source.
+
+  The clean, low-risk fix: have make test not write those artifacts into the 
+  host tree at all. The gate's e2e service bind-mounts playwright-report/ and
+  test-results/ back to the host — that's the only reason root-owned files land
+  there. Drop those two mounts from the gate compose (keep them in the dev
+  overlay for local debugging), and make test writes the report inside the
+  throwaway container instead; rm -rf afterward just works. The list reporter
+  still prints pass/fail to stdout, which is all the gate needs.
+
+  Let me confirm nothing in the README leans on host-side reports, then
+  implement it.
+
+  Ran 1 shell command (ctrl+o to expand)
+
+❯ This is all on another dev desktop which doesn't have my personal claude on   
+  it                                                                            
+
+⏺ Understood — that Linux box is a separate dev desktop without Claude, so
+  you're running commands there by hand. The immediate unblock I gave still
+  applies (run docker run --rm -v "$PWD/e2e:/work" alpine sh -c 'rm -rf 
+  /work/playwright-report /work/test-results', or sudo rm -rf those two, on that
+  desktop).
+
+  Now let me ship the real fix so a grader can't hit it. Implementing Option B —
+  no host artifacts from the gate:
+
+⏺ Update(docker-compose.yml)
+  ⎿  Added 9 lines, removed 4 lines
+       89        # `make test-spec` a seconds-long check (TEST_PLAN tier 
+           T1). The image
+       90        # still contains them, so the mount only ever shadows id
+           entical content.
+       91        - ./e2e/tests:/e2e/tests
+       92 -      # Reports land on the host so failures are inspectable a
+          -fter the                                                      
+       93 -      # container exits.                                      
+       94 -      - ./e2e/playwright-report:/e2e/playwright-report        
+       95 -      - ./e2e/test-results:/e2e/test-results                  
+       92 +      # The report/result artifacts are deliberately NOT bind-
+          +mounted in the                                                
+       93 +      # gate. The e2e container runs as root, and on Linux a b
+          +ind mount drops                                               
+       94 +      # root-owned playwright-report/ and test-results/ into t
+          +he working tree                                               
+       95 +      # that the invoking user then cannot delete — so `make t
+          +est` followed by                                              
+       96 +      # `rm -rf` of the checkout fails with "Permission denied
+          +" (OPEN_QUESTIONS                                             
+       97 +      # §3). The gate only needs the pass/fail the `list` repo
+          +rter prints to                                                
+       98 +      # stdout, so the report stays inside the throwaway conta
+          +iner. `make up` /                                             
+       99 +      # `make test-spec` overlay docker-compose.dev.yml, which
+          + mounts them back                                             
+      100 +      # for local inspection.                                 
+      101  
+      102  volumes:
+      103    pgdata:
+
+⏺ Now add the report mounts to the dev overlay so local debugging keeps them:
+
+⏺ Update(docker-compose.dev.yml)
+  ⎿  Added 10 lines
+      27        # local Postgres on the default port, and this should not
+           collide with it.
+      28        # Override with POSTGRES_HOST_PORT if 55432 is taken too.
+      29        - "127.0.0.1:${POSTGRES_HOST_PORT:-55432}:5432"
+      30 +                                                               
+      31 +  e2e:                                                         
+      32 +    # Local-only: surface Playwright's report and results on th
+         +e host so a                                                    
+      33 +    # failure is inspectable after the container exits (used by
+         + `make test-spec`                                              
+      34 +    # and any dev run through this overlay). Left out of the ga
+         +te compose on                                                  
+      35 +    # purpose — running as root, these land root-owned on Linux
+         +; see the note in                                              
+      36 +    # docker-compose.yml. `make clean` deletes any leftovers fr
+         +om a container.                                                
+      37 +    volumes:                                                   
+      38 +      - ./e2e/playwright-report:/e2e/playwright-report         
+      39 +      - ./e2e/test-results:/e2e/test-results                   
+
+⏺ Now update the OPEN_QUESTIONS §3 writeup to reflect the shipped fix:
+
+⏺ Update(docs/OPEN_QUESTIONS.md)
+  ⎿  Added 20 lines, removed 17 lines
+      212  
+      213  ### Root-owned e2e artifacts on Linux
+      214  
+      215 -On Linux, bind mounts pass UIDs through untranslated. The e2e 
+          -container runs as root,                                       
+      216 -so Playwright's `playwright-report/` and `test-results/` land 
+          -in the working tree owned                                     
+      217 -by root. macOS does not show this — Docker Desktop's file shar
+          -ing remaps ownership to the                                   
+      218 -host user.                                                    
+      215 +On Linux, bind mounts pass UIDs through untranslated. The e2e 
+          +container runs as root, so any                                
+      216 +directory it bind-mounts back to the host lands in the working
+          + tree owned by root, and the                                  
+      217 +invoking user then cannot delete it. macOS hides this: Docker 
+          +Desktop's file sharing remaps                                 
+      218 +ownership to the host user. The failure mode that matters is a
+          + grader's: `make test`, then                                  
+      219 +`rm -rf` the checkout to clean up, and the delete stops on "Pe
+          +rmission denied".                                             
+      220  
+      220 -**What ships.** `make clean` deletes those two paths from insi
+          -de a throwaway container                                      
+      221 -(`docker run --rm -v "$(CURDIR)/e2e:/work" alpine …`), so clea
+          -nup runs with the same                                        
+      222 -privileges that created them. No `sudo` on either platform.   
+      221 +**What ships.** The gate compose (`docker-compose.yml`) does *
+          +*not** bind-mount Playwright's                                
+      222 +`playwright-report/` or `test-results/`, so `make test` writes
+          + the report inside the throwaway                              
+      223 +e2e container and leaves nothing root-owned in the working tre
+          +e — a fresh clone → `make test`                               
+      224 +→ `rm -rf` just works. The gate needs only the pass/fail the `
+          +list` reporter prints to stdout.                              
+      225 +For local debugging, `docker-compose.dev.yml` (overlaid by `ma
+          +ke up` / `make test-spec`) mounts                             
+      226 +them back, and `make clean` deletes any such dev-run leftovers
+          + from inside a container                                      
+      227 +(`docker run --rm -v "$(CURDIR)/e2e:/work" alpine …`), so no `
+          +sudo` is needed on either platform.                           
+      228  
+      224 -**Why this is a mitigation, not a fix.** It deletes the root-o
+          -wned files rather than                                        
+      225 -avoiding creating them. Between runs they still sit root-owned
+          - in the working tree, where                                   
+      226 -they can block an editor or a git operation.                  
+      227 -                                                              
+      228 -**The fuller fix, not implemented.** Run the e2e service as th
+          -e invoking user —                                             
+      229 -`user: "${HOST_UID}:${HOST_GID}"` in compose, with the Makefil
+          -e passing `id -u` / `id -g`.                                  
+      230 -That additionally requires moving the Playwright browser cache
+          - off `/root`                                                  
+      231 -(`ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright` before the inst
+          -all step in `e2e/Dockerfile`,                                 
+      232 -world-readable), because a non-root user cannot read `/root/.c
+          -ache/ms-playwright`. Not done:                                
+      233 -it needs verification on a Linux host, which was out of budget
+          -.                                                             
+      229 +**The alternative, not taken.** Keep the reports on the host f
+          +or the gate too, but run the e2e                              
+      230 +service as the invoking user — `user: "${HOST_UID}:${HOST_GID}
+          +"`, the Makefile passing `id -u` /                            
+      231 +`id -g`, plus moving the Playwright browser cache off `/root` 
+      232 +(`ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright`, world-readable
+          +) since a non-root user cannot read                           
+      233 +`/root/.cache/ms-playwright`. That is the "correct" fix *if* h
+          +ost-side gate reports were required,                          
+      234 +but it trades a reliable gate for one whose success depends on
+          + uid-mapping quirks (HOME, cache                              
+      235 +paths) that vary across hosts. For a gate whose whole value is
+          + reproducibility, not creating the                            
+      236 +artifacts is the safer call.                                  
+
+⏺ Validating both compose configs — the gate must show only the specs mount, the
+  dev overlay must add the reports back:
+
+  Ran 1 shell command (ctrl+o to expand)
+
+⏺ Let me check more simply — grep the mount source paths in each rendered
+  config:
+
+  Ran 1 shell command (ctrl+o to expand)
+⏺ Let me look at the actual rendered format:
+
+  Ran 1 shell command (ctrl+o to expand)
+
+⏺ Let me just dump each full config and grep the mount lines directly:
+
+  Ran 1 shell command (ctrl+o to expand)
+
+⏺ docker compose config filters out e2e because of its test profile — that's why
+  it showed nothing. Let me validate with the profile active:
+
+  Ran 1 shell command (ctrl+o to expand)
+
+⏺ Exactly right:
+  - Gate (docker-compose.yml): e2e mounts only e2e/tests — no report/results
+  bind mounts, so make test leaves nothing root-owned on the host.
+  - Dev overlay: e2e gets all three, so make up / make test-spec still surface
+  reports locally.
+
+  Both parse clean. Committing and pushing:
+
+  Pushed to main (ctrl+o to expand)
+
+⏺ Pushed (42bc4de). Here's where this leaves you.
+
+  What a grader now hits
+
+  Clone → make test (passes, results on stdout) → rm -rf the folder → works, no 
+  permission error, no sudo. The gate writes Playwright's report inside the
+  throwaway container and puts nothing root-owned in the working tree. The whole
+  failure mode you hit is gone at the source, not just mitigated.
+
+  Local debugging is unchanged: make up / make test-spec still drop the HTML
+  report on the host (via the dev overlay), and make clean still cleans those up
+  from a container.
+
+  To verify on that Linux desktop (run by hand — no Claude needed)
+
+  # 1. Unstick the currently-stuck files (one-time), from the repo root:
+  docker run --rm -v "$PWD/e2e:/work" alpine sh -c 'rm -rf 
+  /work/playwright-report /work/test-results'
+  #    (or, if you have sudo:  sudo rm -rf e2e/playwright-report 
+  e2e/test-results)
+
+  # 2. Pull the fix:
+  git pull
+
+  # 3. Prove it:
+  make test              # still green — results print to the terminal
+  ls -la e2e/            # NO playwright-report/ or test-results/ should appear
+  rm -rf <a throwaway copy of the checkout>   # deletes cleanly, no sudo
+
+  Step 3 is the real confirmation. I validated the compose on this Mac — the
+  gate renders with only the e2e/tests mount, the dev overlay keeps all three —
+  and the test execution is unchanged (the list reporter still prints pass/fail
+  to stdout; only the on-host HTML report moves to dev-only). But since this Mac
+  can't reproduce the Linux ownership behavior, your make test on the desktop
+  is the thing that proves it end to end.
+
+  Honest trade-off, written up in OPEN_QUESTIONS §3: the gate no longer leaves
+  an HTML report on the host. For grading that's the right call — a green run
+  needs only stdout, and the alternative (running e2e as your host UID) makes
+  the gate's success depend on uid-mapping quirks that vary by machine, which is
+  the opposite of what the gate is for.
+
+  Want me to also drop a one-line note in the README's Testing section pointing
+  to OPEN_QUESTIONS §3 for this, or is keeping it in the docs enough?
+
+✻ Cogitated for 12m 23s
+
+❯ Sure that would be great                                                      
+
+⏺ Update(README.md)
+  ⎿  Added 4 lines
+      178  E2E runs against a real Postgres, so no spec assumes an empty 
+           database; each namespaces its
+      179  fixtures with a run-unique prefix, which is what makes the sui
+           te re-runnable without `make clean`.
+      180  
+      181 +The gate leaves your working tree untouched: `make test` keeps
+          + Playwright's report inside the                               
+      182 +throwaway container rather than bind-mounting it — on Linux th
+          +at would land root-owned — so a                               
+      183 +clone → `make test` → `rm -rf` stays clean ([why](docs/OPEN_QU
+          +ESTIONS.md#root-owned-e2e-artifacts-on-linux)).               
+      184 +                                                              
+      185  The full case matrix is in **[docs/TEST_PLAN.md](docs/TEST_PLA
+           N.md)** - these are the 61 distinct scenarios I planned for in
+            the test plan (21 of them negative); 144 is the number of act
+           ual Playwright assertions that collectively prove them (most c
+           ases need more than one assertion to be considered actually ve
+           rified.)
+      186  
+      187  ---
+
+⏺ Quick check that the anchor matches the heading, then commit and push:
+
+  Pushed to main (ctrl+o to expand)
+
+⏺ Done — pushed (738e339). The Testing section now carries a one-line note that
+  make test leaves the working tree clean (report stays in the container, would
+  land root-owned on Linux otherwise), linking to OPEN_QUESTIONS §3 for the full
+  reasoning. Anchor matches the heading, so the link resolves.
+
+  Everything's on origin/main and the tree is clean. Recap of what landed this
+  session:
+
+  ┌─────────────┬───────────────────────────────────────────────────────────┐
+  │   Commit    │                                                           │
+  ├─────────────┼───────────────────────────────────────────────────────────┤
+  │ 61e5658     │ make clean deletes root-owned e2e artifacts from a        │
+  │             │ container                                                 │
+  ├─────────────┼───────────────────────────────────────────────────────────┤
+  │ 2162c42     │ npm ci against committed lockfiles                        │
+  ├─────────────┼───────────────────────────────────────────────────────────┤
+  │ c04ccc9 /   │ transcript reorg — added Session 4, then dropped the      │
+  │ acc8d4f     │ redundant morning and renumbered 0–3                      │
+  ├─────────────┼───────────────────────────────────────────────────────────┤
+  │ 42bc4de     │ the real fix — gate compose no longer bind-mounts report  │
+  │             │ artifacts, so make test → rm -rf is clean on Linux        │
+  ├─────────────┼───────────────────────────────────────────────────────────┤
+  │ 738e339     │ README note pointing to the writeup                       │
+  └─────────────┴───────────────────────────────────────────────────────────┘
+
+  The one thing still worth doing on your side: run make test on that Linux
+  desktop after git pull and confirm e2e/ stays empty of playwright-report/ and
+  test-results/ — that's the end-to-end proof this Mac can't give. Glad you
+  caught it before a grader did.
+
+✻ Cooked for 42s
+
+❯ Confirmed it works on my linux!                                               
+
+⏺ That's the confirmation that mattered — the one thing this Mac fundamentally
+  couldn't prove. So the full chain now holds on Linux: make test green, e2e/
+  stays clean, rm -rf works with no sudo. The exact bug you tripped on is closed
+  at the source, and a grader takes the same path with no snag.
+
+  Everything's committed and pushed; the tree is clean. You're done.
+
+  One small optional touch if you want it: since it's now actually verified on
+  Linux (not just reasoned about), I could add three words to OPEN_QUESTIONS §3
+  — "verified on Linux" — so a grader reading the doc sees it was tested, not
+  just asserted. Say the word and I'll add it; otherwise this is a wrap.
+  Congrats on shipping it. 🎉
+
+✻ Cooked for 18s
+
+❯ deleted successfully                                                          
+
+⏺ Perfect — that's the last confirmation. Clean rm -rf, no sudo, no leftovers.
+  🎉
+
+  Everything's on origin/main and the tree is clean — you're fully wrapped. Nice
+  work catching that Linux issue before submission; the whole clone → make test
+  → delete path is now airtight. Good luck with the review!
+
+✻ Churned for 3s
+
+❯ So how do I look at the test results without the files in e2e?                
+
+⏺ Good question — the split is deliberate, so here's how each case works now.
+
+  For pass/fail (the normal case — and what a grader reads): it's right in the
+  terminal. make test runs the list reporter, so every spec prints as it runs,
+  with a summary and any failure's error/stack inline on stdout. You don't need
+  the files for that — that's the whole point; the gate's result is the terminal
+  output.
+
+  For the rich HTML report / traces / screenshots (debugging a failure): run the
+  suite through the dev overlay, which still bind-mounts the report dirs to the
+  host. Two ways:
+
+  # full suite, with host-side report + traces:
+  docker compose -f docker-compose.yml -f docker-compose.dev.yml run --rm e2e
+
+  # or a single spec (this already uses the dev overlay):
+  make test-spec SPEC=08-delete-job
+
+  Either writes to e2e/playwright-report/ and e2e/test-results/ on the host,
+  same as before. Then view:
+
+  npx playwright show-report e2e/playwright-report          # HTML report (needs
+  node locally)
+  npx playwright show-trace  e2e/test-results/<…>/trace.zip  # trace for a 
+  failed test
+
+  On Linux, run make clean afterward to remove those (root-owned) dev leftovers.
+
+  So: gate = read the terminal; debugging = re-run via the dev overlay and open 
+  the report. Only the gate stopped writing to e2e/ — the debugging path is
+  unchanged.
+
+  If you'd like, I can add a make test-report target that runs the full suite
+  through the dev overlay and prints where the report landed, so you don't have
+  to remember the long docker compose -f … -f … line. Want that?
+
+✻ Crunched for 42s
+
+❯ Sure that would be great. Also, do we still need         docker run --rm -v   
+  "$(CURDIR)/e2e:/work" alpine sh -c 'rm -rf /work/playwright-report            
+  /work/test-results'                                                           
+   in the Makefile?                                                             
+⏺ Great question — and the answer is yes, we still need it, but for a different
+  reason than before. Let me verify the exact current Makefile text before
+  editing.
+
+  Read 1 file (ctrl+o to expand)
+
+⏺ Confirmed the reasoning: keep it. The gate (make test) no longer creates those
+  files — but the dev overlay still does, and make test-spec / the new make 
+  test-report run e2e through that overlay as root. So on Linux those runs still
+  drop root-owned artifacts, and make clean is what removes them without sudo.
+  Reverting to a host rm would just reintroduce the exact bug for the dev path.
+  I'll refresh the comment so it names the real source. Making the changes:
+
+⏺ Update(Makefile)
+  ⎿  Added 1 line, removed 1 line
+      12  SEED_ARGS  ?= --count $(SEED_COUNT) --clear --seed 42
+      13  
+      14  .DEFAULT_GOAL := help
+      15 -.PHONY: help build up stop down clean test test-spec test-backe
+         -nd test-all seed logs ps shell db-url psql time                
+      15 +.PHONY: help build up stop down clean test test-spec test-repor
+         +t test-backend test-all seed logs ps shell db-url psql time    
+      16  
+      17  help: ## Show available commands
+      18    @grep -hE '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
+
+⏺ Update(Makefile)
+  ⎿  Added 15 lines
+      41    # uses the base config on purpose and will drop them — run `m
+          ake up` after.
+      42    $(COMPOSE_DEV) run --rm e2e npx playwright test $(SPEC)
+      43  
+      44 +test-report: ## Full E2E suite via the dev overlay; writes the 
+         +HTML report to e2e/playwright-report/                          
+      45 +  # Same suite as `make test`, but through the dev overlay so t
+         +he report and                                                  
+      46 +  # result artifacts are bind-mounted to the host for inspectio
+         +n. The `-` on the                                              
+      47 +  # run keeps the report path printing even when specs fail — w
+         +hich is exactly                                                
+      48 +  # when you want it. On Linux these artifacts are root-owned; 
+         +`make clean` removes                                           
+      49 +  # them.                                                      
+      50 +  $(COMPOSE_DEV) up -d --build --wait $(APP_SERVICES)          
+      51 +  @echo "▸ seeding baseline test data ($(SEED_COUNT) jobs; exis
+         +ting jobs are cleared)"                                        
+      52 +  $(COMPOSE_DEV) exec -T backend python manage.py seed_jobs $(S
+         +EED_ARGS)                                                      
+      53 +  -$(COMPOSE_DEV) run --rm --build e2e                         
+      54 +  @echo ""                                                     
+      55 +  @echo "  ▸ HTML report  e2e/playwright-report/index.html"    
+      56 +  @echo "  ▸ view         npx playwright show-report e2e/playwr
+         +ight-report"                                                   
+      57 +  @echo "  ▸ cleanup      make clean   (artifacts are root-owne
+         +d on Linux)"                                                   
+      58 +                                                               
+      59  test-backend: ## Run backend unit tests (pytest-django), outsid
+          e the make test gate
+      60    $(COMPOSE) up -d --wait db
+      61    # --build so the image carries the code being tested. Backend
+           source is not
+
+⏺ Update(Makefile)
+  ⎿  Added 6 lines, removed 4 lines
+      74    $(COMPOSE) down --remove-orphans
+      75  
+      76  clean: ## Remove containers, networks, volumes and locally buil
+          t images
+      77 -  # On Linux the e2e service runs as root, so its bind-mounted 
+         -playwright-report/                                             
+      78 -  # and test-results/ land in the working tree root-owned; a ho
+         -st-side rm then                                                
+      79 -  # hits "Permission denied". Deleting them from inside a conta
+         -iner matches the                                               
+      80 -  # privileges that created them. See docs/OPEN_QUESTIONS.md §3
+         -.                                                              
+      77 +  # `make test-spec` and `make test-report` run the e2e contain
+         +er through the dev                                             
+      78 +  # overlay, which bind-mounts playwright-report/ and test-resu
+         +lts/. That                                                     
+      79 +  # container runs as root, so on Linux those land in the worki
+         +ng tree root-owned                                             
+      80 +  # and a host-side rm hits "Permission denied". Delete them fr
+         +om inside a                                                    
+      81 +  # container, matching the privileges that created them. (The 
+         +gate, `make test`,                                             
+      82 +  # does not mount them at all.) See docs/OPEN_QUESTIONS.md §3.
+      83    docker run --rm -v "$(CURDIR)/e2e:/work" alpine sh -c 'rm -rf
+           /work/playwright-report /work/test-results'
+      84    $(COMPOSE) down --volumes --remove-orphans --rmi local
+      85    @echo "▸ clean slate"
+
+⏺ Now the README — add test-report to the commands table and to the testing
+  note:
+
+⏺ Update(README.md)
+  ⎿  Added 1 line
+      31  | `make up` | Start the stack and wait until healthy |
+      32  | `make test` | **The gate.** Build, start, run the Playwright 
+          E2E suite |
+      33  | `make test-spec SPEC=03-update-job-api` | Run one spec agains
+          t the running stack |
+      34 +| `make test-report` | Full suite via the dev overlay; writes t
+         +he HTML report to `e2e/playwright-report/` |                   
+      35  | `make test-backend` | Backend unit tests (pytest-django) |
+      36  | `make test-all` | Both suites |
+      37  | `make seed N=250000` | Seed jobs with realistic status histor
+          ies |
+
+⏺ Update(README.md)
+  ⎿  Added 3 lines
+      182  The gate leaves your working tree untouched: `make test` keeps
+            Playwright's report inside the
+      183  throwaway container rather than bind-mounting it — on Linux th
+           at would land root-owned — so a
+      184  clone → `make test` → `rm -rf` stays clean ([why](docs/OPEN_QU
+           ESTIONS.md#root-owned-e2e-artifacts-on-linux)).
+      185 +Pass/fail prints to the terminal (the `list` reporter); when y
+          +ou want the HTML report on disk,                              
+      186 +`make test-report` re-runs the full suite through the dev over
+          +lay, which mounts it to                                       
+      187 +`e2e/playwright-report/`.                                     
+      188  
+      189  The full case matrix is in **[docs/TEST_PLAN.md](docs/TEST_PLA
+           N.md)** - these are the 61 distinct scenarios I planned for in
+            the test plan (21 of them negative); 144 is the number of act
+           ual Playwright assertions that collectively prove them (most c
+           ases need more than one assertion to be considered actually ve
+           rified.)
+      190  
+
+⏺ Let me validate the Makefile parses and the target shows in help:
+
+  Ran 1 shell command (ctrl+o to expand)
+
+⏺ Parses clean, ignores the test exit code (the - prefix), and shows in make 
+  help. Committing and pushing:
+
+  Pushed to main (ctrl+o to expand)
+
+⏺ Pushed (fec696f). Both parts handled:
+
+  make test-report — new target. It runs the full suite through the dev overlay
+  (same specs as the gate) and writes the HTML report + traces to
+  e2e/playwright-report/ and e2e/test-results/ on the host, then prints:
+  ▸ HTML report  e2e/playwright-report/index.html
+  ▸ view         npx playwright show-report e2e/playwright-report
+  ▸ cleanup      make clean   (artifacts are root-owned on Linux)
+  It's prefixed so the report path still prints even when specs fail — which is
+  exactly when you reach for it. Added to the README commands table and the
+  Testing note too.
+
+  The docker run … alpine … rm -rf in make clean — keep it. The gate stopped
+  creating those files, but make test-spec and make test-report both run e2e
+  through the dev overlay (as root), so on Linux they still drop root-owned
+  playwright-report/ and test-results/. make clean is what removes them without
+  sudo — dropping it would reintroduce the permission error for the dev
+  workflow. I updated its comment to name that real source (and to note the gate
+  doesn't mount them at all), so the reasoning stays accurate.
+
+  So the full picture now:
+  - make test → pass/fail in the terminal, nothing written to the tree.
+  - make test-report (or make test-spec) → HTML report on disk for debugging.
+  - make clean → removes those dev artifacts safely on either OS.
+
+✻ Churned for 2m 37s
+
+❯ so make test-report will have the problem with cleanup on linux?              
+
+⏺ Straight answer: yes — as written, make test-report runs e2e through the dev
+  overlay as root, so on Linux it drops root-owned playwright-report/ and
+  test-results/. make clean removes them without sudo, but a manual rm would
+  still hit the permission wall. That's an easy thing to fix, though — let me
+  make test-report chown the artifacts back to you, so they behave like any file
+  you created.
+
+⏺ Update(Makefile)
+  ⎿  Added 6 lines, removed 3 lines
+      45    # Same suite as `make test`, but through the dev overlay so t
+          he report and
+      46    # result artifacts are bind-mounted to the host for inspectio
+          n. The `-` on the
+      47    # run keeps the report path printing even when specs fail — w
+          hich is exactly
+      48 -  # when you want it. On Linux these artifacts are root-owned; 
+         -`make clean` removes                                           
+      49 -  # them.                                                      
+      48 +  # when you want it.                                          
+      49    $(COMPOSE_DEV) up -d --build --wait $(APP_SERVICES)
+      50    @echo "▸ seeding baseline test data ($(SEED_COUNT) jobs; exis
+          ting jobs are cleared)"
+      51    $(COMPOSE_DEV) exec -T backend python manage.py seed_jobs $(S
+          EED_ARGS)
+      52    -$(COMPOSE_DEV) run --rm --build e2e
+      53 +  # The e2e container runs as root, so on Linux the report it j
+         +ust wrote is                                                   
+      54 +  # root-owned. chown it back to the invoking user (from inside
+         + a container, so no                                            
+      55 +  # sudo) — now you can open and `rm` the report like any file 
+         +you made, without                                              
+      56 +  # needing `make clean`. No-op on macOS, where Docker Desktop 
+         +already remaps.                                                
+      57 +  -docker run --rm -v "$(CURDIR)/e2e:/work" alpine chown -R "$$
+         +(id -u):$$(id -g)" /work/playwright-report /work/test-results  
+      58    @echo ""
+      59    @echo "  ▸ HTML report  e2e/playwright-report/index.html"
+      60    @echo "  ▸ view         npx playwright show-report e2e/playwr
+          ight-report"
+      57 -  @echo "  ▸ cleanup      make clean   (artifacts are root-owne
+         -d on Linux)"                                                   
+      61  
+      62  test-backend: ## Run backend unit tests (pytest-django), outsid
+          e the make test gate
+      63    $(COMPOSE) up -d --wait db
+
+⏺ Update(Makefile)
+  ⎿  Added 6 lines, removed 6 lines
+      77    $(COMPOSE) down --remove-orphans
+      78  
+      79  clean: ## Remove containers, networks, volumes and locally buil
+          t images
+      80 -  # `make test-spec` and `make test-report` run the e2e contain
+         -er through the dev                                             
+      81 -  # overlay, which bind-mounts playwright-report/ and test-resu
+         -lts/. That                                                     
+      82 -  # container runs as root, so on Linux those land in the worki
+         -ng tree root-owned                                             
+      83 -  # and a host-side rm hits "Permission denied". Delete them fr
+         -om inside a                                                    
+      84 -  # container, matching the privileges that created them. (The 
+         -gate, `make test`,                                             
+      85 -  # does not mount them at all.) See docs/OPEN_QUESTIONS.md §3.
+      80 +  # `make test-spec` runs the e2e container through the dev ove
+         +rlay, which                                                    
+      81 +  # bind-mounts playwright-report/ and test-results/. That cont
+         +ainer runs as root,                                            
+      82 +  # so on Linux those land in the working tree root-owned and a
+         + host-side rm hits                                             
+      83 +  # "Permission denied". Delete them from inside a container, m
+         +atching the                                                    
+      84 +  # privileges that created them. (`make test` doesn't mount th
+         +em at all; `make                                               
+      85 +  # test-report` chowns them back to you.) See docs/OPEN_QUESTI
+         +ONS.md §3.                                                     
+      86    docker run --rm -v "$(CURDIR)/e2e:/work" alpine sh -c 'rm -rf
+           /work/playwright-report /work/test-results'
+      87    $(COMPOSE) down --volumes --remove-orphans --rmi local
+      88    @echo "▸ clean slate"
+
+⏺ Let me validate the recipe parses with the chown step, then commit and push:
+
+  Pushed to main (ctrl+o to expand)
+
+⏺ Pushed (faf082d). So the answer is: it would have, but now it doesn't.
+
+  make test-report now ends with a container-side chown -R $(id -u):$(id -g) of
+  the two artifact dirs, so on Linux the report comes out owned by you — you can
+  open it and rm it like any file you made, no sudo and no make clean needed.
+  It's a no-op on macOS (Docker Desktop already remaps).
+
+  Where each command stands now:
+  - make test (the gate) — writes nothing to the tree. Clean.
+  - make test-report — writes the report, then hands it back to you. Clean.
+  - make test-spec — still leaves root-owned files (it's the fast single-spec
+  loop); make clean clears them. I left that one as-is rather than add a chown
+  to every quick iteration, but say the word if you'd like it to self-clean too.
+
+  Worth a quick confirm on the Linux box next time you're on it: make 
+  test-report, then ls -l e2e/playwright-report (should show your user), and rm 
+  -rf e2e/playwright-report works without sudo.
+✻ Cooked for 2m 13s
+
+❯ Wait but can't you do the chown command for the regular test run and not have 
+  a special make test-report?                                                   
+
+⏺ Yes — I can, and honestly it's a nice consolidation: put the report mounts
+  back in the gate, have make test chown them to you afterward, and drop the
+  separate test-report entirely. Bonus for a grader: a failing run leaves the
+  HTML report and traces right there to inspect, not just stdout.
+
+  Two things I have to get right, and will:
+  1. The gate must still fail on a red run. So the recipe captures the suite's
+  exit code, chowns regardless, then exits with that code — the chown can't mask
+  a failure.
+  2. One honest tradeoff: make test again writes report files into e2e/
+  (gitignored), but now they're owned by you, so rm -rf is clean.
+
+  Let me make the change. First the compose files — mounts back in the gate,
+  remove the dev-overlay duplicate:
+
+⏺ Update(docker-compose.yml)
+  ⎿  Added 8 lines, removed 9 lines
+       89        # `make test-spec` a seconds-long check (TEST_PLAN tier 
+           T1). The image
+       90        # still contains them, so the mount only ever shadows id
+           entical content.
+       91        - ./e2e/tests:/e2e/tests
+       92 -      # The report/result artifacts are deliberately NOT bind-
+          -mounted in the                                                
+       93 -      # gate. The e2e container runs as root, and on Linux a b
+          -ind mount drops                                               
+       94 -      # root-owned playwright-report/ and test-results/ into t
+          -he working tree                                               
+       95 -      # that the invoking user then cannot delete — so `make t
+          -est` followed by                                              
+       96 -      # `rm -rf` of the checkout fails with "Permission denied
+          -" (OPEN_QUESTIONS                                             
+       97 -      # §3). The gate only needs the pass/fail the `list` repo
+          -rter prints to                                                
+       98 -      # stdout, so the report stays inside the throwaway conta
+          -iner. `make up` /                                             
+       99 -      # `make test-spec` overlay docker-compose.dev.yml, which
+          - mounts them back                                             
+      100 -      # for local inspection.                                 
+       92 +      # Reports land on the host so a run's HTML report and fa
+          +ilure traces stay                                             
+       93 +      # inspectable after the container exits. The e2e contain
+          +er runs as root, so                                           
+       94 +      # on Linux these are written root-owned (bind mounts pas
+          +s the UID through                                             
+       95 +      # untranslated); `make test` chowns them back to the inv
+          +oking user after the                                          
+       96 +      # run, so a clone -> make test -> rm -rf stays clean wit
+          +h no sudo. See                                                
+       97 +      # OPEN_QUESTIONS §3.                                    
+       98 +      - ./e2e/playwright-report:/e2e/playwright-report        
+       99 +      - ./e2e/test-results:/e2e/test-results                  
+      100  
+      101  volumes:
+      102    pgdata:
+
+⏺ Update(docker-compose.dev.yml)
+  ⎿  Removed 10 lines
+      27        # local Postgres on the default port, and this should not
+           collide with it.
+      28        # Override with POSTGRES_HOST_PORT if 55432 is taken too.
+      29        - "127.0.0.1:${POSTGRES_HOST_PORT:-55432}:5432"
+      30 -                                                               
+      31 -  e2e:                                                         
+      32 -    # Local-only: surface Playwright's report and results on th
+         -e host so a                                                    
+      33 -    # failure is inspectable after the container exits (used by
+         - `make test-spec`                                              
+      34 -    # and any dev run through this overlay). Left out of the ga
+         -te compose on                                                  
+      35 -    # purpose — running as root, these land root-owned on Linux
+         -; see the note in                                              
+      36 -    # docker-compose.yml. `make clean` deletes any leftovers fr
+         -om a container.                                                
+      37 -    volumes:                                                   
+      38 -      - ./e2e/playwright-report:/e2e/playwright-report         
+      39 -      - ./e2e/test-results:/e2e/test-results                   
+
+⏺ Now the Makefile — chown in make test, remove test-report, update .PHONY and
+  the clean comment:
+
+⏺ Update(Makefile)
+  ⎿  Added 6 lines, removed 1 line
+      32    $(COMPOSE) up -d --build --wait $(APP_SERVICES)
+      33    @echo "▸ seeding baseline test data ($(SEED_COUNT) jobs; exis
+          ting jobs are cleared)"
+      34    $(COMPOSE) exec -T backend python manage.py seed_jobs $(SEED_
+          ARGS)
+      35 -  $(COMPOSE) run --rm --build e2e                              
+      35 +  # Run the suite, hand its report back to you (the container w
+         +rites it as root;                                              
+      36 +  # on Linux bind mounts pass that UID through), then exit with
+         + the suite's own                                               
+      37 +  # status so a red run still fails the gate. chown is a no-op 
+         +on macOS.                                                      
+      38 +  @rc=0; $(COMPOSE) run --rm --build e2e || rc=$$?; \          
+      39 +    docker run --rm -v "$(CURDIR)/e2e:/work" alpine chown -R "$
+         +$(id -u):$$(id -g)" /work/playwright-report /work/test-results 
+         +>/dev/null 2>&1 || true; \                                     
+      40 +    exit $$rc                                                  
+      41  
+      42  test-spec: ## Run one spec against the running stack, e.g. make
+           test-spec SPEC=01-jobs-list-api
+      43    @test -n "$(SPEC)" || { echo "usage: make test-spec SPEC=<spe
+          c-name>"; exit 2; }
+
+⏺ Update(Makefile)
+  ⎿  Removed 18 lines
+      46    # uses the base config on purpose and will drop them — run `m
+          ake up` after.
+      47    $(COMPOSE_DEV) run --rm e2e npx playwright test $(SPEC)
+      48  
+      49 -test-report: ## Full E2E suite via the dev overlay; writes the 
+         -HTML report to e2e/playwright-report/                          
+      50 -  # Same suite as `make test`, but through the dev overlay so t
+         -he report and                                                  
+      51 -  # result artifacts are bind-mounted to the host for inspectio
+         -n. The `-` on the                                              
+      52 -  # run keeps the report path printing even when specs fail — w
+         -hich is exactly                                                
+      53 -  # when you want it.                                          
+      54 -  $(COMPOSE_DEV) up -d --build --wait $(APP_SERVICES)          
+      55 -  @echo "▸ seeding baseline test data ($(SEED_COUNT) jobs; exis
+         -ting jobs are cleared)"                                        
+      56 -  $(COMPOSE_DEV) exec -T backend python manage.py seed_jobs $(S
+         -EED_ARGS)                                                      
+      57 -  -$(COMPOSE_DEV) run --rm --build e2e                         
+      58 -  # The e2e container runs as root, so on Linux the report it j
+         -ust wrote is                                                   
+      59 -  # root-owned. chown it back to the invoking user (from inside
+         - a container, so no                                            
+      60 -  # sudo) — now you can open and `rm` the report like any file 
+         -you made, without                                              
+      61 -  # needing `make clean`. No-op on macOS, where Docker Desktop 
+         -already remaps.                                                
+      62 -  -docker run --rm -v "$(CURDIR)/e2e:/work" alpine chown -R "$$
+         -(id -u):$$(id -g)" /work/playwright-report /work/test-results  
+      63 -  @echo ""                                                     
+      64 -  @echo "  ▸ HTML report  e2e/playwright-report/index.html"    
+      65 -  @echo "  ▸ view         npx playwright show-report e2e/playwr
+         -ight-report"                                                   
+      66 -                                                               
+      49  test-backend: ## Run backend unit tests (pytest-django), outsid
+          e the make test gate
+      50    $(COMPOSE) up -d --wait db
+      51    # --build so the image carries the code being tested. Backend
+           source is not
+
+⏺ Update(Makefile)
+  ⎿  Added 1 line, removed 1 line
+      12  SEED_ARGS  ?= --count $(SEED_COUNT) --clear --seed 42
+      13  
+      14  .DEFAULT_GOAL := help
+      15 -.PHONY: help build up stop down clean test test-spec test-repor
+         -t test-backend test-all seed logs ps shell db-url psql time    
+      15 +.PHONY: help build up stop down clean test test-spec test-backe
+         +nd test-all seed logs ps shell db-url psql time                
+      16  
+      17  help: ## Show available commands
+      18    @grep -hE '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
+
+⏺ Update(Makefile)
+  ⎿  Added 5 lines, removed 6 lines
+      64    $(COMPOSE) down --remove-orphans
+      65  
+      66  clean: ## Remove containers, networks, volumes and locally buil
+          t images
+      67 -  # `make test-spec` runs the e2e container through the dev ove
+         -rlay, which                                                    
+      68 -  # bind-mounts playwright-report/ and test-results/. That cont
+         -ainer runs as root,                                            
+      69 -  # so on Linux those land in the working tree root-owned and a
+         - host-side rm hits                                             
+      70 -  # "Permission denied". Delete them from inside a container, m
+         -atching the                                                    
+      71 -  # privileges that created them. (`make test` doesn't mount th
+         -em at all; `make                                               
+      72 -  # test-report` chowns them back to you.) See docs/OPEN_QUESTI
+         -ONS.md §3.                                                     
+      67 +  # `make test-spec` runs the e2e container as root and, unlike
+         + `make test`, does                                             
+      68 +  # not chown its output, so on Linux playwright-report/ and te
+         +st-results/ can be                                             
+      69 +  # left root-owned and a host-side rm would hit "Permission de
+         +nied". Delete them                                             
+      70 +  # from inside a container, matching the privileges that creat
+         +ed them. See                                                   
+      71 +  # docs/OPEN_QUESTIONS.md §3.                                 
+      72    docker run --rm -v "$(CURDIR)/e2e:/work" alpine sh -c 'rm -rf
+           /work/playwright-report /work/test-results'
+      73    $(COMPOSE) down --volumes --remove-orphans --rmi local
+      74    @echo "▸ clean slate"
+
+⏺ Now the README — drop the test-report command row and rewrite the testing
+  note:
+
+⏺ Update(README.md)
+  ⎿  Removed 1 line
+      31  | `make up` | Start the stack and wait until healthy |
+      32  | `make test` | **The gate.** Build, start, run the Playwright 
+          E2E suite |
+      33  | `make test-spec SPEC=03-update-job-api` | Run one spec agains
+          t the running stack |
+      34 -| `make test-report` | Full suite via the dev overlay; writes t
+         -he HTML report to `e2e/playwright-report/` |                   
+      34  | `make test-backend` | Backend unit tests (pytest-django) |
+      35  | `make test-all` | Both suites |
+      36  | `make seed N=250000` | Seed jobs with realistic status histor
+          ies |
+
+⏺ Update(README.md)
+  ⎿  Added 5 lines, removed 6 lines
+      178  E2E runs against a real Postgres, so no spec assumes an empty 
+           database; each namespaces its
+      179  fixtures with a run-unique prefix, which is what makes the sui
+           te re-runnable without `make clean`.
+      180  
+      181 -The gate leaves your working tree untouched: `make test` keeps
+          - Playwright's report inside the                               
+      182 -throwaway container rather than bind-mounting it — on Linux th
+          -at would land root-owned — so a                               
+      183 -clone → `make test` → `rm -rf` stays clean ([why](docs/OPEN_QU
+          -ESTIONS.md#root-owned-e2e-artifacts-on-linux)).               
+      184 -Pass/fail prints to the terminal (the `list` reporter); when y
+          -ou want the HTML report on disk,                              
+      185 -`make test-report` re-runs the full suite through the dev over
+          -lay, which mounts it to                                       
+      186 -`e2e/playwright-report/`.                                     
+      181 +Pass/fail prints to the terminal (the `list` reporter), and th
+          +e full HTML report and failure                                
+      182 +traces land in `e2e/playwright-report/` and `e2e/test-results/
+          +`. The e2e container runs as root,                            
+      183 +so `make test` chowns those back to you afterwards — on Linux 
+          +they'd otherwise be root-owned — so a                         
+      184 +clone → `make test` → `rm -rf` stays clean without sudo       
+      185 +([why](docs/OPEN_QUESTIONS.md#root-owned-e2e-artifacts-on-linu
+          +x)).                                                          
+      186  
+      187  The full case matrix is in **[docs/TEST_PLAN.md](docs/TEST_PLA
+           N.md)** - these are the 61 distinct scenarios I planned for in
+            the test plan (21 of them negative); 144 is the number of act
+           ual Playwright assertions that collectively prove them (most c
+           ases need more than one assertion to be considered actually ve
+           rified.)
+      188  
+
+⏺ Now rewrite OPEN_QUESTIONS §3 to match the chown-in-gate approach:
+
+⏺ Update(docs/OPEN_QUESTIONS.md)
+  ⎿  Added 20 lines, removed 19 lines
+      212  
+      213  ### Root-owned e2e artifacts on Linux
+      214  
+      215 -On Linux, bind mounts pass UIDs through untranslated. The e2e 
+          -container runs as root, so any                                
+      216 -directory it bind-mounts back to the host lands in the working
+          - tree owned by root, and the                                  
+      217 -invoking user then cannot delete it. macOS hides this: Docker 
+          -Desktop's file sharing remaps                                 
+      218 -ownership to the host user. The failure mode that matters is a
+          - grader's: `make test`, then                                  
+      219 -`rm -rf` the checkout to clean up, and the delete stops on "Pe
+          -rmission denied".                                             
+      215 +On Linux, bind mounts pass UIDs through untranslated. The e2e 
+          +container runs as root, so the                                
+      216 +`playwright-report/` and `test-results/` it writes to the bind
+          +-mounted working tree are owned by                            
+      217 +root — and the invoking user then cannot delete them. macOS hi
+          +des this: Docker Desktop's file                               
+      218 +sharing remaps ownership to the host user. The failure mode th
+          +at matters is a grader's: `make                               
+      219 +test`, then `rm -rf` the checkout to clean up, and the delete 
+          +stops on "Permission denied".                                 
+      220  
+      221 -**What ships.** The gate compose (`docker-compose.yml`) does *
+          -*not** bind-mount Playwright's                                
+      222 -`playwright-report/` or `test-results/`, so `make test` writes
+          - the report inside the throwaway                              
+      223 -e2e container and leaves nothing root-owned in the working tre
+          -e — a fresh clone → `make test`                               
+      224 -→ `rm -rf` just works. The gate needs only the pass/fail the `
+          -list` reporter prints to stdout.                              
+      225 -For local debugging, `docker-compose.dev.yml` (overlaid by `ma
+          -ke up` / `make test-spec`) mounts                             
+      226 -them back, and `make clean` deletes any such dev-run leftovers
+          - from inside a container                                      
+      227 -(`docker run --rm -v "$(CURDIR)/e2e:/work" alpine …`), so no `
+          -sudo` is needed on either platform.                           
+      221 +**What ships.** The reports stay bind-mounted — a failing run'
+          +s HTML report and traces are worth                            
+      222 +having on the host — and `make test` chowns `playwright-report
+          +/` and `test-results/` back to the                            
+      223 +invoking user after the run, from inside a container (`docker 
+          +run --rm -v "$(CURDIR)/e2e:/work"                             
+      224 +alpine chown …`), so no `sudo` on either platform. The run cap
+          +tures the suite's exit code and                               
+      225 +re-exits with it, so the chown never masks a red run. A fresh 
+          +clone → `make test` → `rm -rf` then                           
+      226 +just works, and you keep the report. The chown is a no-op on m
+          +acOS.                                                         
+      227  
+      229 -**The alternative, not taken.** Keep the reports on the host f
+          -or the gate too, but run the e2e                              
+      230 -service as the invoking user — `user: "${HOST_UID}:${HOST_GID}
+          -"`, the Makefile passing `id -u` /                            
+      231 -`id -g`, plus moving the Playwright browser cache off `/root` 
+      228 +`make test-spec` (the fast single-spec loop) deliberately skip
+          +s the chown to stay quick, so it can                          
+      229 +still leave root-owned artifacts on Linux; `make clean` delete
+          +s those from inside a container the                           
+      230 +same way, again without `sudo`.                               
+      231 +                                                              
+      232 +**The alternative, not taken.** Run the e2e service as the inv
+          +oking user from the start —                                   
+      233 +`user: "${HOST_UID}:${HOST_GID}"`, plus moving the Playwright 
+          +browser cache off `/root`                                     
+      234  (`ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright`, world-readable
+           ) since a non-root user cannot read
+      233 -`/root/.cache/ms-playwright`. That is the "correct" fix *if* h
+          -ost-side gate reports were required,                          
+      234 -but it trades a reliable gate for one whose success depends on
+          - uid-mapping quirks (HOME, cache                              
+      235 -paths) that vary across hosts. For a gate whose whole value is
+          - reproducibility, not creating the                            
+      236 -artifacts is the safer call.                                  
+      235 +`/root/.cache/ms-playwright`. That avoids creating the files r
+          +oot-owned at all, but makes the gate's                        
+      236 +success depend on uid-mapping quirks (HOME, cache paths) that 
+          +vary across hosts. A post-run chown                           
+      237 +leaves the container itself unchanged and keeps the gate simpl
+          +e, so it was the safer call.                                  
+
+⏺ All edits done. Validating: gate config now carries the report mounts, make 
+  test has the exit-code-preserving chown, and test-report is gone:
+
+  Ran 1 shell command (ctrl+o to expand)
+
+⏺ Everything checks out — the rc=0; … || rc=$?; chown … || true; exit $rc dance
+  preserves the suite's exit code, the gate mounts all three, and test-report is
+  gone. Committing and pushing:
+
+  Pushed to main (ctrl+o to expand)
+
+⏺ Pushed (f160166). You were right — this is cleaner. Here's the final shape:
+
+  - make test — runs the suite, prints pass/fail to the terminal, leaves the
+  HTML report + traces in e2e/playwright-report/ and e2e/test-results/ owned by 
+  you, and exits with the suite's status. So: one command, report always there,
+  rm -rf always works, and the gate still fails loudly on a red run (the chown
+  can't mask it). A grader who hits a failure even gets the report to look at.
+  - make test-report — gone. Redundant now.
+  - make test-spec — unchanged (fast single-spec loop); it skips the chown to
+  stay quick, so make clean still tidies its leftovers on Linux.
+
+  Net effect on the diff: 5 files, −26 lines — it removed more than it added,
+  since the separate target and the dev-overlay duplicate mounts are gone.
+
+  The one thing to confirm next time you're on the Linux box: make test, then ls
+  -l e2e/playwright-report should show your user, and rm -rf 
+  e2e/playwright-report works with no sudo. That's the whole behavior in one
+  check.
+
+  Want me to also give make test-spec the same self-chown for consistency, or is
+  leaving it as the quick make clean-backed loop good? Either's fine — your
+  call.
+
+✻ Cooked for 6m 3s
+※ recap: Finalizing the take-home for delivery. Latest change makes `make test` write the report and chown it back so cleanup works on Linux; it's committed and pushed. Next: you verify on the Linux box that `make test` then `rm -rf` works without sudo. (disable recaps in /config)
+
+❯ Yes give make test-spec the same treatment                                    
+
+⏺ On it — I'll factor the chown into a shared E2E_CHOWN variable so test and
+  test-spec stay identical, then wire test-spec up with the same
+  exit-code-preserving pattern.
+
+⏺ Update(Makefile)
+  ⎿  Added 7 lines
+      11  SEED_COUNT ?= 30
+      12  SEED_ARGS  ?= --count $(SEED_COUNT) --clear --seed 42
+      13  
+      14 +# The e2e container runs as root, so on Linux the report it wri
+         +tes to the bind                                                
+      15 +# mount is root-owned (bind mounts pass the UID through untrans
+         +lated). chown it                                               
+      16 +# back to the invoking user from inside a container — no sudo, 
+         +no-op on macOS,                                                
+      17 +# never fails the caller. `make test` and `make test-spec` run 
+         +this after the                                                 
+      18 +# suite, preserving the suite's exit code so a red run still fa
+         +ils.                                                           
+      19 +E2E_CHOWN = docker run --rm -v "$(CURDIR)/e2e:/work" alpine cho
+         +wn -R "$$(id -u):$$(id -g)" /work/playwright-report /work/test-
+         +results >/dev/null 2>&1 || true                                
+      20 +                                                               
+      21  .DEFAULT_GOAL := help
+      22  .PHONY: help build up stop down clean test test-spec test-backe
+          nd test-all seed logs ps shell db-url psql time
+      23  
+
+⏺ Update(Makefile)
+  ⎿  Added 3 lines, removed 4 lines
+      39    $(COMPOSE) up -d --build --wait $(APP_SERVICES)
+      40    @echo "▸ seeding baseline test data ($(SEED_COUNT) jobs; exis
+          ting jobs are cleared)"
+      41    $(COMPOSE) exec -T backend python manage.py seed_jobs $(SEED_
+          ARGS)
+      42 -  # Run the suite, hand its report back to you (the container w
+         -rites it as root;                                              
+      43 -  # on Linux bind mounts pass that UID through), then exit with
+         - the suite's own                                               
+      44 -  # status so a red run still fails the gate. chown is a no-op 
+         -on macOS.                                                      
+      42 +  # Run the suite, hand its report back to you (see E2E_CHOWN),
+         + then exit with the                                            
+      43 +  # suite's own status so a red run still fails the gate.      
+      44    @rc=0; $(COMPOSE) run --rm --build e2e || rc=$$?; \
+      46 -    docker run --rm -v "$(CURDIR)/e2e:/work" alpine chown -R "$
+         -$(id -u):$$(id -g)" /work/playwright-report /work/test-results 
+         ->/dev/null 2>&1 || true; \                                     
+      45 +    $(E2E_CHOWN); \                                            
+      46      exit $$rc
+      47  
+      48  test-spec: ## Run one spec against the running stack, e.g. make
+           test-spec SPEC=01-jobs-list-api
+
+⏺ Update(Makefile)
+  ⎿  Added 4 lines, removed 1 line
+      50    # Uses the dev overlay so running a spec does not reconcile t
+          he stack back to
+      51    # the base config and drop the host ports `make up` published
+          . `make test`
+      52    # uses the base config on purpose and will drop them — run `m
+          ake up` after.
+      53 -  $(COMPOSE_DEV) run --rm e2e npx playwright test $(SPEC)      
+      53 +  # Same chown-back as `make test` (see E2E_CHOWN), exit code p
+         +reserved.                                                      
+      54 +  @rc=0; $(COMPOSE_DEV) run --rm e2e npx playwright test $(SPEC
+         +) || rc=$$?; \                                                 
+      55 +    $(E2E_CHOWN); \                                            
+      56 +    exit $$rc                                                  
+      57  
+      58  test-backend: ## Run backend unit tests (pytest-django), outsid
+          e the make test gate
+      59    $(COMPOSE) up -d --wait db
+
+⏺ Now update the clean comment and OPEN_QUESTIONS §3 to reflect that both
+  targets self-chown (clean's delete is now a safety net for interrupted runs):
+
+⏺ Update(Makefile)
+  ⎿  Added 5 lines, removed 5 lines
+      73    $(COMPOSE) down --remove-orphans
+      74  
+      75  clean: ## Remove containers, networks, volumes and locally buil
+          t images
+      76 -  # `make test-spec` runs the e2e container as root and, unlike
+         - `make test`, does                                             
+      77 -  # not chown its output, so on Linux playwright-report/ and te
+         -st-results/ can be                                             
+      78 -  # left root-owned and a host-side rm would hit "Permission de
+         -nied". Delete them                                             
+      79 -  # from inside a container, matching the privileges that creat
+         -ed them. See                                                   
+      80 -  # docs/OPEN_QUESTIONS.md §3.                                 
+      76 +  # `make test` and `make test-spec` chown their e2e output bac
+         +k to you, but a run                                            
+      77 +  # interrupted before that (Ctrl-C) can still leave playwright
+         +-report/ and                                                   
+      78 +  # test-results/ root-owned on Linux, where a host-side rm wou
+         +ld hit "Permission                                             
+      79 +  # denied". Delete them from inside a container, matching the 
+         +privileges that                                                
+      80 +  # created them. See docs/OPEN_QUESTIONS.md §3.               
+      81    docker run --rm -v "$(CURDIR)/e2e:/work" alpine sh -c 'rm -rf
+           /work/playwright-report /work/test-results'
+      82    $(COMPOSE) down --volumes --remove-orphans --rmi local
+      83    @echo "▸ clean slate"
+
+⏺ Update(docs/OPEN_QUESTIONS.md)
+  ⎿  Added 3 lines, removed 3 lines
+      225  re-exits with it, so the chown never masks a red run. A fresh 
+           clone → `make test` → `rm -rf` then
+      226  just works, and you keep the report. The chown is a no-op on m
+           acOS.
+      227  
+      228 -`make test-spec` (the fast single-spec loop) deliberately skip
+          -s the chown to stay quick, so it can                          
+      229 -still leave root-owned artifacts on Linux; `make clean` delete
+          -s those from inside a container the                           
+      230 -same way, again without `sudo`.                               
+      228 +`make test-spec` chowns its output the same way. `make clean` 
+          +still deletes `playwright-report/`                            
+      229 +and `test-results/` from inside a container as a safety net — 
+          +for a run interrupted (Ctrl-C) before                         
+      230 +the chown — again without `sudo`.                             
+      231  
+      232  **The alternative, not taken.** Run the e2e service as the inv
+           oking user from the start —
+      233  `user: "${HOST_UID}:${HOST_GID}"`, plus moving the Playwright 
+           browser cache off `/root`
+
+❯ If the test failes, does the chown still happen?                              
+
+⏺ Great question to double-check — and the answer is yes, the chown runs whether
+  the suite passes or fails. That's the exact reason for the rc dance rather
+  than a plain sequence. Let me show you the expanded recipe as proof, then
+  commit the test-spec change:
+
+  Ran 1 shell command (ctrl+o to expand)
+
+⏺ Confirmed in both. Reading that line as the single shell command it is:
+
+  rc=0;  <run suite> || rc=$?;   <chown> || true;   exit $rc
+
+  On a failing run: the suite exits non-zero → || rc=$? captures that code (and
+  the || stops the shell from bailing) → the chown line is still reached and
+  runs → exit $rc re-raises the suite's failure. So the report gets chowned to
+  you and the gate still goes red. The chown is also wrapped in || true, so even
+  if the chown itself hiccupped it couldn't flip a red run green or a green run
+  red. The only case it's skipped is a hard Ctrl-C mid-run — which is why make 
+  clean keeps its container-side delete as a backstop.
+
+  Now committing the test-spec change:
+
+  Pushed to main (ctrl+o to expand)
+
+⏺ Pushed (6f0d87b). So to answer directly: yes — the chown runs on pass and on 
+  fail, for both make test and make test-spec. A failing run still exits red
+  (the gate stays honest), and you still get the report handed back to you owned
+  by your user.
+
+  Final state, both targets identical now via the shared E2E_CHOWN:
+  - make test / make test-spec → run suite → chown report to you (pass or fail)
+  → exit with the suite's status.
+  - make clean → backstop that deletes the artifacts from a container, for the
+  one gap the chown can't cover (a Ctrl-C before it runs).
+
+  Same quick Linux check applies whenever you're next on that box: run either
+  target, confirm e2e/playwright-report is owned by you and rm -rf works without
+  sudo — on a passing and a deliberately-failing run if you want to see both
+  paths.
+
+✻ Crunched for 2m 21s
+
+❯ ok great, thanks so much!                                                     
+
+⏺ You're welcome — glad we caught that root-owned issue and got it airtight.
+  Everything's committed and pushed to main, tree's clean. Good luck with the
+  review! 🎉
+
+✻ Sautéed for 3s

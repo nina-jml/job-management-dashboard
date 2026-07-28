@@ -202,7 +202,7 @@ not serve the query it was built for, under a performance claim measured on the 
 
 ## AI usage & prompt engineering
 
-I used Claude Code with Opus 5 for this project. I have been using Opus 4.8 quite a bit and was familiar/pleased with it; when Opus 5 was released very shortly before I started this project, I wanted to try it out. I realize it was a bit risky to use such a new release but I was curious about it. 
+I used Claude Code with Opus 5 for this project. I have been using Opus 4.8 quite a bit and was familiar/pleased with it; when Opus 5 was released very shortly before I started this project, I wanted to try it out. I realize it was a bit risky to use such a new release but I was curious about it. At the very end I switched back to Opus 4.8, and there was a build behavior that the Opus 4.8 agent proposed a much better fix for than the Opus 5 agent, so it did make me question my decision. It's too soon to tell though; I thought it did a good job. 
 
 I spent a little time ramping up on the different technologies and
 doing a little research by browsing the internet and using Claude chat, which isn't captured here.
