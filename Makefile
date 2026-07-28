@@ -11,6 +11,13 @@ POSTGRES_HOST_PORT ?= 55432
 SEED_COUNT ?= 30
 SEED_ARGS  ?= --count $(SEED_COUNT) --clear --seed 42
 
+# The e2e container runs as root, so on Linux the report it writes to the bind
+# mount is root-owned (bind mounts pass the UID through untranslated). chown it
+# back to the invoking user from inside a container — no sudo, no-op on macOS,
+# never fails the caller. `make test` and `make test-spec` run this after the
+# suite, preserving the suite's exit code so a red run still fails.
+E2E_CHOWN = docker run --rm -v "$(CURDIR)/e2e:/work" alpine chown -R "$$(id -u):$$(id -g)" /work/playwright-report /work/test-results >/dev/null 2>&1 || true
+
 .DEFAULT_GOAL := help
 .PHONY: help build up stop down clean test test-spec test-backend test-all seed logs ps shell db-url psql time
 
@@ -32,11 +39,10 @@ test: ## Run the Playwright E2E suite (builds and starts the stack first)
 	$(COMPOSE) up -d --build --wait $(APP_SERVICES)
 	@echo "▸ seeding baseline test data ($(SEED_COUNT) jobs; existing jobs are cleared)"
 	$(COMPOSE) exec -T backend python manage.py seed_jobs $(SEED_ARGS)
-	# Run the suite, hand its report back to you (the container writes it as root;
-	# on Linux bind mounts pass that UID through), then exit with the suite's own
-	# status so a red run still fails the gate. chown is a no-op on macOS.
+	# Run the suite, hand its report back to you (see E2E_CHOWN), then exit with the
+	# suite's own status so a red run still fails the gate.
 	@rc=0; $(COMPOSE) run --rm --build e2e || rc=$$?; \
-		docker run --rm -v "$(CURDIR)/e2e:/work" alpine chown -R "$$(id -u):$$(id -g)" /work/playwright-report /work/test-results >/dev/null 2>&1 || true; \
+		$(E2E_CHOWN); \
 		exit $$rc
 
 test-spec: ## Run one spec against the running stack, e.g. make test-spec SPEC=01-jobs-list-api
@@ -44,7 +50,10 @@ test-spec: ## Run one spec against the running stack, e.g. make test-spec SPEC=0
 	# Uses the dev overlay so running a spec does not reconcile the stack back to
 	# the base config and drop the host ports `make up` published. `make test`
 	# uses the base config on purpose and will drop them — run `make up` after.
-	$(COMPOSE_DEV) run --rm e2e npx playwright test $(SPEC)
+	# Same chown-back as `make test` (see E2E_CHOWN), exit code preserved.
+	@rc=0; $(COMPOSE_DEV) run --rm e2e npx playwright test $(SPEC) || rc=$$?; \
+		$(E2E_CHOWN); \
+		exit $$rc
 
 test-backend: ## Run backend unit tests (pytest-django), outside the make test gate
 	$(COMPOSE) up -d --wait db
@@ -64,11 +73,11 @@ down: ## Stop and remove containers and networks (keeps the database volume)
 	$(COMPOSE) down --remove-orphans
 
 clean: ## Remove containers, networks, volumes and locally built images
-	# `make test-spec` runs the e2e container as root and, unlike `make test`, does
-	# not chown its output, so on Linux playwright-report/ and test-results/ can be
-	# left root-owned and a host-side rm would hit "Permission denied". Delete them
-	# from inside a container, matching the privileges that created them. See
-	# docs/OPEN_QUESTIONS.md §3.
+	# `make test` and `make test-spec` chown their e2e output back to you, but a run
+	# interrupted before that (Ctrl-C) can still leave playwright-report/ and
+	# test-results/ root-owned on Linux, where a host-side rm would hit "Permission
+	# denied". Delete them from inside a container, matching the privileges that
+	# created them. See docs/OPEN_QUESTIONS.md §3.
 	docker run --rm -v "$(CURDIR)/e2e:/work" alpine sh -c 'rm -rf /work/playwright-report /work/test-results'
 	$(COMPOSE) down --volumes --remove-orphans --rmi local
 	@echo "▸ clean slate"

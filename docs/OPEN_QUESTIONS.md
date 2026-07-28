@@ -225,9 +225,9 @@ alpine chown …`), so no `sudo` on either platform. The run captures the suite'
 re-exits with it, so the chown never masks a red run. A fresh clone → `make test` → `rm -rf` then
 just works, and you keep the report. The chown is a no-op on macOS.
 
-`make test-spec` (the fast single-spec loop) deliberately skips the chown to stay quick, so it can
-still leave root-owned artifacts on Linux; `make clean` deletes those from inside a container the
-same way, again without `sudo`.
+`make test-spec` chowns its output the same way. `make clean` still deletes `playwright-report/`
+and `test-results/` from inside a container as a safety net — for a run interrupted (Ctrl-C) before
+the chown — again without `sudo`.
 
 **The alternative, not taken.** Run the e2e service as the invoking user from the start —
 `user: "${HOST_UID}:${HOST_GID}"`, plus moving the Playwright browser cache off `/root`
